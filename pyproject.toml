@@ -1,0 +1,27 @@
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "badwulf"
+version = "0.0.1"
+authors = [
+  { name="Kylie A. Bemis", email="k.bemis@northeastern.edu" },
+]
+description = "Minimal manager for Beowulf clusters and scientific data"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.10"
+classifiers = [
+	"Development Status :: 1 - Planning",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: Artistic License",
+    "Intended Audience :: Science/Research",
+    "Operating System :: Unix",
+]
+
+[project.urls]
+Homepage = "https://github.com/kuwisdelu/badwulf"
+Issues = "https://github.com/kuwisdelu/badwulf/issues"
