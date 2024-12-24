@@ -303,7 +303,7 @@ class expdb:
 		if remote_dbhost is not None and remote_dbpath is None:
 			remote_dbpath = dbpath
 		self.username = username
-		self.dbpath = fix_path(dbpath, mustWork=True)
+		self.dbpath = fix_path(dbpath, must_exist=True)
 		self.dbname = dbname
 		self.remote_dbhost = remote_dbhost
 		self.remote_dbpath = remote_dbpath
@@ -403,7 +403,7 @@ class expdb:
 			path = os.path.join(self.dbpath, "manifest.json")
 		else:
 			path = os.path.join(self.dbpath, self.dbname, "manifest.json")
-		path = fix_path(path, mustWork=True)
+		path = fix_path(path, must_exist=True)
 		if self.verbose:
 			print(f"parsing '{path}'")
 		with open(path) as file:
@@ -438,7 +438,7 @@ class expdb:
 		"""
 		tags = ["name", "atime", "mtime", "size", "path"]
 		path = os.path.join(self.dbpath, scope, group, dataset)
-		path = fix_path(path, mustWork=True)
+		path = fix_path(path, must_exist=True)
 		size = dirsize(path, all_names=True)
 		atime = os.path.getatime(path)
 		mtime = os.path.getmtime(path)
@@ -453,7 +453,7 @@ class expdb:
 		:returns: A list of expcache instances
 		"""
 		path = os.path.join(self.dbpath, scope, group)
-		path = fix_path(path, mustWork=True)
+		path = fix_path(path, must_exist=True)
 		return [self._get_cached_dataset(scope, group, dataset)
 			for dataset
 			in ls(path)]
@@ -467,7 +467,7 @@ class expdb:
 		path = os.path.join(self.dbpath, scope)
 		groups = []
 		if os.path.isdir(path):
-			path = fix_path(path, mustWork=True)
+			path = fix_path(path, must_exist=True)
 			for group in ls(path):
 				groups.extend(self._get_cached_group(scope, group))
 		return groups
@@ -576,13 +576,13 @@ class expdb:
 					hits.append(result)
 		return hits
 	
-	def prune_cache(self, limit, units, strategy = "lru", dryrun = False, ask = False):
+	def prune_cache(self, limit, units, strategy = "lru", dry_run = False, ask = False):
 		"""
 		List cached datasets by name
 		:param limit: Maximum size of the cache
 		:param units: Size units (B, KB, MB, GB, TB, etc.)
 		:param strategy: One of "lru", "mru", "big", "small"
-		:param dryrun: Show what would be done without doing it?
+		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before deleting?
 		"""
 		limit = to_bytes(limit, units)
@@ -618,11 +618,11 @@ class expdb:
 			return
 		if ask and not askYesNo():
 			return
-		if not dryrun:
+		if not dry_run:
 			for x in cache[:target]:
 				print(f"deleting '{x.path}'")
 				try:
-					shutil.rmtree(fix_path(x.path, mustWork=True))
+					shutil.rmtree(fix_path(x.path, must_exist=True))
 				except:
 					print(f"failed to delete '{x.path}'")
 			print(f"the local cache is now {format_bytes(newsize)}")
@@ -648,7 +648,7 @@ class expdb:
 		scope = dataset.scope
 		group = dataset.group
 		path = os.path.join(self.dbpath, scope, group)
-		path = fix_path(path, mustWork=False)
+		path = fix_path(path, must_exist=False)
 		if not os.path.isdir(path):
 			os.makedirs(path)
 		src = os.path.join(self.remote_dbpath, scope, group, name)
@@ -679,7 +679,7 @@ class expdb:
 		:param force: Should the dataset be re-submitted if already tracked?
 		:param ask: Confirm before uploading?
 		"""
-		path = fix_path(path, mustWork=False)
+		path = fix_path(path, must_exist=False)
 		name = os.path.basename(path)
 		if name in self.manifest and not force:
 			print("dataset is already tracked; use force=True to re-submit")

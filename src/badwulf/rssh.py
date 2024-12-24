@@ -157,7 +157,7 @@ class rssh:
 		"""
 		truehost = f"{self.username}@{self.hostname}"
 		showhost = f"{self.username}@{self.destination}"
-		id_file = fix_path(id_file, mustWork=True)
+		id_file = fix_path(id_file, must_exist=True)
 		print(f"key will be uploaded from: '{id_file}'")
 		print(f"key will be uploaded to: '{showhost}'")
 		if ask and not askYesNo():
@@ -172,18 +172,18 @@ class rssh:
 			cmd += [truehost]
 		return subprocess.run(cmd)
 	
-	def download(self, src, dest, dryrun = False, ask = False):
+	def download(self, src, dest, dry_run = False, ask = False):
 		"""
 		Download file(s) to local storage using rsync
 		:param src: The source path on the destination machine
 		:param dest: The destination path on the local machine
-		:param dryrun: Show what would be done without doing it?
+		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before downloading?
 		"""
 		truesrc = f"{self.username}@{self.hostname}:{src}"
 		showsrc = f"{self.username}@{self.destination}:{src}"
 		has_trailing_slash = dest[-1] == "/"
-		dest = fix_path(dest, mustWork=False)
+		dest = fix_path(dest, must_exist=False)
 		if dest[-1] != "/" and has_trailing_slash:
 			dest += "/"
 		print(f"data will be downloaded from: '{showsrc}'")
@@ -197,22 +197,22 @@ class rssh:
 			rsh = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 			rsh = " ".join(rsh + ["-p", str(self.port)])
 			cmd = ["rsync", "-aP", "--rsh", rsh, truesrc, dest]
-		if dryrun:
+		if dry_run:
 			cmd += ["--dry-run"]
 		return subprocess.run(cmd)
 	
-	def upload(self, src, dest, dryrun = False, ask = False):
+	def upload(self, src, dest, dry_run = False, ask = False):
 		"""
 		Upload file(s) from local storage using rsync
 		:param src: The source path on the local machine
 		:param dest: The destination path on the destination machine
-		:param dryrun: Show what would be done without doing it?
+		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before uploading?
 		"""
 		truedest = f"{self.username}@{self.hostname}:{dest}"
 		showdest = f"{self.username}@{self.destination}:{dest}"
 		has_trailing_slash = src[-1] == "/"
-		src = fix_path(src, mustWork=True)
+		src = fix_path(src, must_exist=True)
 		if src[-1] != "/" and has_trailing_slash:
 			src += "/"
 		print(f"data will be uploaded from: '{src}'")
@@ -226,17 +226,17 @@ class rssh:
 			rsh = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 			rsh = " ".join(rsh + ["-p", str(self.port)])
 			cmd = ["rsync", "-aP", "--rsh", rsh, src, truedest]
-		if dryrun:
+		if dry_run:
 			cmd += ["--dry-run"]
 		return subprocess.run(cmd)
 	
-	def rsync(self, src, dest, target = None, dryrun = False, ask = False):
+	def rsync(self, src, dest, target = None, dry_run = False, ask = False):
 		"""
 		Sync file(s) by running rsync on the destination machine
 		:param src: The source path on the destination machine
 		:param dest: The destination path on the target machine
 		:param target: The target machine (if different from destination)
-		:param dryrun: Show what would be done without doing it?
+		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before syncing?
 		"""
 		truehost = f"{self.username}@{self.hostname}"
@@ -257,7 +257,7 @@ class rssh:
 		print(f"data will be copied to: '{showtarget}:{dest}'")
 		if ask and not askYesNo():
 			return
-		if dryrun:
+		if dry_run:
 			cmd += ["--dry-run"]
 		return subprocess.run(cmd)
 	

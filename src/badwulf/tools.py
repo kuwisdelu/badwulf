@@ -5,6 +5,7 @@ import os
 import re
 import socket
 import random
+import tempfile
 
 def to_bytes(x, units = "bytes"):
 	"""
@@ -50,20 +51,24 @@ def format_bytes(x, units = "auto"):
 		else:
 			units = "bytes"
 	if units in ("bytes", "B"):
-		pass
-	elif units == "KB":
-		x /= 1000
-	elif units == "MB":
-		x /= 1000 ** 2
-	elif units == "GB":
-		x /= 1000 ** 3
-	elif units == "TB":
-		x /= 1000 ** 4
-	elif units == "PB":
-		x /= 1000 ** 5
+		if x == 1 and units == "bytes":
+			units = "byte"
+		x = int(x)
 	else:
-		raise ValueError(f"invalid units: {units}")
-	x = round(x, ndigits=2)
+		if units == "KB":
+			x /= 1000
+		elif units == "MB":
+			x /= 1000 ** 2
+		elif units == "GB":
+			x /= 1000 ** 3
+		elif units == "TB":
+			x /= 1000 ** 4
+		elif units == "PB":
+			x /= 1000 ** 5
+		else:
+			raise ValueError(f"invalid units: {units}")
+		x = round(x, ndigits=2)
+		x = float(x)
 	return f"{x} {units}"
 
 def print_bytes(x, units = "auto"):
@@ -89,17 +94,17 @@ def askYesNo(msg = "Continue? (yes/no): "):
 		else:
 			print("Invalid input. Please enter yes/no.")
 
-def fix_path(path, mustWork = True):
+def fix_path(path, must_exist = True):
 	"""
 	Normalize and expand paths
 	:param path: The path to normalize
-	:param mustWork: Must the path exist?
+	:param must_exist: Must the path exist?
 	:returns: The normalized path
 	"""
 	if "~" in path:
 		path = os.path.expanduser(path)
 	path = os.path.realpath(path)
-	if mustWork and not os.path.exists(path):
+	if must_exist and not os.path.exists(path):
 		raise FileNotFoundError(f"path does not exist: '{path}'")
 	return path
 
@@ -108,7 +113,7 @@ def file_create(path):
 	Create a file
 	:param path: The file to create
 	"""
-	path = fix_path(path, mustWork=False)
+	path = fix_path(path, must_exist=False)
 	with open(path, "a"):
 		os.utime(path, None)
 
@@ -117,7 +122,7 @@ def file_remove(path):
 	Delete a file
 	:param path: The file to delete
 	"""
-	path = fix_path(path, mustWork=False)
+	path = fix_path(path, must_exist=False)
 	if os.path.exists(path):
 		os.remove(path)
 
