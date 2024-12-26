@@ -32,11 +32,11 @@ def test_db_open(database):
 
 def test_db_get(database):
 	with database as db:
-		assert db.get("Dataset-id") == db["Dataset-id"]
+		assert db.get("Dataset-ID") == db["Dataset-ID"]
 
 def test_db_ls(database):
 	with database as db:
-		assert "Dataset-id" in db.ls()
+		assert "Dataset-ID" in db.ls()
 
 def test_db_ls_cache(database):
 	with database as db:
