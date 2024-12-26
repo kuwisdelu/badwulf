@@ -26,6 +26,15 @@ classifiers = [
 Homepage = "https://github.com/kuwisdelu/badwulf"
 Issues = "https://github.com/kuwisdelu/badwulf/issues"
 
+[project.optional-dependencies]
+test = ["pytest"]
+
+[external]
+dependencies = [
+	"pkg:generic/ssh",
+	"pkg:generic/rsync",
+]
+
 [tool.pytest.ini_options]
 addopts = [
 	"--import-mode=importlib",
