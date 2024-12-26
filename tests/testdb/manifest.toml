@@ -1,0 +1,26 @@
+
+[Dataset-id]
+scope = "Protected"
+group = "Name of research group or data repository"
+title = "This is a short title"
+description = """\
+	This is a description of the experiment or study, \
+	including the purpose why the data was collected, \
+	and the overall goals of the research project.\
+	"""
+sample-processing = """\
+	This section describes the sample preparation and \
+	the data collection protocol.\
+	"""
+data-processing = """\
+	This section describes any computational processing \
+	applied to the data or files.\
+	"""
+contact = [
+	{name = "Jane Doe", email = "person@url.com"}
+]
+date.created = "1 Jan 1970"
+date.received = "1 Jan 1970"
+formats = []
+keywords = []
+notes = []

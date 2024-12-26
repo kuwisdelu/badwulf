@@ -13,10 +13,14 @@ description = "Minimal manager for Beowulf clusters and scientific data"
 readme = "README.md"
 license = {text = "Artistic License 2.0"}
 requires-python = ">=3.10"
+dependencies = [
+	"tomli >= 1.1.0 ; python_version < '3.11'"
+]
 classifiers = [
 	"Development Status :: 1 - Planning",
 	"Programming Language :: Python :: 3",
 	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
 	"License :: OSI Approved :: Artistic License",
 	"Intended Audience :: Science/Research",
 	"Operating System :: Unix",

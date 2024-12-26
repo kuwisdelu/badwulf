@@ -230,37 +230,6 @@ class rssh:
 			cmd += ["--dry-run"]
 		return subprocess.run(cmd)
 	
-	def rsync(self, src, dest, target = None, dry_run = False, ask = False):
-		"""
-		Sync file(s) by running rsync on the destination machine
-		:param src: The source path on the destination machine
-		:param dest: The destination path on the target machine
-		:param target: The target machine (if different from destination)
-		:param dry_run: Show what would be done without doing it?
-		:param ask: Confirm before syncing?
-		"""
-		truehost = f"{self.username}@{self.hostname}"
-		showhost = f"{self.username}@{self.destination}"
-		if self.server is None:
-			cmd = ["ssh", truehost]
-		else:
-			cmd = ["ssh", "-p", str(self.port), truehost]
-		if target is None:
-			truetarget = truehost
-			showtarget = showhost
-			cmd += ["rsync", "-aP", src, dest]
-		else:
-			truetarget = f"{self.username}@{target}"
-			showtarget = truetarget
-			cmd += ["rsync", "-aP", src, f"{truetarget}:{dest}"]
-		print(f"data will be copied from: '{showhost}:{src}'")
-		print(f"data will be copied to: '{showtarget}:{dest}'")
-		if ask and not askYesNo():
-			return
-		if dry_run:
-			cmd += ["--dry-run"]
-		return subprocess.run(cmd)
-	
 	def ssh(self):
 		"""
 		Attach an unrestricted ssh terminal session

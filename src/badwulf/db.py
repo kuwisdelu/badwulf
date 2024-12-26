@@ -2,7 +2,12 @@
 # Experiment data manager
 
 import os
-import json
+import sys
+if sys.version_info >= (3, 11):
+	import tomllib
+else:
+	import tomli as tomllib
+
 import shutil
 from time import sleep
 from dataclasses import dataclass
@@ -71,8 +76,8 @@ class expdata:
 		self.group = entry["group"]
 		self.title = entry["title"]
 		self.description = entry["description"]
-		self.sample_processing = entry["sample processing"]
-		self.data_processing = entry["data processing"]
+		self.sample_processing = entry["sample-processing"]
+		self.data_processing = entry["data-processing"]
 		self.contact = entry["contact"]
 		self.date = entry["date"]
 		self.formats = entry["formats"]
@@ -346,6 +351,19 @@ class expdb:
 			fields.extend([server, server_username, port])
 		fields = ", ".join(fields)
 		return f"expdb({fields})"
+		
+	def __enter__(self):
+		"""
+		Enter context manager
+		"""
+		self.open_manifest()
+		return self
+	
+	def __exit__(self, exc_type, exc_value, traceback):
+		"""
+		Exit context manager
+		"""
+		self.close()
 	
 	def __del__(self):
 		"""
@@ -400,14 +418,14 @@ class expdb:
 		Refresh the database manifest
 		"""
 		if self.dbname is None:
-			path = os.path.join(self.dbpath, "manifest.json")
+			path = os.path.join(self.dbpath, "manifest.toml")
 		else:
-			path = os.path.join(self.dbpath, self.dbname, "manifest.json")
+			path = os.path.join(self.dbpath, self.dbname, "manifest.toml")
 		path = fix_path(path, must_exist=True)
 		if self.verbose:
 			print(f"parsing '{path}'")
-		with open(path) as file:
-			manifest = json.load(file)
+		with open(path, "rb") as file:
+			manifest = tomllib.load(file)
 			manifest = {name: expdata(name, entry) 
 				for name, entry in manifest.items()}
 			self._manifest = manifest
