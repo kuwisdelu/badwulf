@@ -46,3 +46,7 @@ def test_db_status(database):
 		assert len(synced) == 0
 		assert len(remoteonly) == 1
 		assert len(localonly) == 0
+
+def test_db_close(database):
+	database.close()
+	assert not database.isopen()

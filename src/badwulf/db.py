@@ -17,6 +17,12 @@ from datetime import datetime
 from .tools import *
 from .rssh import *
 
+# scopes
+SCOPE_PRIVATE = "Private"
+SCOPE_PROTECTED = "Protected"
+SCOPE_PUBLIC = "Public"
+SCOPE_XFER = "Xfer"
+
 def format_datasets(iterable, names_only = False, header = True):
 	"""
 	Format an iterable of datasets
@@ -439,9 +445,9 @@ class expdb:
 		if self.verbose:
 			print("detecting cached datasets")
 		cache = []
-		cache.extend(self._get_cached_scope("Private"))
-		cache.extend(self._get_cached_scope("Protected"))
-		cache.extend(self._get_cached_scope("Public"))
+		cache.extend(self._get_cached_scope(SCOPE_PRIVATE))
+		cache.extend(self._get_cached_scope(SCOPE_PROTECTED))
+		cache.extend(self._get_cached_scope(SCOPE_PUBLIC))
 		self._cache = {dataset.name: dataset for dataset in cache}
 		if self.verbose:
 			print(f"{len(cache)} datasets available locally")
@@ -712,7 +718,7 @@ class expdb:
 			src = path + "/"
 		else:
 			src = path
-		dest = os.path.join(self.dbpath, "Xfer", name)
+		dest = os.path.join(self.dbpath, SCOPE_XFER, name)
 		dest = dest + "/"
 		try:
 			con = rssh(self.username,
