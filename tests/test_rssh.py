@@ -2,22 +2,22 @@
 from badwulf.rssh import *
 
 def test_rssh_without_gateway():
-	con = rssh("the-doctor", "tardis")
-	assert con.username == "the-doctor"
-	assert con.destination == "tardis"
-	assert con.hostname == "tardis"
+	con = rssh("bad-wolf", "vortex")
+	assert con.username == "bad-wolf"
+	assert con.destination == "vortex"
+	assert con.hostname == "vortex"
 	assert con.server is None
-	assert con.server_username == "the-doctor"
+	assert con.server_username == "bad-wolf"
 	assert not con.isopen()
 
 def test_rssh_with_gateway():
-	con = rssh("rose-tyler", "tardis",
-		server="time-vortex",
-		server_username="bad-wolf",
+	con = rssh("bad-wolf", "vortex",
+		server="login.dimension.time",
+		server_username="root",
 		autoconnect=False)
-	assert con.username == "rose-tyler"
-	assert con.destination == "tardis"
+	assert con.username == "bad-wolf"
+	assert con.destination == "vortex"
 	assert con.hostname == "localhost"
-	assert con.server == "time-vortex"
-	assert con.server_username == "bad-wolf"
+	assert con.server == "login.dimension.time"
+	assert con.server_username == "root"
 	assert not con.isopen()
