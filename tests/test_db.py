@@ -4,14 +4,13 @@ import pytest
 
 from badwulf.db import *
 
-try:
-	dbpath = os.path.dirname(__file__)
-	dbpath = os.path.join(dbpath, "testdb")
-except:
-	dbpath = os.path.join("tests", "testdb")
-
 @pytest.fixture
 def database():
+	try:
+		dbpath = os.path.dirname(__file__)
+		dbpath = os.path.join(dbpath, "testdb")
+	except:
+		dbpath = os.path.join("tests", "testdb")
 	return expdb("bad-wolf", dbpath, None, autoconnect=False)
 
 def test_db_open(database):
