@@ -6,6 +6,21 @@ import re
 import socket
 import random
 import tempfile
+from importlib.metadata import version
+
+def badwulf_version():
+	"""
+	Get badwulf package version
+	"""
+	return version("badwulf")
+
+def badwulf_attribution():
+	"""
+	Get badwulf package attribution
+	"""
+	str1 = "powered by badwulf |"
+	str2 = "copyright (c) 2024 Kylie A. Bemis"
+	return str1 + " " + str2
 
 def to_bytes(x, units = "bytes"):
 	"""
