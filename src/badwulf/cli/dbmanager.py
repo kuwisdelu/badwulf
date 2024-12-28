@@ -2,7 +2,6 @@
 import sys
 import os
 import platform
-import subprocess
 import argparse
 import datetime
 import importlib.metadata
@@ -10,10 +9,11 @@ from time import sleep
 
 from ..tools import *
 from ..rssh import *
+from ..expdb import *
 
-class clmanager:
+class dbmanager:
 	"""
-	Command line utility for Beowulf clusters
+	Command line utility for scientific dataset management
 	"""
 	
 	def __init__(self,
@@ -25,6 +25,10 @@ class clmanager:
 		readme = None,
 		program = None,
 		username = None,
+		dbpath = None,
+		dbname = None,
+		remote_dbhost = None,
+		remote_dbpath = None,
 		server = None,
 		server_username = None,
 		port = None):
@@ -38,6 +42,10 @@ class clmanager:
 		:param readme: The file path of a README.md file
 		:param program: The name of the program (defaults to name)
 		:param username: Your username on the cluster
+		:param dbpath: The local database path
+		:param dbname: The database name (optional)
+		:param remote_dbhost: The remote database host
+		:param remote_dbpath: The remote database path
 		:param server: The gateway server hostname (optional)
 		:param server_username: Your username on the gateway server (optional)
 		:param port: The local port for gateway server SSH forwarding
@@ -56,6 +64,10 @@ class clmanager:
 		else:
 			self.program = program
 		self.username = username
+		self.dbpath = dbpath
+		self.dbname = dbname
+		self.remote_dbhost = remote_dbhost
+		self.remote_dbpath = remote_dbpath
 		self.server = server
 		self.server_username = server_username
 		self.port = port

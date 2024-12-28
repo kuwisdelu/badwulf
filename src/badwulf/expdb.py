@@ -303,7 +303,7 @@ class expdb:
 		Initialize an expdb instance
 		:param username: Your username on remote database host
 		:param dbpath: The local database path
-		:param dbname: The local database name (optional)
+		:param dbname: The database name (optional)
 		:param remote_dbhost: The remote database host
 		:param remote_dbpath: The remote database path
 		:param server: The gateway server hostname (optional)
@@ -397,6 +397,24 @@ class expdb:
 			self.open_cache()
 		return self._cache
 	
+	@property
+	def dbdir(self):
+		if self.dbpath is None:
+			return None
+		if self.dbname is None:
+			return self.dbpath
+		else:
+			return os.path.join(self.dbpath, self.dbname)
+	
+	@property
+	def remote_dbdir(self):
+		if self.remote_dbpath is None:
+			return None
+		if self.dbname is None:
+			return self.remote_dbpath
+		else:
+			return os.path.join(self.remote_dbpath, self.dbname)
+	
 	def get(self, key):
 		"""
 		Return db[key]
@@ -425,10 +443,7 @@ class expdb:
 		"""
 		Refresh the database manifest
 		"""
-		if self.dbname is None:
-			path = os.path.join(self.dbpath, "manifest.toml")
-		else:
-			path = os.path.join(self.dbpath, self.dbname, "manifest.toml")
+		path = os.path.join(self.dbdir, "manifest.toml")
 		path = fix_path(path, must_exist=True)
 		if self.verbose:
 			print(f"parsing '{path}'")
@@ -463,7 +478,7 @@ class expdb:
 		:returns: An expcache instance
 		"""
 		tags = ["name", "atime", "mtime", "size", "path"]
-		path = os.path.join(self.dbpath, scope, group, dataset)
+		path = os.path.join(self.dbdir, scope, group, dataset)
 		path = fix_path(path, must_exist=True)
 		size = dirsize(path, all_names=True)
 		atime = os.path.getatime(path)
@@ -478,7 +493,7 @@ class expdb:
 		:param group: The dataset group
 		:returns: A list of expcache instances
 		"""
-		path = os.path.join(self.dbpath, scope, group)
+		path = os.path.join(self.dbpdir, scope, group)
 		path = fix_path(path, must_exist=True)
 		return [self._get_cached_dataset(scope, group, dataset)
 			for dataset
@@ -490,7 +505,7 @@ class expdb:
 		:param scope: The dataset scope
 		:returns: A list of expcache instances
 		"""
-		path = os.path.join(self.dbpath, scope)
+		path = os.path.join(self.dbdir, scope)
 		groups = []
 		if os.path.isdir(path):
 			path = fix_path(path, must_exist=True)
@@ -673,13 +688,13 @@ class expdb:
 		dataset = self.get(name)
 		scope = dataset.scope
 		group = dataset.group
-		path = os.path.join(self.dbpath, scope, group)
+		path = os.path.join(self.dbdir, scope, group)
 		path = fix_path(path, must_exist=False)
 		if not os.path.isdir(path):
 			os.makedirs(path)
-		src = os.path.join(self.remote_dbpath, scope, group, name)
+		src = os.path.join(self.remote_dbdir, scope, group, name)
 		src = src + "/"
-		dest = os.path.join(self.dbpath, scope, group, name)
+		dest = os.path.join(self.dbdir, scope, group, name)
 		dest = dest + "/"
 		try:
 			con = rssh(self.username,
@@ -720,7 +735,7 @@ class expdb:
 			src = path + "/"
 		else:
 			src = path
-		dest = os.path.join(self.dbpath, SCOPE_XFER, name)
+		dest = os.path.join(self.remote_dbdir, SCOPE_XFER, name)
 		dest = dest + "/"
 		try:
 			con = rssh(self.username,
