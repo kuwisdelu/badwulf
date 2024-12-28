@@ -66,6 +66,7 @@ class expdata:
 	sample_processing: str
 	data_processing: str
 	contact: dict
+	url: dict
 	date: dict
 	formats: list
 	keywords: list
@@ -82,13 +83,14 @@ class expdata:
 		self.group = entry["group"]
 		self.title = entry["title"]
 		self.description = entry["description"]
-		self.sample_processing = entry["sample-processing"]
-		self.data_processing = entry["data-processing"]
-		self.contact = entry["contact"]
-		self.date = entry["date"]
-		self.formats = entry["formats"]
-		self.keywords = entry["keywords"]
-		self.notes = entry["notes"]
+		self.sample_processing = entry.get("sample-processing", "")
+		self.data_processing = entry.get("data-processing", "")
+		self.contact = entry.get("contact", [])
+		self.url = entry.get("url", {})
+		self.date = entry.get("date", {})
+		self.formats = entry.get("formats", [])
+		self.keywords = entry.get("keywords", [])
+		self.notes = entry.get("notes", [])
 		self.printwidth = printwidth
 	
 	def __str__(self):

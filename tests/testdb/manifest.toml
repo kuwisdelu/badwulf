@@ -1,6 +1,6 @@
 
 [Dataset-ID]
-scope = "Protected"
+scope = "Private"
 group = "Name of research group or data repository"
 title = "This is a short title"
 description = """\
@@ -17,10 +17,45 @@ data-processing = """\
 	applied to the data or files.\
 	"""
 contact = [
-	{name = "Jane Doe", email = "person@url.com"}
+	{name = "Bad Wolf", email = "entity@the-moment.time"}
 ]
+url.doi = "not.a.valid.doi"
+url.pub = "bad.wolf.corporation"
 date.created = "1 Jan 1970"
 date.received = "1 Jan 1970"
 formats = []
 keywords = []
 notes = []
+
+[Dataset-01]
+scope = "Private"
+group = "Bad Wolf Corporation"
+title = "Example private dataset"
+description = """\
+	This dataset should not be shared or published.\
+	"""
+contact = [
+	{name = "Bad Wolf", email = "entity@the-moment.time"}
+]
+
+[Dataset-02]
+scope = "Protected"
+group = "Bad Wolf Corporation"
+title = "Example protected dataset"
+description = """\
+	This dataset requires permission to be shared or published.\
+	"""
+contact = [
+	{name = "Bad Wolf", email = "entity@the-moment.time"}
+]
+
+[Dataset-03]
+scope = "Public"
+group = "Bad Wolf Corporation"
+title = "Example public dataset"
+description = """\
+	This dataset is safe to publish and share widely.\
+	"""
+contact = [
+	{name = "Bad Wolf", email = "entity@the-moment.time"}
+]

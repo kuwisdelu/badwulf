@@ -210,6 +210,8 @@ def grep1(pattern, x, ignore_case = True, context_width = None):
 	:param context_width: Width of a context window to return
 	:returns: A Match or None
 	"""
+	if x is None:
+		return None
 	if ignore_case:
 		match = re.search(pattern, x, flags=re.IGNORECASE)
 	else:
@@ -241,9 +243,12 @@ def grep(pattern, x, ignore_case = True):
 	:param ignore_case: Should case be ignored?
 	:returns: A list of matches
 	"""
-	return [grep1(pattern, xi, ignore_case=ignore_case) 
-		for xi 
-		in x]
+	if x is None:
+		return []
+	else:
+		return [grep1(pattern, xi, ignore_case=ignore_case) 
+			for xi 
+			in x]
 
 def grepl(pattern, x, ignore_case = True):
 	"""
@@ -253,7 +258,10 @@ def grepl(pattern, x, ignore_case = True):
 	:param ignore_case: Should case be ignored?
 	:returns: A list of bools
 	"""
-	return [match is not None 
-		for match 
-		in grep(pattern, x, ignore_case=ignore_case)]
+	if x is None:
+		return []
+	else:
+		return [match is not None 
+			for match 
+			in grep(pattern, x, ignore_case=ignore_case)]
 

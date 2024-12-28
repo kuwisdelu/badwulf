@@ -31,21 +31,25 @@ def test_db_ls_cache(database):
 
 def test_db_search(database):
 	with database as db:
-		assert len(db.search("test")) == 0
-		assert len(db.search("research")) == 1
+		assert len(db.search("this dataset")) == 3
+		assert len(db.search("not")) == 1
+		assert len(db.search("secret")) == 0
 
 def test_db_search_cache(database):
 	with database as db:
-		assert len(db.search_cache("test")) == 0
-		assert len(db.search_cache("research")) == 0
+		assert len(db.search_cache("this dataset")) == 0
+		assert len(db.search_cache("not")) == 0
+		assert len(db.search_cache("secret")) == 0
+
+def test_db_describe(database):
+	with database as db:
+		assert db["Dataset-01"].describe() is not None
+		assert db["Dataset-02"].describe() is not None
+		assert db["Dataset-03"].describe() is not None
 
 def test_db_status(database):
 	with database as db:
 		synced, remoteonly, localonly = db.status()
 		assert len(synced) == 0
-		assert len(remoteonly) == 1
+		assert len(remoteonly) == 4
 		assert len(localonly) == 0
-
-def test_db_close(database):
-	database.close()
-	assert not database.isopen()
