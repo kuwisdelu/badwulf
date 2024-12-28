@@ -19,7 +19,7 @@ data-processing = """\
 contact = [
 	{name = "Bad Wolf", email = "entity@the-moment.time"}
 ]
-url.doi = "not.a.valid.doi"
+url.doi = "not.a.valid.doi/or.is.it"
 url.pub = "bad.wolf.corporation"
 date.created = "1 Jan 1970"
 date.received = "1 Jan 1970"
