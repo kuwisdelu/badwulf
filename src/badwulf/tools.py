@@ -22,6 +22,16 @@ def badwulf_attribution():
 	str2 = "copyright (c) 2024 Kylie A. Bemis"
 	return str1 + " " + str2
 
+def is_known_host(nodes):
+	"""
+	Check if the program is running on a known host
+	:param nodes: A list of hostnames
+	:returns: True if running on a known host, False otherwise
+	"""
+	host = platform.node().replace(".local", "")
+	nodes = [nodename.casefold() for nodename in nodes]
+	return host.casefold() in nodes
+
 def to_bytes(x, units = "bytes"):
 	"""
 	Convert a size to bytes

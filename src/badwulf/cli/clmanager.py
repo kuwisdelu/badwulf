@@ -1,6 +1,5 @@
 
 import sys
-import os
 import platform
 import subprocess
 import argparse
@@ -9,7 +8,7 @@ import importlib.metadata
 from time import sleep
 
 from ..tools import *
-from ..rssh import *
+from ..rssh import rssh
 
 class clmanager:
 	"""
@@ -26,7 +25,7 @@ class clmanager:
 		program = None,
 		username = None,
 		server = None,
-		server_username = None,
+		server_username = False,
 		port = None):
 		"""
 		Initialize a cluster CLI utility program
@@ -74,6 +73,8 @@ class clmanager:
 		parser.add_argument("-n", "--node", action="append",
 			help=f"{self.name} node", dest="nodes",
 			metavar="NODE")
+		parser.add_argument("-p", "--port", action="store",
+			help="port forwarding", default=self.port)
 		parser.add_argument("-u", "--user", action="store",
 			help=f"{self.name} user", default=self.username)
 		parser.add_argument("-L", "--login", action="store",
@@ -175,13 +176,11 @@ class clmanager:
 		Check if the program is running on a cluster node
 		:returns: True if running the a cluster node, False otherwise
 		"""
-		host = platform.node().replace(".local", "")
 		if isinstance(self.nodes, dict):
 			nodes = self.nodes.values()
 		else:
 			nodes = self.nodes
-		nodes = [nodename.casefold() for nodename in nodes]
-		return host.casefold() in nodes
+		return is_known_host(nodes)
 	
 	def resolve_node(self, nodes):
 		"""
@@ -259,9 +258,10 @@ class clmanager:
 				server_username=args.login, 
 				port=args.port)
 			sleep(1) # allow time to connect
-		# run
+		# help
 		if args.cmd is None:
 			self._parser.print_help()
+		# run
 		elif args.cmd == "run":
 			if args.remote_command is None:
 				con.ssh()

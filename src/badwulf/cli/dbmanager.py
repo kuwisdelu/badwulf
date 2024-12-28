@@ -1,6 +1,5 @@
 
 import sys
-import os
 import platform
 import argparse
 import datetime
@@ -8,8 +7,8 @@ import importlib.metadata
 from time import sleep
 
 from ..tools import *
-from ..rssh import *
-from ..expdb import *
+from ..rssh import rssh
+from ..expdb import expdb
 
 class dbmanager:
 	"""
@@ -18,32 +17,32 @@ class dbmanager:
 	
 	def __init__(self,
 		name,
-		nodes,
+		dbpath,
+		dbname,
 		version,
 		date,
 		description,
 		readme = None,
 		program = None,
 		username = None,
-		dbpath = None,
-		dbname = None,
+		metapath = True,
 		remote_dbhost = None,
 		remote_dbpath = None,
 		server = None,
-		server_username = None,
+		server_username = False,
 		port = None):
 		"""
 		Initialize a cluster CLI utility program
 		:param name: The name of the cluster/server
-		:param nodes: A list of nodenames or dict in the form {alias: nodename}
+		:param dbpath: The local database path
+		:param dbname: The database name
 		:param version: The version of the program
 		:param date: The date of the program's last revision
 		:param description: A description of the program
 		:param readme: The file path of a README.md file
 		:param program: The name of the program (defaults to name)
 		:param username: Your username on the cluster
-		:param dbpath: The local database path
-		:param dbname: The database name (optional)
+		:param metapath: Subdirectory containing "manifest.toml"" (optional)
 		:param remote_dbhost: The remote database host
 		:param remote_dbpath: The remote database path
 		:param server: The gateway server hostname (optional)
@@ -51,7 +50,8 @@ class dbmanager:
 		:param port: The local port for gateway server SSH forwarding
 		"""
 		self.name = name
-		self.nodes = nodes
+		self.dbpath = dbpath
+		self.dbname = dbname
 		self.version = version
 		if isinstance(date, datetime.date):
 			self.date = date
@@ -64,8 +64,7 @@ class dbmanager:
 		else:
 			self.program = program
 		self.username = username
-		self.dbpath = dbpath
-		self.dbname = dbname
+		self.metapath = metapath
 		self.remote_dbhost = remote_dbhost
 		self.remote_dbpath = remote_dbpath
 		self.server = server
@@ -74,84 +73,161 @@ class dbmanager:
 		self._parser = None
 		self._args = None
 
-	def _add_cluster_args(self, parser):
+	def _add_server_args(self, parser):
 		"""
-		Add cluster parameters to a parser.
+		Add server parameters to a parser.
 		:param parser: The parser to update
 		"""
-		if isinstance(self.nodes, dict):
-			for alias, nodename in self.nodes.items():
-				parser.add_argument(f"-{alias}", action="append_const",
-					help=nodename, dest="nodes", const=nodename)
-		parser.add_argument("-n", "--node", action="append",
-			help=f"{self.name} node", dest="nodes",
-			metavar="NODE")
+		parser.add_argument("-p", "--port", action="store",
+			help="port forwarding", default=self.port)
 		parser.add_argument("-u", "--user", action="store",
 			help=f"{self.name} user", default=self.username)
 		parser.add_argument("-L", "--login", action="store",
 			help="gateway server user", default=self.server_username)
 		parser.add_argument("-S", "--server", action="store",
 			help="gateway server host", default=self.server)
+		parser.add_argument("--remote-host", action="store",
+			help="remote database host", default=self.remote_dbhost)
+		parser.add_argument("--remote-path", action="store",
+			help="remote database path", default=self.remote_dbpath)
 	
-	def _add_subcommand_run(self, subparsers):
+	def _add_subcommand_ls(self, subparsers):
 		"""
-		Add 'run' subcommand to subparsers.
+		Add 'ls' subcommand to subparsers.
 		:param subparsers: The subparsers to update
 		"""
-		cmd = subparsers.add_parser("run", 
-			help=f"run command (e.g., shell) on a {self.name} node")
-		self._add_cluster_args(cmd)
-		cmd.add_argument("remote_command", action="store",
-			help="command to execute on a Magi node", nargs=argparse.OPTIONAL,
-			metavar="command")
-		cmd.add_argument("remote_args", action="store",
-			help="command arguments", nargs=argparse.REMAINDER,
-			metavar="...")
+		cmd = subparsers.add_parser("ls", 
+			help="list all datasets")
+		cmd.add_argument("-l", "--details", action="store_true",
+			help="show full details")
+		cmd.add_argument("-s", "--scope", action="store",
+			help="filter by scope")
+		cmd.add_argument("-g", "--group", action="store",
+			help="filter by group")
 	
-	def _add_subcommand_copy_id(self, subparsers):
+	def _add_subcommand_ls_cache(self, subparsers):
 		"""
-		Add 'copy-id' subcommand to subparsers.
+		Add 'ls-cache' subcommand to subparsers.
 		:param subparsers: The subparsers to update
 		"""
-		cmd = subparsers.add_parser("copy-id", 
-			help=f"copy ssh keys to a {self.name} node")
-		self._add_cluster_args(cmd)
-		cmd.add_argument("identity_file", action="store",
-			help="ssh key identity file")
+		cmd = subparsers.add_parser("ls-cache", 
+			help="list cached datasets")
+		cmd.add_argument("-l", "--details", action="store_true",
+			help="show full details")
+		cmd.add_argument("-s", "--scope", action="store",
+			help="filter by scope")
+		cmd.add_argument("-g", "--group", action="store",
+			help="filter by group")
+		cmd.add_argument("--sort", action="store",
+			help="sort by file attribute (atime, mtime, size)")
+		cmd.add_argument("--reverse", action="store",
+			help="reverse by file attribute (atime, mtime, size)")
 	
-	def _add_subcommand_push(self, subparsers):
+	def _add_subcommand_search(self, subparsers):
 		"""
-		Add a 'push' subcommand to subparsers.
+		Add 'search' subcommand to subparsers.
 		:param subparsers: The subparsers to update
 		"""
-		cmd = subparsers.add_parser("push", 
-			help=f"upload file(s) to {self.name}")
-		self._add_cluster_args(cmd)
-		cmd.add_argument("src", action="store",
-			help="source file/directory")
-		cmd.add_argument("dest", action="store",
-			help="destination file/directory")
+		cmd = subparsers.add_parser("search", 
+			help="search all datasets")
+		cmd.add_argument("pattern", action="store",
+			help="search pattern (regex allowed)")
+		cmd.add_argument("-s", "--scope", action="store",
+			help="filter by scope")
+		cmd.add_argument("-g", "--group", action="store",
+			help="filter by group")
+	
+	def _add_subcommand_search_cache(self, subparsers):
+		"""
+		Add 'search-cache' subcommand to subparsers.
+		:param subparsers: The subparsers to update
+		"""
+		cmd = subparsers.add_parser("search-cache", 
+			help="search cached datasets")
+		cmd.add_argument("pattern", action="store",
+			help="search pattern (regex allowed)")
+		cmd.add_argument("-s", "--scope", action="store",
+			help="filter by scope")
+		cmd.add_argument("-g", "--group", action="store",
+			help="filter by group")
+		
+	def _add_subcommand_prune_cache(self, subparsers):
+		"""
+		Add 'prune-cache' subcommand to subparsers.
+		:param subparsers: The subparsers to update
+		"""
+		cmd = subparsers.add_parser("prune-cache", 
+			help="remove cached datasets")
+		cmd.add_argument("limit", action="store",
+			help="maximum cache size (10, 100, 1000, etc.)", type=float)
+		cmd.add_argument("units", action="store",
+			help="cache size units (MB, GB, TB, etc.)")
+		cmd.add_argument("-l", "--lru", action="store_const",
+			help="prune least recently used (default)", dest="strategy", const="lru")
+		cmd.add_argument("-m", "--mru", action="store_const",
+			help="prune most recently used", dest="strategy", const="mru")
+		cmd.add_argument("-b", "--big", action="store_const",
+			help="prune largest files", dest="strategy", const="big")
+		cmd.add_argument("-s", "--small", action="store_const",
+			help="prune smallest files", dest="strategy", const="small")
 		cmd.add_argument("--ask", action="store_true",
-			help="ask to confirm before uploading files?")
+			help="ask to confirm before deleting?")
 		cmd.add_argument("--dry-run", action="store_true",
-			help="show what would happen without doing it?")
+			help="show what would be deleted?")
 	
-	def _add_subcommand_pull(self, subparsers):
+	def _add_subcommand_describe(self, subparsers):
 		"""
-		Add a 'pull' subcommand to subparsers.
+		Add 'describe' subcommand to subparsers.
 		:param subparsers: The subparsers to update
 		"""
-		cmd = subparsers.add_parser("pull", 
-			help=f"download file(s) from {self.name}")
-		self._add_cluster_args(cmd)
-		cmd.add_argument("src", action="store",
-			help="source file/directory")
-		cmd.add_argument("dest", action="store",
-			help="destination file/directory")
+		cmd = subparsers.add_parser("describe", 
+			help="describe a dataset")
+		cmd.add_argument("id", action="store",
+			help="the identifier of the dataset to describe")
+	
+	def _add_subcommand_sync(self, subparsers):
+		"""
+		Add 'sync' subcommand to subparsers.
+		:param subparsers: The subparsers to update
+		"""
+		cmd = subparsers.add_parser("sync", 
+			help="sync a dataset to local cache")
+		cmd.add_argument("id", action="store",
+			help="the identifier of the dataset to sync")
+		self._add_server_args(cmd)
+		cmd.add_argument("-f", "--force", action="store_true",
+			help="force re-sync if already cached")
 		cmd.add_argument("--ask", action="store_true",
-			help="ask to confirm before downloading files?")
-		cmd.add_argument("--dry-run", action="store_true",
-			help="show what would happen without doing it?")
+			help="ask to confirm before syncing?")
+	
+	def _add_subcommand_submit(self, subparsers):
+		"""
+		Add 'submit' subcommand to subparsers.
+		:param subparsers: The subparsers to update
+		"""
+		cmd = subparsers.add_parser("submit", 
+			help="submit a dataset")
+		cmd.add_argument("path", action="store",
+			help="the path to the dataset directory")
+		self._add_server_args(cmd)
+		cmd.add_argument("-f", "--force", action="store_true",
+			help="force re-submission if already tracked")
+		cmd.add_argument("--ask", action="store_true",
+			help="ask to confirm before submitting?")
+	
+	def _add_subcommand_status(self, subparsers):
+		"""
+		Add 'status' subcommand to subparsers.
+		:param subparsers: The subparsers to update
+		"""
+		cmd = subparsers.add_parser("status", 
+			help="report status of cache against manifest")
+		cmd.add_argument("-l", "--details", action="store_true",
+			help="show full details")
+		cmd.add_argument("-s", "--scope", action="store",
+			help="filter by scope")
+		cmd.add_argument("-g", "--group", action="store",
+			help="filter by group")
 	
 	def _add_subcommand_readme(self, subparsers):
 		"""
@@ -174,73 +250,18 @@ class dbmanager:
 		parser.add_argument("-v", "--version", action="store_true",
 			help="display version")
 		subparsers = parser.add_subparsers(dest="cmd")
-		self._add_subcommand_run(subparsers)
-		self._add_subcommand_copy_id(subparsers)
-		self._add_subcommand_push(subparsers)
-		self._add_subcommand_pull(subparsers)
+		self._add_subcommand_ls(subparsers)
+		self._add_subcommand_ls_cache(subparsers)
+		self._add_subcommand_search(subparsers)
+		self._add_subcommand_search_cache(subparsers)
+		self._add_subcommand_prune_cache(subparsers)
+		self._add_subcommand_describe(subparsers)
+		self._add_subcommand_sync(subparsers)
+		self._add_subcommand_submit(subparsers)
+		self._add_subcommand_status(subparsers)
 		if self.readme is not None:
 			self._add_subcommand_readme(subparsers)
 		self._parser = parser
-	
-	def is_node(self):
-		"""
-		Check if the program is running on a cluster node
-		:returns: True if running the a cluster node, False otherwise
-		"""
-		host = platform.node().replace(".local", "")
-		if isinstance(self.nodes, dict):
-			nodes = self.nodes.values()
-		else:
-			nodes = self.nodes
-		nodes = [nodename.casefold() for nodename in nodes]
-		return host.casefold() in nodes
-	
-	def resolve_node(self, nodes):
-		"""
-		Get single valid nodename from a list of nodes
-		:param nodes: A list of nodenames
-		"""
-		host = platform.node().replace(".local", "")
-		if nodes is None or len(nodes) != 1:
-			sys.exit(f"{self.program}: error: must specify exactly _one_ {self.name} node")
-		node = nodes[0]
-		if self.is_node():
-			if host == node.casefold():
-				node = "localhost"
-			else:
-				node += ".local"
-		return node
-	
-	def open_ssh(self,
-		node,
-		username = None,
-		server = None,
-		server_username = None,
-		port = None):
-		"""
-		Open SSH connection to a cluster node
-		:param node: The target cluster node
-		:param username: Your username on the cluster
-		:param server: The gateway server hostname (optional)
-		:param server_username: Your username on the gateway server (optional)
-		:param port: Port used for gateway forwarding
-		:returns: An open rssh instance
-		"""
-		if username is None:
-			username = self.username
-		if server is None:
-			server = self.server
-		if server_username is None:
-			server_username = self.server_username
-		if port is None:
-			port = findport()
-		# connect and return the session
-		session = rssh(username, node,
-			server=server,
-			server_username=server_username,
-			port=port,
-			autoconnect=True)
-		return session
 	
 	def parse_args(self):
 		"""
@@ -249,6 +270,26 @@ class dbmanager:
 		if self._parser is None:
 			self._init_parser()
 		self._args = self._parser.parse_args()
+	
+	def open_db(self):
+		"""
+		Open connection to the database
+		:param dbpath: The local database path
+		"""
+		# check for valid database path
+		if not os.path.isdir(self.dbpath):
+			raise NotADirectoryError(f"database does not exist: '{self.dbpath}'")
+		# connect and return database
+		db = expdb(self.username, self.dbpath, self.dbname,
+			metapath=self.metapath,
+			remote_dbhost=self.remote_dbhost,
+			remote_dbpath=self.remote_dbpath,
+			server=self.server,
+			server_username=self.server_username,
+			port=self.port,
+			verbose=False,
+			autoconnect=False)
+		return db
 	
 	def main(self):
 		"""
@@ -263,42 +304,133 @@ class dbmanager:
 			print(f"{description} version {self.version} (revised {self.date})")
 			print(badwulf_attribution())
 			sys.exit()
-		# open ssh for server commands
-		if args.cmd in ("run", "copy-id", "push", "pull"):
-			con = self.open_ssh(self.resolve_node(args.nodes),
-				username=args.user,
-				server=args.server,
-				server_username=args.login, 
-				port=args.port)
-			sleep(1) # allow time to connect
-		# run
+		# help
 		if args.cmd is None:
 			self._parser.print_help()
-		elif args.cmd == "run":
-			if args.remote_command is None:
-				con.ssh()
+		else:
+			db = self.open_db()
+		# ls
+		if args.cmd == "ls":
+			datasets = db.ls(
+				scope=args.scope,
+				group=args.group,
+				details=args.details)
+			if args.details:
+				print_datasets(datasets)
 			else:
-				print(f"connecting as {con.username}@{con.destination}")
-				dest = f"{con.username}@{con.hostname}"
-				if con.server is None:
-					cmd = ["ssh", dest]
+				for name in datasets:
+					print(f"['{name}']")
+		# ls-cache
+		elif args.cmd == "ls-cache":
+			datasets = db.ls_cache(
+				scope=args.scope,
+				group=args.group,
+				details=args.details or args.sort is not None)
+			if args.sort is not None or args.reverse is not None:
+				if args.sort is not None:
+					sortby = args.sort.casefold()
 				else:
-					cmd = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
-					cmd += ["-p", str(con.port), dest]
-				cmd.append(args.remote_command)
-				cmd.extend(args.remote_args)
-				subprocess.run(cmd)
-		# copy-id
-		elif args.cmd == "copy-id":
-			con.copy_id(args.identity_file)
-		# push
-		elif args.cmd == "push":
-			con.upload(args.src, args.dest,
+					sortby = args.reverse.casefold()
+				if sortby == "size".casefold():
+					datasets.sort(key=lambda x: x.size)
+				elif sortby == "atime".casefold():
+					datasets.sort(key=lambda x: x.atime)
+				elif sortby == "mtime".casefold():
+					datasets.sort(key=lambda x: x.mtime)
+				else:
+					sys.exit(f"msi ls-cache: error: can't sort by attribute: '{args.sort}'")
+				if args.reverse is not None:
+					datasets.reverse()
+			if args.details or args.sort is not None:
+				print_datasets(datasets)
+				sizes = [x.size for x in datasets]
+				print(f"~= {format_bytes(sum(sizes))} total")
+			else:
+				for name in datasets:
+					print(f"['{name}']")
+		# search
+		elif args.cmd == "search":
+			hits = db.search(
+				pattern=args.pattern,
+				scope=args.scope,
+				group=args.group)
+			print_datasets(hits)
+		# search-cache
+		elif args.cmd == "search-cache":
+			hits = db.search_cache(
+				pattern=args.pattern,
+				scope=args.scope,
+				group=args.group)
+			print_datasets(hits)
+		# prune-cache
+		elif args.cmd == "prune-cache":
+			if args.strategy is None:
+				args.strategy = "lru"
+			db.prune_cache(
+				limit=args.limit,
+				units=args.units,
+				strategy=args.strategy,
 				dry_run=args.dry_run, ask=args.ask)
-		# pull
-		elif args.cmd == "pull":
-			con.download(args.src, args.dest,
-				dry_run=args.dry_run, ask=args.ask)
+		# describe
+		elif args.cmd == "describe":
+			dataset = db.get(args.name)
+			if dataset is None:
+				sys.exit(f"msi describe: error: no such dataset: '{args.name}'")
+			else:
+				print(dataset.describe())
+		# sync
+		elif args.cmd == "sync":
+			if args.name in db.cache and not args.force:
+				sys.exit("msi sync: dataset is already cached; use --force to re-sync")
+			db.username = args.user
+			db.remote_dbhost = args.remote_host
+			db.remote_dbpath = args.remote_path
+			db.server = args.server
+			db.server_username = args.login
+			db.port = args.port
+			db.sync(args.name,
+				force=args.force,
+				ask=args.ask)
+		# submit
+		elif args.cmd == "submit":
+			name = os.path.basename(args.path)
+			if name in db.manifest and not args.force:
+				sys.exit("msi submit: dataset is already tracked; use --force to re-submit")
+			db.username = args.user
+			db.remote_dbhost = args.remote_host
+			db.remote_dbpath = args.remote_path
+			db.server = args.server
+			db.server_username = args.login
+			db.port = args.port
+			db.submit(args.path,
+				force=args.force,
+				ask=args.ask)
+		# status
+		elif args.cmd == "status":
+			synced, remoteonly, localonly = db.status(
+				scope=args.scope,
+				group=args.group,
+				details=args.details)
+			msg_synced = "\n~~~~ synced:"
+			msg_remoteonly = "\n>>>> tracked but not cached:"
+			msg_localonly = "\n<<<< cached but not tracked:"
+			if args.details:
+				print(msg_synced)
+				print_datasets(synced)
+				print(msg_remoteonly)
+				print_datasets(remoteonly)
+				print(msg_localonly)
+				print_datasets(localonly)
+			else:
+				print(msg_synced)
+				for name in synced:
+					print(f"['{name}']")
+				print(msg_remoteonly)
+				for name in remoteonly:
+					print(f"['{name}']")
+				print(msg_localonly)
+				for name in localonly:
+					print(f"['{name}']")
 		# readme
 		elif args.cmd == "readme":
 			if args.pager is None:

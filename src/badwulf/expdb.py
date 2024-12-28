@@ -272,10 +272,16 @@ class expcache:
 	
 	@property
 	def atime(self):
+		"""
+		Get last accessed time
+		"""
 		return datetime.fromtimestamp(self._atime)
 	
 	@property
 	def mtime(self):
+		"""
+		Get last modified time
+		"""
 		return datetime.fromtimestamp(self._mtime)
 	
 	def __str__(self):
@@ -294,7 +300,7 @@ class expdb:
 	Database manager for experimental datasets and metadata
 	"""
 	
-	def __init__(self, username, dbpath, dbname,
+	def __init__(self, username, dbpath, dbname, metapath = True,
 		remote_dbhost = None, remote_dbpath = None,
 		server = None, server_username = None,
 		port = 8080, remote_port = 22, verbose = False,
@@ -303,7 +309,8 @@ class expdb:
 		Initialize an expdb instance
 		:param username: Your username on remote database host
 		:param dbpath: The local database path
-		:param dbname: The database name (optional)
+		:param dbname: The database name (may be None)
+		:param metapath: Subdirectory containing "manifest.toml"" (optional)
 		:param remote_dbhost: The remote database host
 		:param remote_dbpath: The remote database path
 		:param server: The gateway server hostname (optional)
@@ -318,6 +325,12 @@ class expdb:
 		self.username = username
 		self.dbpath = fix_path(dbpath, must_exist=True)
 		self.dbname = dbname
+		if metapath in (True, False):
+			if metapath:
+				metapath = dbname
+			else:
+				metapath = None
+		self.metapath = metapath
 		self.remote_dbhost = remote_dbhost
 		self.remote_dbpath = remote_dbpath
 		self.server = server
@@ -387,18 +400,27 @@ class expdb:
 	
 	@property
 	def manifest(self):
+		"""
+		Get dataset manifest
+		"""
 		if self._manifest is None:
 			self.open_manifest()
 		return self._manifest
 	
 	@property
 	def cache(self):
+		"""
+		Get local cache
+		"""
 		if self._cache is None:
 			self.open_cache()
 		return self._cache
 	
 	@property
 	def dbdir(self):
+		"""
+		Resolve local cache directory
+		"""
 		if self.dbpath is None:
 			return None
 		if self.dbname is None:
@@ -408,6 +430,9 @@ class expdb:
 	
 	@property
 	def remote_dbdir(self):
+		"""
+		Resolve remote database directory
+		"""
 		if self.remote_dbpath is None:
 			return None
 		if self.dbname is None:
@@ -443,7 +468,10 @@ class expdb:
 		"""
 		Refresh the database manifest
 		"""
-		path = os.path.join(self.dbdir, "manifest.toml")
+		if self.metapath is None:
+			path = os.path.join(self.dbdir, "manifest.toml")
+		else:
+			path = os.path.join(self.dbdir, self.metapath, "manifest.toml")
 		path = fix_path(path, must_exist=True)
 		if self.verbose:
 			print(f"parsing '{path}'")
