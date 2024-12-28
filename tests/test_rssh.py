@@ -1,5 +1,5 @@
 
-from badwulf.rssh import *
+from badwulf import rssh
 
 def test_rssh_without_gateway():
 	con = rssh("bad-wolf", "vortex")

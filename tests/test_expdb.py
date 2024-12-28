@@ -2,7 +2,7 @@
 import os
 import pytest
 
-from badwulf.db import *
+from badwulf import expdb
 
 @pytest.fixture
 def database():

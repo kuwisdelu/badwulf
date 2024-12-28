@@ -1,5 +1,5 @@
 
 from .rssh import rssh
-from .db import expdb
+from .expdb import expdb
 
 __all__ = ["rssh", "expdb"]
