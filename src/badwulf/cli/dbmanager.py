@@ -162,18 +162,22 @@ class dbmanager:
 			help="maximum cache size (10, 100, 1000, etc.)", type=float)
 		cmd.add_argument("units", action="store",
 			help="cache size units (MB, GB, TB, etc.)")
-		cmd.add_argument("-l", "--lru", action="store_const",
+		cmd.add_argument("-s", "--scope", action="store",
+			help="filter by scope")
+		cmd.add_argument("-g", "--group", action="store",
+			help="filter by group")
+		cmd.add_argument("-L", "--lru", action="store_const",
 			help="prune least recently used (default)", dest="strategy", const="lru")
-		cmd.add_argument("-m", "--mru", action="store_const",
+		cmd.add_argument("-M", "--mru", action="store_const",
 			help="prune most recently used", dest="strategy", const="mru")
-		cmd.add_argument("-b", "--big", action="store_const",
+		cmd.add_argument("-B", "--big", action="store_const",
 			help="prune largest files", dest="strategy", const="big")
-		cmd.add_argument("-s", "--small", action="store_const",
+		cmd.add_argument("-S", "--small", action="store_const",
 			help="prune smallest files", dest="strategy", const="small")
 		cmd.add_argument("--ask", action="store_true",
 			help="ask to confirm before deleting?")
 		cmd.add_argument("--dry-run", action="store_true",
-			help="show what would be deleted?")
+			help="show what would happen without doing it?")
 	
 	def _add_subcommand_describe(self, subparsers):
 		"""
@@ -199,6 +203,8 @@ class dbmanager:
 			help="force re-sync if already cached")
 		cmd.add_argument("--ask", action="store_true",
 			help="ask to confirm before syncing?")
+		cmd.add_argument("--dry-run", action="store_true",
+			help="show what would happen without doing it?")
 	
 	def _add_subcommand_submit(self, subparsers):
 		"""
@@ -214,6 +220,8 @@ class dbmanager:
 			help="force re-submission if already tracked")
 		cmd.add_argument("--ask", action="store_true",
 			help="ask to confirm before submitting?")
+		cmd.add_argument("--dry-run", action="store_true",
+			help="show what would happen without doing it?")
 	
 	def _add_subcommand_status(self, subparsers):
 		"""
@@ -370,6 +378,8 @@ class dbmanager:
 			db.prune_cache(
 				limit=args.limit,
 				units=args.units,
+				scope=args.scope,
+				group=args.group,
 				strategy=args.strategy,
 				dry_run=args.dry_run, ask=args.ask)
 		# describe
@@ -391,7 +401,7 @@ class dbmanager:
 			db.port = args.port
 			db.sync(args.id,
 				force=args.force,
-				ask=args.ask)
+				dry_run=args.dry_run, ask=args.ask)
 		# submit
 		elif args.cmd == "submit":
 			name = os.path.basename(args.path)
@@ -405,7 +415,7 @@ class dbmanager:
 			db.port = args.port
 			db.submit(args.path,
 				force=args.force,
-				ask=args.ask)
+				dry_run=args.dry_run, ask=args.ask)
 		# status
 		elif args.cmd == "status":
 			synced, remoteonly, localonly = db.status(

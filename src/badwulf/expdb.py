@@ -617,7 +617,8 @@ class expdb:
 					hits.append(result)
 		return hits
 	
-	def prune_cache(self, limit, units, strategy = "lru", dry_run = False, ask = False):
+	def prune_cache(self, limit, units, scope = None, group = None,
+		strategy = "lru", dry_run = False, ask = False):
 		"""
 		List cached datasets by name
 		:param limit: Maximum size of the cache
@@ -627,7 +628,7 @@ class expdb:
 		:param ask: Confirm before deleting?
 		"""
 		limit = to_bytes(limit, units)
-		cache = self.ls_cache(details=True)
+		cache = self.ls_cache(scope, group, details=True)
 		strategy = strategy.casefold()
 		if strategy == "lru".casefold():
 			cache.sort(key=lambda x: x.atime)
@@ -669,11 +670,12 @@ class expdb:
 			print(f"the local cache is now {format_bytes(newsize)}")
 		return
 	
-	def sync(self, name, force = False, ask = False):
+	def sync(self, name, force = False, dry_run = False, ask = False):
 		"""
 		Sync a dataset to local storage
 		:param name: The name of the dataset
 		:param force: Should the dataset be re-synced if already cached?
+		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before downloading?
 		"""
 		if name not in self.manifest:
@@ -704,7 +706,7 @@ class expdb:
 				port=self.port,
 				destination_port=self.remote_port)
 			sleep(1) # allow time to connect
-			con.download(src, dest, ask=ask)
+			con.download(src, dest, dry_run=dry_run, ask=ask)
 			if os.path.isdir(dest):
 				print("sync complete; refreshing cache metadata")
 				self.open_cache()
@@ -713,11 +715,12 @@ class expdb:
 		finally:
 			con.close()
 	
-	def submit(self, path, force = False, ask = False):
+	def submit(self, path, force = False, dry_run = False, ask = False):
 		"""
 		Submit a dataset to the database maintainer(s)
 		:param path: The path to the data directory
 		:param force: Should the dataset be re-submitted if already tracked?
+		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before uploading?
 		"""
 		path = fix_path(path, must_exist=False)
@@ -745,7 +748,7 @@ class expdb:
 				port=self.port,
 				destination_port=self.remote_port)
 			sleep(1) # allow time to connect
-			con.upload(src, dest, ask=ask)
+			con.upload(src, dest, dry_run=dry_run, ask=ask)
 			print("submission complete")
 		except:
 			print("a problem occured during submission")
