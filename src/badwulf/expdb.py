@@ -23,35 +23,6 @@ SCOPE_PROTECTED = "Protected"
 SCOPE_PUBLIC = "Public"
 SCOPE_XFER = "Xfer"
 
-def format_datasets(iterable, names_only = False, header = True):
-	"""
-	Format an iterable of datasets
-	:param iterable: An iterable of datasets
-	:param names_only: Print names only?
-	:param header: Print number of datasets?
-	:return: A formatted string
-	"""
-	if names_only:
-		sl = [f"['{dataset.name}']" 
-			for dataset 
-			in iterable]
-	else:
-		sl = [f"['{dataset.name}']\n{dataset}" 
-			for dataset 
-			in iterable]
-	if header:
-		sl = [f"#### {len(sl)} datasets ####\n"] + sl
-	return "\n".join(sl)
-
-def print_datasets(iterable, names_only = False, header = True):
-	"""
-	Print an iterable of datasets
-	:param iterable: An iterable of datasets
-	:param names_only: Print names only?
-	:param header: Print number of datasets?
-	"""
-	print(format_datasets(iterable, names_only, header))
-
 @dataclass
 class expdata:
 	"""
@@ -131,7 +102,7 @@ class expdata:
 				if len(note) > printwidth:
 					note = note[:printwidth - 4] + "..."
 			sl.append(f"  note {i + 1}: {note}")
-		more_fields = [f"'{field}'" for field in notprinted]
+		more_fields = [f"'{field}'" for field in sorted(notprinted)]
 		more_fields = ", ".join(more_fields)
 		sl.append(f"  additional fields: {more_fields}")
 		sl.append(" }")
@@ -208,17 +179,18 @@ class expsearch:
 			hits["sample_processing"] = sample_processing
 		if data_processing is not None:
 			hits["data_processing"] = data_processing
-		for contact in dataset.contact:
+		for i, contact in enumerate(dataset.contact):
 			if any(grepl(pattern, contact.values())):
-				if "contact" not in hits:
-					hits["contact"] = []
-				hits["contact"].append(contact)
-		if any(grepl(pattern, dataset.formats)):
-			hits["formats"] = dataset.formats
-		if any(grepl(pattern, dataset.keywords)):
-			hits["keywords"] = dataset.keywords
-		if any(grepl(pattern, dataset.notes)):
-			hits["notes"] = dataset.notes
+				hits[f"contact {i + 1}"] = contact
+		for i, format_ in enumerate(dataset.formats):
+			if grep1(pattern, format_) is not None:
+				hits[f"format {i + 1}"] = format_
+		for i, keyword in enumerate(dataset.keywords):
+			if grep1(pattern, keyword) is not None:
+				hits[f"keyword {i + 1}"] = keyword
+		for i, note in enumerate(dataset.notes):
+			if grep1(pattern, note) is not None:
+				hits[f"note {i + 1}"] = note
 		self.hits = hits
 		self.printwidth = dataset.printwidth
 	

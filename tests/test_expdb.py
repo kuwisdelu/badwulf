@@ -19,11 +19,11 @@ def test_db_open(database):
 
 def test_db_get(database):
 	with database as db:
-		assert db.get("Test-data-01") == db["Test-data-01"]
+		assert db.get("Test-data-1") == db["Test-data-1"]
 
 def test_db_ls(database):
 	with database as db:
-		assert "Test-data-01" in db.ls()
+		assert "Test-data-1" in db.ls()
 
 def test_db_ls_cache(database):
 	with database as db:
@@ -43,10 +43,10 @@ def test_db_search_cache(database):
 
 def test_db_describe(database):
 	with database as db:
-		assert db["Test-data-01"].describe() is not None
-		assert db["Test-data-02"].describe() is not None
-		assert db["Test-data-03"].describe() is not None
-		assert db["Test-data-04"].describe() is not None
+		assert db["Test-data-1"].describe() is not None
+		assert db["Test-data-2"].describe() is not None
+		assert db["Test-data-3"].describe() is not None
+		assert db["Test-data-4"].describe() is not None
 
 def test_db_status(database):
 	with database as db:

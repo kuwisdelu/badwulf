@@ -24,10 +24,12 @@ url.pub = "bad.wolf.corporation"
 date.created = "1 Jan 1970"
 date.received = "1 Jan 1970"
 formats = []
-keywords = []
-notes = []
+keywords = ["documentation"]
+notes = [
+	"Fields scope, group, title, description are required",
+	"Everything else is optional (but strongly recommended)."]
 
-[Dataset-01]
+[Example-1]
 scope = "Private"
 group = "Bad Wolf Corporation"
 title = "Example private dataset"
@@ -37,8 +39,10 @@ description = """\
 contact = [
 	{name = "Bad Wolf", email = "entity@the-moment.time"}
 ]
+keywords = ["secret", "meme"]
+notes = ["I am the Bad Wolf."]
 
-[Dataset-02]
+[Example-2]
 scope = "Protected"
 group = "Bad Wolf Corporation"
 title = "Example protected dataset"
@@ -48,8 +52,10 @@ description = """\
 contact = [
 	{name = "Bad Wolf", email = "entity@the-moment.time"}
 ]
+keywords = ["secret", "meme"]
+notes = ["I create myself."]
 
-[Dataset-03]
+[Example-3]
 scope = "Public"
 group = "Bad Wolf Corporation"
 title = "Example public dataset"
@@ -59,3 +65,7 @@ description = """\
 contact = [
 	{name = "Bad Wolf", email = "entity@the-moment.time"}
 ]
+keywords = ["bootstrap", "paradox"]
+notes = [
+	"I take the words, I scatter them in time and space.",
+	"A message to lead myself here."]

@@ -2,7 +2,9 @@
 
 from badwulf.cli import dbmanager
 
-wulfdb = dbmanager("Badwulf DB", "/Volumes/Datasets", None,
+wulfdb = dbmanager("Badwulf DB", 
+	dbpath="examples/exampledb",
+	dbname=None,
 	version = "0.0.0",
 	date = "2024-12-27",
 	description = "Badwulf database CLI utility",

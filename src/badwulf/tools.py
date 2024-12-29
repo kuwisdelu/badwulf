@@ -104,6 +104,35 @@ def print_bytes(x, units = "auto"):
 	"""
 	print(format_bytes(x, units))
 
+def format_datasets(iterable, names_only = False, header = True):
+	"""
+	Format datasets
+	:param iterable: An iterable of datasets
+	:param names_only: Print names only?
+	:param header: Print number of datasets?
+	:return: A formatted string
+	"""
+	if names_only:
+		sl = [f"['{dataset.name}']" 
+			for dataset 
+			in iterable]
+	else:
+		sl = [f"['{dataset.name}']\n{dataset}" 
+			for dataset 
+			in iterable]
+	if header:
+		sl = [f"#### {len(sl)} datasets ####\n"] + sl
+	return "\n".join(sl)
+
+def print_datasets(iterable, names_only = False, header = True):
+	"""
+	Print datasets
+	:param iterable: An iterable of datasets
+	:param names_only: Print names only?
+	:param header: Print number of datasets?
+	"""
+	print(format_datasets(iterable, names_only, header))
+
 def askYesNo(msg = "Continue? (yes/no): "):
 	"""
 	Ask a user to confirm yes or no

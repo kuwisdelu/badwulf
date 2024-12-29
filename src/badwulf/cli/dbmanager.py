@@ -373,14 +373,14 @@ class dbmanager:
 				dry_run=args.dry_run, ask=args.ask)
 		# describe
 		elif args.cmd == "describe":
-			dataset = db.get(args.name)
+			dataset = db.get(args.id)
 			if dataset is None:
-				sys.exit(f"msi describe: error: no such dataset: '{args.name}'")
+				sys.exit(f"msi describe: error: no such dataset: '{args.id}'")
 			else:
 				print(dataset.describe())
 		# sync
 		elif args.cmd == "sync":
-			if args.name in db.cache and not args.force:
+			if args.id in db.cache and not args.force:
 				sys.exit("msi sync: dataset is already cached; use --force to re-sync")
 			db.username = args.user
 			db.remote_dbhost = args.remote_host
@@ -388,7 +388,7 @@ class dbmanager:
 			db.server = args.server
 			db.server_username = args.login
 			db.port = args.port
-			db.sync(args.name,
+			db.sync(args.id,
 				force=args.force,
 				ask=args.ask)
 		# submit
