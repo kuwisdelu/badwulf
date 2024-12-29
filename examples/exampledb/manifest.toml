@@ -1,0 +1,61 @@
+
+[Dataset-ID]
+scope = "Public"
+group = "Name of research group or data repository"
+title = "This is a short title"
+description = """\
+	This is a description of the experiment or study, \
+	including the purpose why the data was collected, \
+	and the overall goals of the research project.\
+	"""
+sample-processing = """\
+	This section describes the sample preparation and \
+	the data collection protocol.\
+	"""
+data-processing = """\
+	This section describes any computational processing \
+	applied to the data or files.\
+	"""
+contact = [
+	{name = "Bad Wolf", email = "entity@the-moment.time"}
+]
+url.doi = "not.a.valid.doi/or.is.it"
+url.pub = "bad.wolf.corporation"
+date.created = "1 Jan 1970"
+date.received = "1 Jan 1970"
+formats = []
+keywords = []
+notes = []
+
+[Dataset-01]
+scope = "Private"
+group = "Bad Wolf Corporation"
+title = "Example private dataset"
+description = """\
+	This dataset should not be shared or published.\
+	"""
+contact = [
+	{name = "Bad Wolf", email = "entity@the-moment.time"}
+]
+
+[Dataset-02]
+scope = "Protected"
+group = "Bad Wolf Corporation"
+title = "Example protected dataset"
+description = """\
+	This dataset requires permission to be shared or published.\
+	"""
+contact = [
+	{name = "Bad Wolf", email = "entity@the-moment.time"}
+]
+
+[Dataset-03]
+scope = "Public"
+group = "Bad Wolf Corporation"
+title = "Example public dataset"
+description = """\
+	This dataset is safe to publish and share widely.\
+	"""
+contact = [
+	{name = "Bad Wolf", email = "entity@the-moment.time"}
+]
