@@ -493,7 +493,7 @@ class expdb:
 		:param group: The dataset group
 		:returns: A list of expcache instances
 		"""
-		path = os.path.join(self.dbpdir, scope, group)
+		path = os.path.join(self.dbdir, scope, group)
 		path = fix_path(path, must_exist=True)
 		return [self._get_cached_dataset(scope, group, dataset)
 			for dataset
@@ -730,7 +730,7 @@ class expdb:
 		if self.remote_dbpath is None:
 			raise IOError("remote path is None")
 		if not os.path.isdir(path):
-			raise NotADirectoryError("path must be a directory")
+			raise NotADirectoryError(f"path must be a directory: {path}")
 		if path[-1] != "/":
 			src = path + "/"
 		else:

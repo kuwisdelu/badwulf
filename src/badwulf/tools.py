@@ -189,7 +189,7 @@ def ls(path = ".", all_names = False):
 	"""
 	path = fix_path(path)
 	if not os.path.isdir(path):
-		raise NotADirectoryError("path must be a directory")
+		raise NotADirectoryError(f"path must be a directory: {path}")
 	if all_names:
 		return [f 
 			for f 

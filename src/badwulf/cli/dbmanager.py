@@ -98,8 +98,8 @@ class dbmanager:
 		"""
 		cmd = subparsers.add_parser("ls", 
 			help="list all datasets")
-		cmd.add_argument("-l", "--details", action="store_true",
-			help="show full details")
+		cmd.add_argument("-l", "--long", action="store_true",
+			help="show extended details")
 		cmd.add_argument("-s", "--scope", action="store",
 			help="filter by scope")
 		cmd.add_argument("-g", "--group", action="store",
@@ -112,8 +112,8 @@ class dbmanager:
 		"""
 		cmd = subparsers.add_parser("ls-cache", 
 			help="list cached datasets")
-		cmd.add_argument("-l", "--details", action="store_true",
-			help="show full details")
+		cmd.add_argument("-l", "--long", action="store_true",
+			help="show extended details")
 		cmd.add_argument("-s", "--scope", action="store",
 			help="filter by scope")
 		cmd.add_argument("-g", "--group", action="store",
@@ -222,8 +222,8 @@ class dbmanager:
 		"""
 		cmd = subparsers.add_parser("status", 
 			help="report status of cache against manifest")
-		cmd.add_argument("-l", "--details", action="store_true",
-			help="show full details")
+		cmd.add_argument("-l", "--long", action="store_true",
+			help="show extended details")
 		cmd.add_argument("-s", "--scope", action="store",
 			help="filter by scope")
 		cmd.add_argument("-g", "--group", action="store",
@@ -314,23 +314,24 @@ class dbmanager:
 			datasets = db.ls(
 				scope=args.scope,
 				group=args.group,
-				details=args.details)
-			if args.details:
+				details=args.long)
+			if args.long:
 				print_datasets(datasets)
 			else:
 				for name in datasets:
 					print(f"['{name}']")
 		# ls-cache
 		elif args.cmd == "ls-cache":
+			sort = args.sort is not None or args.reverse is not None
 			datasets = db.ls_cache(
 				scope=args.scope,
 				group=args.group,
-				details=args.details or args.sort is not None)
-			if args.sort is not None or args.reverse is not None:
-				if args.sort is not None:
-					sortby = args.sort.casefold()
-				else:
-					sortby = args.reverse.casefold()
+				details=args.long or sort)
+			if sort:
+				if args.reverse is not None:
+					args.sort = args.reverse
+					args.reverse = True
+				sortby = args.sort.casefold()
 				if sortby == "size".casefold():
 					datasets.sort(key=lambda x: x.size)
 				elif sortby == "atime".casefold():
@@ -339,9 +340,9 @@ class dbmanager:
 					datasets.sort(key=lambda x: x.mtime)
 				else:
 					sys.exit(f"msi ls-cache: error: can't sort by attribute: '{args.sort}'")
-				if args.reverse is not None:
+				if args.reverse:
 					datasets.reverse()
-			if args.details or args.sort is not None:
+			if sort or args.long:
 				print_datasets(datasets)
 				sizes = [x.size for x in datasets]
 				print(f"~= {format_bytes(sum(sizes))} total")
@@ -410,11 +411,11 @@ class dbmanager:
 			synced, remoteonly, localonly = db.status(
 				scope=args.scope,
 				group=args.group,
-				details=args.details)
+				details=args.long)
 			msg_synced = "\n~~~~ synced:"
 			msg_remoteonly = "\n>>>> tracked but not cached:"
 			msg_localonly = "\n<<<< cached but not tracked:"
-			if args.details:
+			if args.long:
 				print(msg_synced)
 				print_datasets(synced)
 				print(msg_remoteonly)
