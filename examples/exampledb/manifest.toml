@@ -26,7 +26,7 @@ date.received = "1 Jan 1970"
 formats = []
 keywords = ["documentation"]
 notes = [
-	"Fields scope, group, title, description are required",
+	"Fields 'scope', 'group', 'title', 'description' are required",
 	"Everything else is optional (but strongly recommended)."]
 
 [Example-1]
