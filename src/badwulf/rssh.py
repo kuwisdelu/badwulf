@@ -3,7 +3,8 @@
 
 import subprocess
 
-from .tools import *
+from .tools import askYesNo
+from .tools import fix_path
 
 class rssh:
 	"""
@@ -119,7 +120,7 @@ class rssh:
 			print(f"connecting as {gateway}")
 			self.process = subprocess.Popen(cmd)
 			print(f"forwarding to {self.destination} on port {self.port}")
-		except:
+		except Exception:
 			self.process = None
 			print("failed to open connection")
 	

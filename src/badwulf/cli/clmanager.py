@@ -4,10 +4,11 @@ import platform
 import subprocess
 import argparse
 import datetime
-import importlib.metadata
 from time import sleep
 
-from ..tools import *
+from ..tools import badwulf_attribution
+from ..tools import is_known_host
+from ..tools import findport
 from ..rssh import rssh
 
 class clmanager:

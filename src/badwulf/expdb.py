@@ -14,8 +14,17 @@ from dataclasses import dataclass
 from dataclasses import asdict
 from datetime import datetime
 
-from .tools import *
-from .rssh import *
+from .tools import ls
+from .tools import fix_path
+from .tools import dirsize
+from .tools import to_bytes
+from .tools import format_bytes
+from .tools import format_datasets
+from .tools import print_datasets
+from .tools import askYesNo
+from .tools import grep1
+from .tools import grepl
+from .rssh import rssh
 
 # scopes
 SCOPE_PRIVATE = "Private"
@@ -337,7 +346,7 @@ class expdb:
 		if self.server is not None:
 			server = f"server='{self.server}'"
 			if self.server_username is None:
-				server_username = f"server_username=None"
+				server_username = "server_username=None"
 			else:
 				server_username = f"server_username='{self.server_username}'"
 			port = f"port={self.port}"
@@ -453,7 +462,7 @@ class expdb:
 				for name, entry in manifest.items()}
 			self._manifest = manifest
 		if self.verbose:
-			print(f"manifest is searchable")
+			print("manifest is searchable")
 	
 	def open_cache(self):
 		"""
@@ -477,7 +486,6 @@ class expdb:
 		:param dataset: The dataset name
 		:returns: An expcache instance
 		"""
-		tags = ["name", "atime", "mtime", "size", "path"]
 		path = os.path.join(self.dbdir, scope, group, dataset)
 		path = fix_path(path, must_exist=True)
 		size = dirsize(path, all_names=True)
@@ -665,7 +673,7 @@ class expdb:
 				print(f"deleting '{x.path}'")
 				try:
 					shutil.rmtree(fix_path(x.path, must_exist=True))
-				except:
+				except Exception:
 					print(f"failed to delete '{x.path}'")
 			print(f"the local cache is now {format_bytes(newsize)}")
 		return
@@ -710,7 +718,7 @@ class expdb:
 			if os.path.isdir(dest):
 				print("sync complete; refreshing cache metadata")
 				self.open_cache()
-		except:
+		except Exception:
 			print("a problem occured during syncing")
 		finally:
 			con.close()
@@ -750,7 +758,7 @@ class expdb:
 			sleep(1) # allow time to connect
 			con.upload(src, dest, dry_run=dry_run, ask=ask)
 			print("submission complete")
-		except:
+		except Exception:
 			print("a problem occured during submission")
 		finally:
 			con.close()

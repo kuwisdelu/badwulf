@@ -3,9 +3,9 @@
 
 import os
 import re
+import platform
 import socket
 import random
-import tempfile
 from importlib.metadata import version
 
 def badwulf_version():
