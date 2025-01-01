@@ -5,10 +5,10 @@ import subprocess
 import argparse
 import datetime
 
+from ..expdb import expdb
 from ..tools import badwulf_attribution
 from ..tools import print_datasets
 from ..tools import format_bytes
-from ..expdb import expdb
 
 class dbmanager:
 	"""

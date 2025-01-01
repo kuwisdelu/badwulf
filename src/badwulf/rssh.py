@@ -3,8 +3,8 @@
 
 import subprocess
 
-from .tools import askYesNo
 from .tools import fix_path
+from .tools import askYesNo
 
 class rssh:
 	"""

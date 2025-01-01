@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from dataclasses import asdict
 from datetime import datetime
 
+from .rssh import rssh
 from .tools import ls
 from .tools import fix_path
 from .tools import dirsize
@@ -24,7 +25,6 @@ from .tools import print_datasets
 from .tools import askYesNo
 from .tools import grep1
 from .tools import grepl
-from .rssh import rssh
 
 # scopes
 SCOPE_PRIVATE = "Private"
