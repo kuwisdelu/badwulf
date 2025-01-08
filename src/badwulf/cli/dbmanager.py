@@ -25,7 +25,7 @@ class dbmanager:
 		readme = None,
 		program = None,
 		username = None,
-		metapath = True,
+		metadir = True,
 		remote_dbhost = None,
 		remote_dbpath = None,
 		server = None,
@@ -42,7 +42,7 @@ class dbmanager:
 		:param readme: The file path of a README.md file
 		:param program: The name of the program (defaults to name)
 		:param username: Your username on the cluster
-		:param metapath: Subdirectory containing "manifest.toml"" (optional)
+		:param metadir: Subdirectory containing "manifest.toml"" (optional)
 		:param remote_dbhost: The remote database host
 		:param remote_dbpath: The remote database path
 		:param server: The gateway server hostname (optional)
@@ -64,7 +64,7 @@ class dbmanager:
 		else:
 			self.program = program
 		self.username = username
-		self.metapath = metapath
+		self.metadir = metadir
 		self.remote_dbhost = remote_dbhost
 		self.remote_dbpath = remote_dbpath
 		self.server = server
@@ -289,7 +289,7 @@ class dbmanager:
 			raise NotADirectoryError(f"database does not exist: '{self.dbpath}'")
 		# connect and return database
 		db = expdb(self.username, self.dbpath, self.dbname,
-			metapath=self.metapath,
+			metadir=self.metadir,
 			remote_dbhost=self.remote_dbhost,
 			remote_dbpath=self.remote_dbpath,
 			server=self.server,

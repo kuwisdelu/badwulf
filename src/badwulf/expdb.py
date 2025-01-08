@@ -281,7 +281,7 @@ class expdb:
 	Database manager for experimental datasets and metadata
 	"""
 	
-	def __init__(self, username, dbpath, dbname, metapath = True,
+	def __init__(self, username, dbpath, dbname, metadir = True,
 		remote_dbhost = None, remote_dbpath = None,
 		server = None, server_username = None,
 		port = 8080, remote_port = 22, verbose = False,
@@ -291,7 +291,7 @@ class expdb:
 		:param username: Your username on remote database host
 		:param dbpath: The local database path
 		:param dbname: The database name (may be None)
-		:param metapath: Subdirectory containing "manifest.toml"" (optional)
+		:param metadir: Subdirectory containing "manifest.toml"" (optional)
 		:param remote_dbhost: The remote database host
 		:param remote_dbpath: The remote database path
 		:param server: The gateway server hostname (optional)
@@ -306,12 +306,12 @@ class expdb:
 		self.username = username
 		self.dbpath = fix_path(dbpath, must_exist=True)
 		self.dbname = dbname
-		if metapath in (True, False):
-			if metapath:
-				metapath = dbname
+		if metadir in (True, False):
+			if metadir:
+				metadir = dbname
 			else:
-				metapath = None
-		self.metapath = metapath
+				metadir = None
+		self.metadir = metadir
 		self.remote_dbhost = remote_dbhost
 		self.remote_dbpath = remote_dbpath
 		self.server = server
@@ -449,10 +449,10 @@ class expdb:
 		"""
 		Refresh the database manifest
 		"""
-		if self.metapath is None:
+		if self.metadir is None:
 			path = os.path.join(self.dbdir, "manifest.toml")
 		else:
-			path = os.path.join(self.dbdir, self.metapath, "manifest.toml")
+			path = os.path.join(self.dbdir, self.metadir, "manifest.toml")
 		path = fix_path(path, must_exist=True)
 		if self.verbose:
 			print(f"parsing '{path}'")

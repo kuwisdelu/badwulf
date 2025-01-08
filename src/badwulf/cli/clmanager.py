@@ -109,12 +109,12 @@ class clmanager:
 		cmd.add_argument("identity_file", action="store",
 			help="ssh key identity file")
 	
-	def _add_subcommand_push(self, subparsers):
+	def _add_subcommand_upload(self, subparsers):
 		"""
-		Add a 'push' subcommand to subparsers.
+		Add a 'upload' subcommand to subparsers.
 		:param subparsers: The subparsers to update
 		"""
-		cmd = subparsers.add_parser("push", 
+		cmd = subparsers.add_parser("upload", 
 			help=f"upload file(s) to {self.name}")
 		self._add_cluster_args(cmd)
 		cmd.add_argument("src", action="store",
@@ -126,12 +126,12 @@ class clmanager:
 		cmd.add_argument("--dry-run", action="store_true",
 			help="show what would happen without doing it?")
 	
-	def _add_subcommand_pull(self, subparsers):
+	def _add_subcommand_download(self, subparsers):
 		"""
-		Add a 'pull' subcommand to subparsers.
+		Add a 'download' subcommand to subparsers.
 		:param subparsers: The subparsers to update
 		"""
-		cmd = subparsers.add_parser("pull", 
+		cmd = subparsers.add_parser("download", 
 			help=f"download file(s) from {self.name}")
 		self._add_cluster_args(cmd)
 		cmd.add_argument("src", action="store",
@@ -252,7 +252,7 @@ class clmanager:
 			print(badwulf_attribution())
 			sys.exit()
 		# open ssh for server commands
-		if args.cmd in ("run", "copy-id", "push", "pull"):
+		if args.cmd in ("run", "copy-id", "upload", "download"):
 			con = self.open_ssh(self.resolve_node(args.nodes),
 				username=args.user,
 				server=args.server,
@@ -280,12 +280,12 @@ class clmanager:
 		# copy-id
 		elif args.cmd == "copy-id":
 			con.copy_id(args.identity_file)
-		# push
-		elif args.cmd == "push":
+		# upload
+		elif args.cmd == "upload":
 			con.upload(args.src, args.dest,
 				dry_run=args.dry_run, ask=args.ask)
-		# pull
-		elif args.cmd == "pull":
+		# download
+		elif args.cmd == "download":
 			con.download(args.src, args.dest,
 				dry_run=args.dry_run, ask=args.ask)
 		# readme
