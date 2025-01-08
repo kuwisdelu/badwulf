@@ -166,8 +166,8 @@ class clmanager:
 		subparsers = parser.add_subparsers(dest="cmd")
 		self._add_subcommand_run(subparsers)
 		self._add_subcommand_copy_id(subparsers)
-		self._add_subcommand_push(subparsers)
-		self._add_subcommand_pull(subparsers)
+		self._add_subcommand_upload(subparsers)
+		self._add_subcommand_download(subparsers)
 		if self.readme is not None:
 			self._add_subcommand_readme(subparsers)
 		self._parser = parser
