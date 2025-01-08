@@ -24,8 +24,8 @@ class dbmanager:
 		description,
 		readme = None,
 		program = None,
-		username = None,
 		metadir = True,
+		username = None,
 		remote_dbhost = None,
 		remote_dbpath = None,
 		server = None,
@@ -41,8 +41,8 @@ class dbmanager:
 		:param description: A description of the program
 		:param readme: The file path of a README.md file
 		:param program: The name of the program (defaults to name)
-		:param username: Your username on the cluster
 		:param metadir: Subdirectory containing "manifest.toml"" (optional)
+		:param username: Your username on the cluster
 		:param remote_dbhost: The remote database host
 		:param remote_dbpath: The remote database path
 		:param server: The gateway server hostname (optional)
@@ -63,8 +63,8 @@ class dbmanager:
 			self.program = name.casefold()
 		else:
 			self.program = program
-		self.username = username
 		self.metadir = metadir
+		self.username = username
 		self.remote_dbhost = remote_dbhost
 		self.remote_dbpath = remote_dbpath
 		self.server = server
