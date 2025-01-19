@@ -18,7 +18,7 @@ This tool is __not__ intended to replace true cluster management and scheduling 
 
 ## Examples
 
-A command line utility named `wulf` for a hypothetical "Badwulf" cluster with notes named "Wulf-01", "Wulf-02", and "Wulf-03" could be set up as follows:
+A command line utility named `wulf` for a hypothetical "Badwulf" cluster with compute nodes named "Wulf-01", "Wulf-02", and "Wulf-03" could be set up as follows:
 
 ```
 #!/usr/bin/env python3
