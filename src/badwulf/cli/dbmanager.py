@@ -389,6 +389,8 @@ class dbmanager:
 				sys.exit(f"msi describe: error: no such dataset: '{args.id}'")
 			else:
 				print(dataset.describe())
+				if args.id in db.cache:
+					print(db.cache.get(args.id).describe(dataset.formats))
 		# sync
 		elif args.cmd == "sync":
 			if args.id in db.cache and not args.force:

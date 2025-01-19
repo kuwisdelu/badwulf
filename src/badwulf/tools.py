@@ -210,12 +210,34 @@ def dirsize(path, all_names = False):
 	size = 0
 	files = ls(path, all_names=all_names)
 	for file in files:
+		if file in (".", ".."):
+			continue
 		file = os.path.join(path, file)
 		if os.path.isdir(file):
 			size += dirsize(file, all_names=all_names)
-		elif os.path.exists(file):
+		else:
 			size += os.path.getsize(file)
 	return size
+
+def dirfiles(path, pattern, recursive = False, all_names = False):
+	"""
+	Get files in a directory matching a pattern
+	:param path: The directory
+	:param pattern: The pattern
+	:param all_names: Should hidden files be included?
+	:returns: The size of the directory in bytes
+	"""
+	matches = []
+	files = ls(path, all_names=all_names)
+	for file in files:
+		if file in (".", ".."):
+			continue
+		file = os.path.join(path, file)
+		if os.path.isdir(file) and recursive:
+			matches.extend(dirfiles(file, all_names=all_names))
+		elif grep1(pattern, file) is not None:
+			matches.append(file)
+	return matches
 
 def checkport(port):
 	"""

@@ -18,6 +18,7 @@ from .rssh import rssh
 from .tools import ls
 from .tools import fix_path
 from .tools import dirsize
+from .tools import dirfiles
 from .tools import to_bytes
 from .tools import format_bytes
 from .tools import format_datasets
@@ -269,11 +270,26 @@ class expcache:
 		"""
 		Return str(self)
 		"""
+		return self.describe()
+	
+	def describe(self, printformats = None):
+		"""
+		Return cached dataset description
+		"""
 		path = f" path: '{self.path}'"
 		atime = f" atime: '{self.atime}'"
 		mtime = f" mtime: '{self.mtime}'"
 		size = f" size: {format_bytes(self.size)}"
 		sl = [path, atime, mtime, size]
+		if printformats is not None:
+			files = []
+			fmts = [f"{fmt}$" for fmt in printformats]
+			for pattern in fmts:
+				files.extend(dirfiles(self.path, pattern, recursive=True))
+			files = [f" file {str(i + 1)}: '{file}'" 
+				for i, file 
+				in enumerate(files)]
+			sl.extend(files)
 		return "\n".join(["{"] + sl + ["}"])
 
 class expdb:
