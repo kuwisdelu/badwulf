@@ -24,7 +24,7 @@ class dbmanager:
 		description,
 		readme = None,
 		program = None,
-		metadir = True,
+		metaname = True,
 		username = None,
 		remote_dbhost = None,
 		remote_dbpath = None,
@@ -41,7 +41,7 @@ class dbmanager:
 		:param description: A description of the program
 		:param readme: The file path of a README.md file
 		:param program: The name of the program (defaults to name)
-		:param metadir: Subdirectory containing "manifest.toml"" (optional)
+		:param metaname: Subdirectory containing "manifest.toml"" (optional)
 		:param username: Your username on the cluster
 		:param remote_dbhost: The remote database host
 		:param remote_dbpath: The remote database path
@@ -63,7 +63,7 @@ class dbmanager:
 			self.program = name.casefold()
 		else:
 			self.program = program
-		self.metadir = metadir
+		self.metaname = metaname
 		self.username = username
 		self.remote_dbhost = remote_dbhost
 		self.remote_dbpath = remote_dbpath
@@ -289,7 +289,7 @@ class dbmanager:
 			raise NotADirectoryError(f"database does not exist: '{self.dbpath}'")
 		# connect and return database
 		db = expdb(self.username, self.dbpath, self.dbname,
-			metadir=self.metadir,
+			metaname=self.metaname,
 			remote_dbhost=self.remote_dbhost,
 			remote_dbpath=self.remote_dbpath,
 			server=self.server,
@@ -395,7 +395,7 @@ class dbmanager:
 		elif args.cmd == "sync":
 			if args.id in db.cache and not args.force:
 				sys.exit("msi sync: dataset is already cached; use --force to re-sync")
-			db.username = args.user
+			db.username = args.username
 			db.remote_dbhost = args.remote_host
 			db.remote_dbpath = args.remote_path
 			db.server = args.server
@@ -409,7 +409,7 @@ class dbmanager:
 			name = os.path.basename(args.path)
 			if name in db.manifest and not args.force:
 				sys.exit("msi submit: dataset is already tracked; use --force to re-submit")
-			db.username = args.user
+			db.username = args.username
 			db.remote_dbhost = args.remote_host
 			db.remote_dbpath = args.remote_path
 			db.server = args.server
