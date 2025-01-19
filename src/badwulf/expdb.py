@@ -290,6 +290,8 @@ class expcache:
 				for i, file 
 				in enumerate(files)]
 			sl.extend(files)
+			sl = [" " + s for s in sl]
+			sl = [" Cached:", " {"] + sl + [" }"]
 		return "\n".join(["{"] + sl + ["}"])
 
 class expdb:
