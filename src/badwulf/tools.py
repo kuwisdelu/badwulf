@@ -234,7 +234,7 @@ def dirfiles(path, pattern, recursive = False, all_names = False):
 			continue
 		file = os.path.join(path, file)
 		if os.path.isdir(file) and recursive:
-			matches.extend(dirfiles(file, all_names=all_names))
+			matches.extend(dirfiles(file, pattern, all_names=all_names))
 		elif grep1(pattern, file) is not None:
 			matches.append(file)
 	return matches
