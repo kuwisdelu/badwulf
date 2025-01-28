@@ -9,6 +9,7 @@ from ..expdb import expdb
 from ..tools import badwulf_attribution
 from ..tools import print_datasets
 from ..tools import format_bytes
+from ..tools import findport
 
 class dbmanager:
 	"""
@@ -69,7 +70,10 @@ class dbmanager:
 		self.remote_dbpath = remote_dbpath
 		self.server = server
 		self.server_username = server_username
-		self.port = port
+		if port is None:
+			self.port = findport()
+		else:
+			self.port = port
 		self._parser = None
 		self._args = None
 
