@@ -395,7 +395,7 @@ class dbmanager:
 		elif args.cmd == "sync":
 			if args.id in db.cache and not args.force:
 				sys.exit("msi sync: dataset is already cached; use --force to re-sync")
-			db.username = args.username
+			db.username = args.user
 			db.remote_dbhost = args.remote_host
 			db.remote_dbpath = args.remote_path
 			db.server = args.server
@@ -409,7 +409,7 @@ class dbmanager:
 			name = os.path.basename(args.path)
 			if name in db.manifest and not args.force:
 				sys.exit("msi submit: dataset is already tracked; use --force to re-submit")
-			db.username = args.username
+			db.username = args.user
 			db.remote_dbhost = args.remote_host
 			db.remote_dbpath = args.remote_path
 			db.server = args.server
