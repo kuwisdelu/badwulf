@@ -148,7 +148,7 @@ def askYesNo(msg = "Continue? (yes/no): "):
 		else:
 			print("Invalid input. Please enter yes/no.")
 
-def quote(s, q = "'"):
+def squote(s, q = "'"):
 	"""
 	Wrap a string in quotes
 	:param s: The string to quote
@@ -159,7 +159,18 @@ def quote(s, q = "'"):
 	else:
 		return s
 
-def fix_path(path, must_exist = True):
+def dquote(s, q = '"'):
+	"""
+	Wrap a string in quotes
+	:param s: The string to quote
+	:returns: A quoted string
+	"""
+	if s[0] != q and s[-1] != q:
+		return q + s + q
+	else:
+		return s
+
+def fix_path(path, must_exist = True, escape_spaces = False):
 	"""
 	Normalize and expand paths
 	:param path: The path to normalize
@@ -171,6 +182,8 @@ def fix_path(path, must_exist = True):
 	path = os.path.realpath(path)
 	if must_exist and not os.path.exists(path):
 		raise FileNotFoundError(f"path does not exist: '{path}'")
+	if escape_spaces:
+		path = path.replace(" ", r"\ ")
 	return path
 
 def file_create(path):

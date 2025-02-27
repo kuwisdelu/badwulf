@@ -5,7 +5,8 @@ import subprocess
 
 from .tools import fix_path
 from .tools import askYesNo
-from .tools import quote
+from .tools import squote
+from .tools import dquote
 
 class rssh:
 	"""
@@ -159,13 +160,13 @@ class rssh:
 		"""
 		truehost = f"{self.username}@{self.hostname}"
 		showhost = f"{self.username}@{self.destination}"
-		id_file = fix_path(id_file, must_exist=True)
+		id_file = fix_path(id_file, must_exist=True, escape_spaces=False)
 		print(f"key will be uploaded from: '{id_file}'")
 		print(f"key will be uploaded to: '{showhost}'")
 		if ask and not askYesNo():
 			return
 		print(f"copying key as {showhost}")
-		cmd = ["ssh-copy-id", "-i", quote(id_file)]
+		cmd = ["ssh-copy-id", "-i", id_file]
 		if self.server is None:
 			cmd += [truehost]
 		else:
@@ -182,10 +183,10 @@ class rssh:
 		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before downloading?
 		"""
-		truesrc = f"{self.username}@{self.hostname}:{quote(src)}"
-		showsrc = f"{self.username}@{self.destination}:{quote(src)}"
+		truesrc = f"{self.username}@{self.hostname}:{dquote(src)}"
+		showsrc = f"{self.username}@{self.destination}:{dquote(src)}"
 		has_trailing_slash = dest[-1] == "/"
-		dest = fix_path(dest, must_exist=False)
+		dest = fix_path(dest, must_exist=False, escape_spaces=False)
 		if dest[-1] != "/" and has_trailing_slash:
 			dest += "/"
 		print(f"data will be downloaded from: '{showsrc}'")
@@ -194,11 +195,11 @@ class rssh:
 			return
 		print(f"downloading data as {self.username}@{self.destination}")
 		if self.server is None:
-			cmd = ["rsync", "-aP", truesrc, quote(dest)]
+			cmd = ["rsync", "-aP", truesrc, dest]
 		else:
 			rsh = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 			rsh = " ".join(rsh + ["-p", str(self.port)])
-			cmd = ["rsync", "-aP", "--rsh", rsh, truesrc, quote(dest)]
+			cmd = ["rsync", "-aP", "--rsh", rsh, truesrc, dest]
 		if dry_run:
 			cmd += ["--dry-run"]
 		return subprocess.run(cmd)
@@ -211,10 +212,10 @@ class rssh:
 		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before uploading?
 		"""
-		truedest = f"{self.username}@{self.hostname}:{quote(dest)}"
-		showdest = f"{self.username}@{self.destination}:{quote(dest)}"
+		truedest = f"{self.username}@{self.hostname}:{dquote(dest)}"
+		showdest = f"{self.username}@{self.destination}:{dquote(dest)}"
 		has_trailing_slash = src[-1] == "/"
-		src = fix_path(src, must_exist=True)
+		src = fix_path(src, must_exist=True, escape_spaces=False)
 		if src[-1] != "/" and has_trailing_slash:
 			src += "/"
 		print(f"data will be uploaded from: '{src}'")
@@ -223,11 +224,11 @@ class rssh:
 			return
 		print(f"uploading data as {self.username}@{self.destination}")
 		if self.server is None:
-			cmd = ["rsync", "-aP", quote(src), truedest]
+			cmd = ["rsync", "-aP", src, truedest]
 		else:
 			rsh = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 			rsh = " ".join(rsh + ["-p", str(self.port)])
-			cmd = ["rsync", "-aP", "--rsh", rsh, quote(src), truedest]
+			cmd = ["rsync", "-aP", "--rsh", rsh, src, truedest]
 		if dry_run:
 			cmd += ["--dry-run"]
 		return subprocess.run(cmd)
