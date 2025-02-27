@@ -182,8 +182,8 @@ class rssh:
 		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before downloading?
 		"""
-		truesrc = f"{self.username}@{self.hostname}:{src}"
-		showsrc = f"{self.username}@{self.destination}:{src}"
+		truesrc = f"{self.username}@{self.hostname}:{quote(src)}"
+		showsrc = f"{self.username}@{self.destination}:{quote(src)}"
 		has_trailing_slash = dest[-1] == "/"
 		dest = fix_path(dest, must_exist=False)
 		if dest[-1] != "/" and has_trailing_slash:
@@ -194,11 +194,11 @@ class rssh:
 			return
 		print(f"downloading data as {self.username}@{self.destination}")
 		if self.server is None:
-			cmd = ["rsync", "-aP", quote(truesrc), quote(dest)]
+			cmd = ["rsync", "-aP", truesrc, quote(dest)]
 		else:
 			rsh = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 			rsh = " ".join(rsh + ["-p", str(self.port)])
-			cmd = ["rsync", "-aP", "--rsh", rsh, quote(truesrc), quote(dest)]
+			cmd = ["rsync", "-aP", "--rsh", rsh, truesrc, quote(dest)]
 		if dry_run:
 			cmd += ["--dry-run"]
 		return subprocess.run(cmd)
@@ -211,8 +211,8 @@ class rssh:
 		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before uploading?
 		"""
-		truedest = f"{self.username}@{self.hostname}:{dest}"
-		showdest = f"{self.username}@{self.destination}:{dest}"
+		truedest = f"{self.username}@{self.hostname}:{quote(dest)}"
+		showdest = f"{self.username}@{self.destination}:{quote(dest)}"
 		has_trailing_slash = src[-1] == "/"
 		src = fix_path(src, must_exist=True)
 		if src[-1] != "/" and has_trailing_slash:
@@ -223,11 +223,11 @@ class rssh:
 			return
 		print(f"uploading data as {self.username}@{self.destination}")
 		if self.server is None:
-			cmd = ["rsync", "-aP", quote(src), quote(truedest)]
+			cmd = ["rsync", "-aP", quote(src), truedest]
 		else:
 			rsh = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 			rsh = " ".join(rsh + ["-p", str(self.port)])
-			cmd = ["rsync", "-aP", "--rsh", rsh, quote(src), quote(truedest)]
+			cmd = ["rsync", "-aP", "--rsh", rsh, quote(src), truedest]
 		if dry_run:
 			cmd += ["--dry-run"]
 		return subprocess.run(cmd)
