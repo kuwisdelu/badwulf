@@ -5,6 +5,7 @@ import subprocess
 
 from .tools import fix_path
 from .tools import askYesNo
+from .tools import quote
 
 class rssh:
 	"""
@@ -164,7 +165,7 @@ class rssh:
 		if ask and not askYesNo():
 			return
 		print(f"copying key as {showhost}")
-		cmd = ["ssh-copy-id", "-i", id_file]
+		cmd = ["ssh-copy-id", "-i", quote(id_file)]
 		if self.server is None:
 			cmd += [truehost]
 		else:
@@ -193,11 +194,11 @@ class rssh:
 			return
 		print(f"downloading data as {self.username}@{self.destination}")
 		if self.server is None:
-			cmd = ["rsync", "-aP", truesrc, dest]
+			cmd = ["rsync", "-aP", quote(truesrc), quote(dest)]
 		else:
 			rsh = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 			rsh = " ".join(rsh + ["-p", str(self.port)])
-			cmd = ["rsync", "-aP", "--rsh", rsh, truesrc, dest]
+			cmd = ["rsync", "-aP", "--rsh", rsh, quote(truesrc), quote(dest)]
 		if dry_run:
 			cmd += ["--dry-run"]
 		return subprocess.run(cmd)
@@ -222,11 +223,11 @@ class rssh:
 			return
 		print(f"uploading data as {self.username}@{self.destination}")
 		if self.server is None:
-			cmd = ["rsync", "-aP", src, truedest]
+			cmd = ["rsync", "-aP", quote(src), quote(truedest)]
 		else:
 			rsh = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 			rsh = " ".join(rsh + ["-p", str(self.port)])
-			cmd = ["rsync", "-aP", "--rsh", rsh, src, truedest]
+			cmd = ["rsync", "-aP", "--rsh", rsh, quote(src), quote(truedest)]
 		if dry_run:
 			cmd += ["--dry-run"]
 		return subprocess.run(cmd)

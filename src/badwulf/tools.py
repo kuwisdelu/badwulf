@@ -148,6 +148,17 @@ def askYesNo(msg = "Continue? (yes/no): "):
 		else:
 			print("Invalid input. Please enter yes/no.")
 
+def quote(s, q = "'"):
+	"""
+	Wrap a string in quotes
+	:param s: The string to quote
+	:returns: A quoted string
+	"""
+	if s[0] != q and s[-1] != q:
+		return q + s + q
+	else:
+		return s
+
 def fix_path(path, must_exist = True):
 	"""
 	Normalize and expand paths
