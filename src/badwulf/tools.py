@@ -18,9 +18,9 @@ def badwulf_attribution():
 	"""
 	Get badwulf package attribution
 	"""
-	str1 = "powered by badwulf |"
-	str2 = "copyright (c) 2024 Kylie A. Bemis"
-	return str1 + " " + str2
+	str1 = "powered by badwulf " + badwulf_version()
+	str2 = "(c) 2024 Kylie A. Bemis"
+	return str1 + " | " + str2
 
 def is_known_host(nodes):
 	"""

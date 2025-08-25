@@ -1,9 +1,14 @@
 
 import os
+import platform
 import tempfile
 import pytest
 
 from badwulf.tools import *
+
+def test_is_known_host():
+	host = platform.node().replace(".local", "")
+	assert is_known_host([host])
 
 def test_to_bytes():
 	assert to_bytes(1) == 1
@@ -25,7 +30,7 @@ def test_fix_path_err():
 		fix_path(tmp)
 	assert "path does not exist" in str(err.value)
 
-def test_file_create_remove():
+def test_file_create_remove_ls():
 	tmpdir = tempfile.gettempdir()
 	tmp = os.path.join(tmpdir, "__badwulf_testfile__")
 	if os.path.exists(tmp):
@@ -36,7 +41,7 @@ def test_file_create_remove():
 	file_remove(tmp)
 	assert not os.path.exists(tmp)
 
-def test_findport():
+def test_findport_checkport():
 	p = findport()
 	assert checkport(p) != 0
 

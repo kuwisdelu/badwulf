@@ -5,7 +5,6 @@ import subprocess
 
 from .tools import fix_path
 from .tools import askYesNo
-from .tools import squote
 from .tools import dquote
 
 class rssh:
@@ -96,12 +95,28 @@ class rssh:
 		else:
 			return "localhost"
 	
+	def isbatch(self):
+		"""
+		Check if connection can be established without prompts
+		"""
+		dest = f"{self.username}@{self.hostname}"
+		if self.server is None:
+			cmd = ["ssh", dest]
+			cmd += ["-o", "BatchMode=yes"]
+		else:
+			cmd = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
+			cmd += ["-o", "BatchMode=yes"]
+			cmd += ["-p", str(self.port), dest]
+		cmd += ["true"]
+		proc = subprocess.run(cmd)
+		return proc.returncode == 0
+	
 	def isopen(self):
 		"""
 		Check if the gateway server connection is open
 		"""
 		return self.process is not None
-
+	
 	def open(self):
 		"""
 		Open the connection to the gateway server

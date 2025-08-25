@@ -1,5 +1,6 @@
 
 import os
+import tempfile
 import pytest
 
 from badwulf import expdb
