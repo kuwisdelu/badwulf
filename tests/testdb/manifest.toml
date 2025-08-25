@@ -1,24 +1,24 @@
 
 [Test-data-1]
 scope = "Private"
-group = "Bad-Wolf-Corporation"
+group = "Bad Wolf Corporation"
 title = "I am the Bad Wolf."
 description = ""
 
 [Test-data-2]
 scope = "Private"
-group = "Bad-Wolf-Corporation"
+group = "Bad Wolf Corporation"
 title = "I create myself."
 description = ""
 
 [Test-data-3]
 scope = "Protected"
-group = "Bad-Wolf-Corporation"
+group = "Bad Wolf Corporation"
 title = "I take the words, I scatter them in time and space."
 description = ""
 
 [Test-data-4]
 scope = "Public"
-group = "Bad-Wolf-Corporation"
+group = "Bad Wolf Corporation"
 title = "A message to lead myself here."
 description = ""
