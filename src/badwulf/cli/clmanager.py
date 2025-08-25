@@ -19,7 +19,6 @@ class clmanager:
 	def __init__(self,
 		name,
 		nodes,
-		version,
 		date,
 		description,
 		readme = None,
@@ -32,7 +31,6 @@ class clmanager:
 		Initialize a cluster CLI utility program
 		:param name: The name of the cluster/server
 		:param nodes: A list of nodenames or dict in the form {alias: nodename}
-		:param version: The version of the program
 		:param date: The date of the program's last revision
 		:param description: A description of the program
 		:param readme: The file path of a README.md file
@@ -44,7 +42,6 @@ class clmanager:
 		"""
 		self.name = name
 		self.nodes = nodes
-		self.version = version
 		if isinstance(date, datetime.date):
 			self.date = date
 		else:
@@ -248,7 +245,7 @@ class clmanager:
 		# version
 		if args.version:
 			description = self.description.splitlines()[0]
-			print(f"{description} version {self.version} (revised {self.date})")
+			print(f"{description} (revised {self.date})")
 			print(badwulf_attribution())
 			sys.exit()
 		# open ssh for server commands

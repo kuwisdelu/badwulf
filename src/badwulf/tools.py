@@ -14,13 +14,11 @@ def badwulf_version():
 	"""
 	return version("badwulf")
 
-def badwulf_attribution():
+def badwulf_attribution(copyright = True):
 	"""
 	Get badwulf package attribution
 	"""
-	str1 = "powered by badwulf " + badwulf_version()
-	str2 = "(c) 2024 Kylie A. Bemis"
-	return str1 + " | " + str2
+	return "powered by badwulf v" + badwulf_version()
 
 def is_known_host(nodes):
 	"""

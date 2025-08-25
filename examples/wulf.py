@@ -7,8 +7,7 @@ wulf = clmanager("Badwulf",
 		"01": "Wulf-01",
 		"02": "Wulf-02",
 		"03": "Wulf-03"},
-	version = "0.0.0",
-	date = "2024-12-27",
+	date = "2025-08-26",
 	description = "Badwulf CLI utility",
 	program = "wulf")
 

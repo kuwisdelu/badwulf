@@ -20,40 +20,39 @@ class dbmanager:
 		name,
 		dbpath,
 		dbname,
-		version,
 		date,
 		description,
 		readme = None,
 		program = None,
-		metaname = True,
+		scopes = ("Private", "Protected", "Public"),
 		username = None,
 		remote_dbhost = None,
 		remote_dbpath = None,
 		server = None,
 		server_username = False,
+		xfer = "Xfer",
 		port = None):
 		"""
 		Initialize a cluster CLI utility program
 		:param name: The name of the cluster/server
 		:param dbpath: The local database path
 		:param dbname: The database name
-		:param version: The version of the program
 		:param date: The date of the program's last revision
 		:param description: A description of the program
 		:param readme: The file path of a README.md file
 		:param program: The name of the program (defaults to name)
-		:param metaname: Subdirectory containing "manifest.toml"" (optional)
+		:param scopes: The names of the scopes in the database
 		:param username: Your username on the cluster
 		:param remote_dbhost: The remote database host
 		:param remote_dbpath: The remote database path
 		:param server: The gateway server hostname (optional)
 		:param server_username: Your username on the gateway server (optional)
+		:param xfer: The remote database directory for data transfers
 		:param port: The local port for gateway server SSH forwarding
 		"""
 		self.name = name
 		self.dbpath = dbpath
 		self.dbname = dbname
-		self.version = version
 		if isinstance(date, datetime.date):
 			self.date = date
 		else:
@@ -64,7 +63,7 @@ class dbmanager:
 			self.program = name.casefold()
 		else:
 			self.program = program
-		self.metaname = metaname
+		self.scopes = scopes
 		self.username = username
 		self.remote_dbhost = remote_dbhost
 		self.remote_dbpath = remote_dbpath
@@ -293,11 +292,12 @@ class dbmanager:
 			raise NotADirectoryError(f"database does not exist: '{self.dbpath}'")
 		# connect and return database
 		db = expdb(self.username, self.dbpath, self.dbname,
-			metaname=self.metaname,
+			scopes=self.scopes,
 			remote_dbhost=self.remote_dbhost,
 			remote_dbpath=self.remote_dbpath,
 			server=self.server,
 			server_username=self.server_username,
+			xfer=self.xfer,
 			port=self.port,
 			verbose=False,
 			autoconnect=False)
@@ -313,7 +313,7 @@ class dbmanager:
 		# version
 		if args.version:
 			description = self.description.splitlines()[0]
-			print(f"{description} version {self.version} (revised {self.date})")
+			print(f"{description} (revised {self.date})")
 			print(badwulf_attribution())
 			sys.exit()
 		# help
