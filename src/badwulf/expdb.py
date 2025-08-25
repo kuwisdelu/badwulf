@@ -27,12 +27,6 @@ from .tools import askYesNo
 from .tools import grep1
 from .tools import grepl
 
-# scopes
-SCOPE_PRIVATE = "Private"
-SCOPE_PROTECTED = "Protected"
-SCOPE_PUBLIC = "Public"
-SCOPE_XFER = "Xfer"
-
 @dataclass
 class expdata:
 	"""
@@ -146,6 +140,108 @@ class expdata:
 		:returns: bool
 		"""
 		return grep1(pattern, self.group) is not None
+	
+	@property
+	def flag(self):
+		"""
+		String to display to flag the dataset
+		"""
+		return ""
+
+@dataclass
+class expcache:
+	"""
+	File metadata for a cached dataset
+	"""
+
+	name: str
+	path: str
+	_atime: float
+	_mtime: float
+	size: int
+	err: list
+	
+	def __init__(self, name, path, atime, mtime, size, err = None):
+		"""
+		Initialize an expcache instance
+		:param name: The name of the dataset
+		:param path: The file path to the dataset
+		:param atime: Last access time
+		:param mtime: Last modified time
+		:param size: Total size in storage
+		:param err: Problems with the cached dataset
+		"""
+		self.name = name
+		self.path = path
+		self._atime = atime
+		self._mtime = mtime
+		self.size = size
+		if err is None:
+			self.err = []
+		else:
+			self.err = err
+	
+	@property
+	def atime(self):
+		"""
+		Get last accessed time
+		"""
+		return datetime.fromtimestamp(self._atime)
+	
+	@property
+	def mtime(self):
+		"""
+		Get last modified time
+		"""
+		return datetime.fromtimestamp(self._mtime)
+	
+	def __str__(self):
+		"""
+		Return str(self)
+		"""
+		return self.describe()
+	
+	def describe(self, printformats = None):
+		"""
+		Return cached dataset description
+		"""
+		path = f" path: '{self.path}'"
+		atime = f" atime: '{self.atime}'"
+		mtime = f" mtime: '{self.mtime}'"
+		size = f" size: {format_bytes(self.size)}"
+		sl = [path, atime, mtime, size]
+		if len(self.err) > 0:
+			errors_header = f" errors: {len(self.err)}"
+			errors = []
+			for issue in self.err.keys():
+				issue_list = [f"  {issue} {key}: {val}" 
+					for key, val
+					in self.err[issue].items()]
+				errors.extend(issue_list)
+			errors = [errors_header] + [" {"] + errors + [" }"]
+			sl.extend(errors)
+		if printformats is not None:
+			files = []
+			fmts = [f"{fmt}$" for fmt in printformats]
+			for pattern in fmts:
+				files.extend(dirfiles(self.path, pattern, recursive=True))
+			files = [f" file {str(i + 1)}: '{file}'" 
+				for i, file 
+				in enumerate(files)]
+			sl.extend(files)
+			sl = [" " + s for s in sl]
+			sl = [" Cached:", " {"] + sl + [" }"]
+		return "\n".join(["{"] + sl + ["}"])
+	
+	@property
+	def flag(self):
+		"""
+		String to display to flag the dataset
+		"""
+		if len(self.err) > 0:
+			return " !!!"
+		else:
+			return ""
 
 @dataclass
 class expsearch:
@@ -225,95 +321,28 @@ class expsearch:
 		sl.append(" }")
 		return "\n".join(["{"] + sl + ["}"])
 
-@dataclass
-class expcache:
-	"""
-	File metadata for a cached dataset
-	"""
-
-	name: str
-	path: str
-	_atime: float
-	_mtime: float
-	size: int
-	
-	def __init__(self, name, path, atime, mtime, size):
-		"""
-		Initialize an expcache instance
-		:param name: The name of the dataset
-		:param path: The file path to the dataset
-		:param atime: Last access time
-		:param mtime: Last modified time
-		:param size: Total size in storage
-		"""
-		self.name = name
-		self.path = path
-		self._atime = atime
-		self._mtime = mtime
-		self.size = size
-	
-	@property
-	def atime(self):
-		"""
-		Get last accessed time
-		"""
-		return datetime.fromtimestamp(self._atime)
-	
-	@property
-	def mtime(self):
-		"""
-		Get last modified time
-		"""
-		return datetime.fromtimestamp(self._mtime)
-	
-	def __str__(self):
-		"""
-		Return str(self)
-		"""
-		return self.describe()
-	
-	def describe(self, printformats = None):
-		"""
-		Return cached dataset description
-		"""
-		path = f" path: '{self.path}'"
-		atime = f" atime: '{self.atime}'"
-		mtime = f" mtime: '{self.mtime}'"
-		size = f" size: {format_bytes(self.size)}"
-		sl = [path, atime, mtime, size]
-		if printformats is not None:
-			files = []
-			fmts = [f"{fmt}$" for fmt in printformats]
-			for pattern in fmts:
-				files.extend(dirfiles(self.path, pattern, recursive=True))
-			files = [f" file {str(i + 1)}: '{file}'" 
-				for i, file 
-				in enumerate(files)]
-			sl.extend(files)
-			sl = [" " + s for s in sl]
-			sl = [" Cached:", " {"] + sl + [" }"]
-		return "\n".join(["{"] + sl + ["}"])
-
 class expdb:
 	"""
 	Database manager for experimental datasets and metadata
 	"""
 	
-	def __init__(self, username, dbpath, dbname, metaname = True,
+	def __init__(self, username, dbpath, dbname,
+		scopes = ("Private", "Protected", "Public"),
 		remote_dbhost = None, remote_dbpath = None,
-		server = None, server_username = None,
+		server = None, server_username = None, xfer = "Xfer",
 		port = 8080, remote_port = 22, verbose = False,
 		autoconnect = True):
 		"""
 		Initialize an expdb instance
 		:param username: Your username on remote database host
-		:param dbpath: The local database path
+		:param dbpath: The local database path (must contain "manifest.toml")
 		:param dbname: The database name (may be None)
-		:param metaname: Subdirectory containing "manifest.toml"" (optional)
+		:param scopes: The names of the scopes in the database
 		:param remote_dbhost: The remote database host
 		:param remote_dbpath: The remote database path
 		:param server: The gateway server hostname (optional)
 		:param server_username: Your username on the gateway server (optional)
+		:param xfer: The remote database directory for data transfers
 		:param port: The local port for gateway server SSH forwarding
 		:param remote_port: The remote database host port
 		:param verbose: Print progress messages?
@@ -324,16 +353,12 @@ class expdb:
 		self.username = username
 		self.dbpath = fix_path(dbpath, must_exist=True)
 		self.dbname = dbname
-		if metaname in (True, False):
-			if metaname:
-				metaname = dbname
-			else:
-				metaname = None
-		self.metaname = metaname
+		self.scopes = scopes
 		self.remote_dbhost = remote_dbhost
 		self.remote_dbpath = remote_dbpath
 		self.server = server
 		self.server_username = server_username
+		self.xfer = xfer
 		self.port = port
 		self.remote_port = remote_port
 		self.verbose = verbose
@@ -467,10 +492,7 @@ class expdb:
 		"""
 		Refresh the database manifest
 		"""
-		if self.metaname is None:
-			path = os.path.join(self.dbdir, "manifest.toml")
-		else:
-			path = os.path.join(self.dbdir, self.metaname, "manifest.toml")
+		path = os.path.join(self.dbdir, "manifest.toml")
 		path = fix_path(path, must_exist=True)
 		if self.verbose:
 			print(f"parsing '{path}'")
@@ -489,9 +511,8 @@ class expdb:
 		if self.verbose:
 			print("detecting cached datasets")
 		cache = []
-		cache.extend(self._get_cached_scope(SCOPE_PRIVATE))
-		cache.extend(self._get_cached_scope(SCOPE_PROTECTED))
-		cache.extend(self._get_cached_scope(SCOPE_PUBLIC))
+		for scope in self.scopes:
+			cache.extend(self._get_cached_scope(scope))
 		self._cache = {dataset.name: dataset for dataset in cache}
 		if self.verbose:
 			print(f"{len(cache)} datasets available locally")
@@ -509,8 +530,21 @@ class expdb:
 		size = dirsize(path, all_names=True)
 		atime = os.path.getatime(path)
 		mtime = os.path.getmtime(path)
+		expected = self.get(dataset)
+		if expected is None:
+			err = None
+		else:
+			err = {}
+			if scope.casefold() != expected.scope.casefold():
+				err["scope"] = {
+					"expected": expected.scope,
+					"detected": scope}
+			if group.casefold() != expected.group.casefold():
+				err["group"] = {
+					"expected": expected.group,
+					"detected": group}
 		return expcache(name=dataset, path=path,
-			atime=atime, mtime=mtime, size=size)
+			atime=atime, mtime=mtime, size=size, err=err)
 	
 	def _get_cached_group(self, scope, group):
 		"""
@@ -764,7 +798,7 @@ class expdb:
 			src = path + "/"
 		else:
 			src = path
-		dest = os.path.join(self.remote_dbdir, SCOPE_XFER, name)
+		dest = os.path.join(self.remote_dbdir, self.xfer, name)
 		dest = dest + "/"
 		try:
 			con = rssh(self.username,

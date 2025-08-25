@@ -113,11 +113,11 @@ def format_datasets(iterable, names_only = False, header = True):
 	:return: A formatted string
 	"""
 	if names_only:
-		sl = [f"['{dataset.name}']" 
+		sl = [f"['{dataset.name}']{dataset.flag}" 
 			for dataset 
 			in iterable]
 	else:
-		sl = [f"['{dataset.name}']\n{dataset}" 
+		sl = [f"['{dataset.name}']{dataset.flag}\n{dataset}" 
 			for dataset 
 			in iterable]
 	if header:
