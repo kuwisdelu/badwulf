@@ -9,6 +9,10 @@ wulf = clmanager("Badwulf",
 		"03": "Wulf-03"},
 	date = "2025-08-26",
 	description = "Badwulf CLI utility",
-	program = "wulf")
+	program = "wulf",
+	head="Wulf-01",
+	xfer="Wulf-01",
+	restrict=False,
+	username="bad-wolf")
 
 wulf.main()

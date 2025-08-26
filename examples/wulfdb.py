@@ -7,6 +7,7 @@ wulfdb = dbmanager("Badwulf DB",
 	dbname=None,
 	date = "2025-08-26",
 	description = "Badwulf database CLI utility",
-	program = "wulfdb")
+	program = "wulfdb",
+	username="bad-wolf")
 
 wulfdb.main()

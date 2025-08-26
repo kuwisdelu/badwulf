@@ -23,6 +23,9 @@ class clmanager:
 		description,
 		readme = None,
 		program = None,
+		head = None,
+		xfer = None,
+		restrict = False,
 		username = None,
 		server = None,
 		server_username = False,
@@ -35,6 +38,9 @@ class clmanager:
 		:param description: A description of the program
 		:param readme: The file path of a README.md file
 		:param program: The name of the program (defaults to name)
+		:param head: The head node (optional)
+		:param xfer: The xfer node (optional)
+		:param restrict: Should login be restricted to head node?
 		:param username: Your username on the cluster
 		:param server: The gateway server hostname (optional)
 		:param server_username: Your username on the gateway server (optional)
@@ -52,25 +58,36 @@ class clmanager:
 			self.program = name.casefold()
 		else:
 			self.program = program
+		self.head = head
+		self.xfer = xfer
+		self.restrict = restrict
 		self.username = username
 		self.server = server
 		self.server_username = server_username
 		self.port = port
+		self.session = None
 		self._parser = None
 		self._args = None
 
-	def _add_cluster_args(self, parser):
+	def _add_cluster_args(self, parser, restrict = False):
 		"""
 		Add cluster parameters to a parser.
 		:param parser: The parser to update
 		"""
-		if isinstance(self.nodes, dict):
-			for alias, nodename in self.nodes.items():
-				parser.add_argument(f"-{alias}", action="append_const",
-					help=nodename, dest="nodes", const=nodename)
-		parser.add_argument("-n", "--node", action="append",
-			help=f"{self.name} node", dest="nodes",
-			metavar="NODE")
+		if not restrict:
+			parser.add_argument("-n", "--node", action="append",
+				help=f"{self.name} node", dest="nodes",
+				metavar="NODE")
+			if isinstance(self.nodes, dict):
+				for alias, nodename in self.nodes.items():
+					parser.add_argument(f"-{alias}", action="append_const",
+						help=nodename, dest="nodes", const=nodename)
+		if self.head is not None:
+			parser.add_argument("-H", "--head", action="append_const",
+				help=f"{self.name} head node", dest="nodes", const=self.head)
+		if self.xfer is not None:
+			parser.add_argument("-x", "--xfer", action="append_const",
+				help=f"{self.name} xfer node", dest="nodes", const=self.xfer)
 		parser.add_argument("-p", "--port", action="store",
 			help="port forwarding", default=self.port)
 		parser.add_argument("-u", "--user", action="store",
@@ -87,7 +104,7 @@ class clmanager:
 		"""
 		cmd = subparsers.add_parser("run", 
 			help=f"run command (e.g., shell) on a {self.name} node")
-		self._add_cluster_args(cmd)
+		self._add_cluster_args(cmd, restrict=self.is_strict_client())
 		cmd.add_argument("remote_command", action="store",
 			help="command to execute on a Magi node", nargs=argparse.OPTIONAL,
 			metavar="command")
@@ -102,7 +119,7 @@ class clmanager:
 		"""
 		cmd = subparsers.add_parser("copy-id", 
 			help=f"copy ssh keys to a {self.name} node")
-		self._add_cluster_args(cmd)
+		self._add_cluster_args(cmd, restrict=self.is_strict_client())
 		cmd.add_argument("identity_file", action="store",
 			help="ssh key identity file")
 	
@@ -113,7 +130,7 @@ class clmanager:
 		"""
 		cmd = subparsers.add_parser("upload", 
 			help=f"upload file(s) to {self.name}")
-		self._add_cluster_args(cmd)
+		self._add_cluster_args(cmd, restrict=self.is_strict_client())
 		cmd.add_argument("src", action="store",
 			help="source file/directory")
 		cmd.add_argument("dest", action="store",
@@ -130,7 +147,7 @@ class clmanager:
 		"""
 		cmd = subparsers.add_parser("download", 
 			help=f"download file(s) from {self.name}")
-		self._add_cluster_args(cmd)
+		self._add_cluster_args(cmd, restrict=self.is_strict_client())
 		cmd.add_argument("src", action="store",
 			help="source file/directory")
 		cmd.add_argument("dest", action="store",
@@ -169,10 +186,24 @@ class clmanager:
 			self._add_subcommand_readme(subparsers)
 		self._parser = parser
 	
+	def is_client(self):
+		"""
+		Check if the program is running on a remote client
+		:returns: True if running on a remote client, False otherwise
+		"""
+		return not self.is_node()
+	
+	def is_strict_client(self):
+		"""
+		Check if the program is running on a restricted remote client
+		:returns: True if nodes should be restricted, False otherwise
+		"""
+		return self.is_client() and self.restrict
+
 	def is_node(self):
 		"""
 		Check if the program is running on a cluster node
-		:returns: True if running the a cluster node, False otherwise
+		:returns: True if running on a cluster node, False otherwise
 		"""
 		if isinstance(self.nodes, dict):
 			nodes = self.nodes.values()
@@ -220,12 +251,12 @@ class clmanager:
 		if port is None:
 			port = findport()
 		# connect and return the session
-		session = rssh(username, node,
+		self.session = rssh(username, node,
 			server=server,
 			server_username=server_username,
 			port=port,
 			autoconnect=True)
-		return session
+		return self.session
 	
 	def parse_args(self):
 		"""
@@ -248,14 +279,15 @@ class clmanager:
 			print(f"{description} (revised {self.date})")
 			print(badwulf_attribution())
 			sys.exit()
-		# open ssh for server commands
+		# open session for ssh commands
 		if args.cmd in ("run", "copy-id", "upload", "download"):
-			con = self.open_ssh(self.resolve_node(args.nodes),
+			self.open_ssh(self.resolve_node(args.nodes),
 				username=args.user,
 				server=args.server,
 				server_username=args.login, 
 				port=args.port)
 			sleep(1) # allow time to connect
+		con = self.session
 		# help
 		if args.cmd is None:
 			self._parser.print_help()
