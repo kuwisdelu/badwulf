@@ -5,7 +5,6 @@ from badwulf.cli import dbmanager
 wulfdb = dbmanager("Badwulf DB", 
 	dbpath="examples/exampledb",
 	dbname=None,
-	version = "0.0.0",
 	date = "2025-08-26",
 	description = "Badwulf database CLI utility",
 	program = "wulfdb")
