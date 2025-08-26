@@ -7,9 +7,9 @@ import datetime
 from time import sleep
 
 from ..rssh import rssh
-from ..tools import badwulf_attribution
 from ..tools import is_known_host
 from ..tools import findport
+from ..tools import badwulf_attribution
 
 class clmanager:
 	"""

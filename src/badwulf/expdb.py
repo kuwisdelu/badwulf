@@ -20,12 +20,70 @@ from .tools import fix_path
 from .tools import dirsize
 from .tools import dirfiles
 from .tools import to_bytes
-from .tools import format_bytes
-from .tools import format_datasets
-from .tools import print_datasets
 from .tools import askYesNo
 from .tools import grep1
 from .tools import grepl
+
+def format_size(x, units = "auto"):
+	"""
+	Format bytes
+	:param x: The number of bytes
+	:param units: The units (B, KB, MB, etc.)
+	:returns: A string
+	"""
+	if units == "auto":
+		if x >= 1000 ** 5:
+			units = "PB"
+		elif x >= 1000 ** 4:
+			units = "TB"
+		elif x >= 1000 ** 3:
+			units = "GB"
+		elif x >= 1000 ** 2:
+			units = "MB"
+		elif x >= 1000:
+			units = "KB"
+		else:
+			units = "bytes"
+	if units in ("bytes", "B"):
+		if x == 1 and units == "bytes":
+			units = "byte"
+		x = int(x)
+	else:
+		if units == "KB":
+			x /= 1000
+		elif units == "MB":
+			x /= 1000 ** 2
+		elif units == "GB":
+			x /= 1000 ** 3
+		elif units == "TB":
+			x /= 1000 ** 4
+		elif units == "PB":
+			x /= 1000 ** 5
+		else:
+			raise ValueError(f"invalid units: {units}")
+		x = round(x, ndigits=2)
+		x = float(x)
+	return f"{x} {units}"
+
+def format_datasets(iterable, names_only = False, header = True):
+	"""
+	Format datasets
+	:param iterable: An iterable of datasets
+	:param names_only: Print names only?
+	:param header: Print number of datasets?
+	:return: A formatted string
+	"""
+	if names_only:
+		sl = [f"['{dataset.name}']{dataset.flag}" 
+			for dataset 
+			in iterable]
+	else:
+		sl = [f"['{dataset.name}']{dataset.flag}\n{dataset}" 
+			for dataset 
+			in iterable]
+	if header:
+		sl = [f"#### {len(sl)} datasets ####\n"] + sl
+	return "\n".join(sl)
 
 @dataclass
 class expdata:
@@ -208,7 +266,7 @@ class expcache:
 		path = f" path: '{self.path}'"
 		atime = f" atime: '{self.atime}'"
 		mtime = f" mtime: '{self.mtime}'"
-		size = f" size: {format_bytes(self.size)}"
+		size = f" size: {format_size(self.size)}"
 		sl = [path, atime, mtime, size]
 		if len(self.err) > 0:
 			errors_header = f" errors: {len(self.err)}"
@@ -709,11 +767,11 @@ class expdb:
 		while delsize[target] > limit:
 			target += 1
 		newsize = totsize - sum(sizes[:target])
-		print(f"the local cache is currently {format_bytes(totsize)}")
+		print(f"the local cache is currently {format_size(totsize)}")
 		print(f"using strategy: {strategy}")
 		print("the following datasets will be deleted from the cache:")
-		print_datasets(cache[:target], names_only=True)
-		print(f"~= {format_bytes(sum(sizes[:target]))} will be freed")
+		print(format_datasets(cache[:target], names_only=True))
+		print(f"~= {format_size(sum(sizes[:target]))} will be freed")
 		if not target:
 			return
 		if ask and not askYesNo():
@@ -725,7 +783,7 @@ class expdb:
 					shutil.rmtree(fix_path(x.path, must_exist=True))
 				except Exception:
 					print(f"failed to delete '{x.path}'")
-			print(f"the local cache is now {format_bytes(newsize)}")
+			print(f"the local cache is now {format_size(newsize)}")
 		return
 	
 	def sync(self, name, force = False, dry_run = False, ask = False):

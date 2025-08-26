@@ -6,10 +6,10 @@ import argparse
 import datetime
 
 from ..expdb import expdb
-from ..tools import badwulf_attribution
-from ..tools import print_datasets
-from ..tools import format_bytes
+from ..expdb import format_datasets
+from ..expdb import format_size
 from ..tools import findport
+from ..tools import badwulf_attribution
 
 class dbmanager:
 	"""
@@ -307,7 +307,7 @@ class dbmanager:
 				group=args.group,
 				details=args.long)
 			if args.long:
-				print_datasets(datasets)
+				print(format_datasets(datasets))
 			else:
 				for name in datasets:
 					print(f"['{name}']")
@@ -334,9 +334,9 @@ class dbmanager:
 				if args.reverse:
 					datasets.reverse()
 			if sort or args.long:
-				print_datasets(datasets)
+				print(format_datasets(datasets))
 				sizes = [x.size for x in datasets]
-				print(f"~= {format_bytes(sum(sizes))} total")
+				print(f"~= {format_size(sum(sizes))} total")
 			else:
 				for name in datasets:
 					print(f"['{name}']")
@@ -346,14 +346,14 @@ class dbmanager:
 				pattern=args.pattern,
 				scope=args.scope,
 				group=args.group)
-			print_datasets(hits)
+			print(format_datasets(hits))
 		# search-cache
 		elif args.cmd == "search-cache":
 			hits = db.search_cache(
 				pattern=args.pattern,
 				scope=args.scope,
 				group=args.group)
-			print_datasets(hits)
+			print(format_datasets(hits))
 		# prune-cache
 		elif args.cmd == "prune-cache":
 			if args.strategy is None:
@@ -398,11 +398,11 @@ class dbmanager:
 			msg_localonly = "\n<<<< cached but not tracked:"
 			if args.long:
 				print(msg_synced)
-				print_datasets(synced)
+				print(format_datasets(synced))
 				print(msg_remoteonly)
-				print_datasets(remoteonly)
+				print(format_datasets(remoteonly))
 				print(msg_localonly)
-				print_datasets(localonly)
+				print(format_datasets(localonly))
 			else:
 				print(msg_synced)
 				for name in synced:
