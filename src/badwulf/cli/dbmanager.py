@@ -30,7 +30,6 @@ class dbmanager:
 		remote_dbpath = None,
 		server = None,
 		server_username = False,
-		xfer = "Xfer",
 		port = None):
 		"""
 		Initialize a cluster CLI utility program
@@ -47,7 +46,6 @@ class dbmanager:
 		:param remote_dbpath: The remote database path
 		:param server: The gateway server hostname (optional)
 		:param server_username: Your username on the gateway server (optional)
-		:param xfer: The remote database directory for data transfers
 		:param port: The local port for gateway server SSH forwarding
 		"""
 		self.name = name
@@ -209,23 +207,6 @@ class dbmanager:
 		cmd.add_argument("--dry-run", action="store_true",
 			help="show what would happen without doing it?")
 	
-	def _add_subcommand_submit(self, subparsers):
-		"""
-		Add 'submit' subcommand to subparsers.
-		:param subparsers: The subparsers to update
-		"""
-		cmd = subparsers.add_parser("submit", 
-			help="submit a dataset")
-		cmd.add_argument("path", action="store",
-			help="the path to the dataset directory")
-		self._add_server_args(cmd)
-		cmd.add_argument("-f", "--force", action="store_true",
-			help="force re-submission if already tracked")
-		cmd.add_argument("--ask", action="store_true",
-			help="ask to confirm before submitting?")
-		cmd.add_argument("--dry-run", action="store_true",
-			help="show what would happen without doing it?")
-	
 	def _add_subcommand_status(self, subparsers):
 		"""
 		Add 'status' subcommand to subparsers.
@@ -268,7 +249,6 @@ class dbmanager:
 		self._add_subcommand_prune_cache(subparsers)
 		self._add_subcommand_describe(subparsers)
 		self._add_subcommand_sync(subparsers)
-		self._add_subcommand_submit(subparsers)
 		self._add_subcommand_status(subparsers)
 		if self.readme is not None:
 			self._add_subcommand_readme(subparsers)
@@ -297,7 +277,6 @@ class dbmanager:
 			remote_dbpath=self.remote_dbpath,
 			server=self.server,
 			server_username=self.server_username,
-			xfer=self.xfer,
 			port=self.port,
 			verbose=False,
 			autoconnect=False)
@@ -406,20 +385,6 @@ class dbmanager:
 			db.server_username = args.login
 			db.port = args.port
 			db.sync(args.id,
-				force=args.force,
-				dry_run=args.dry_run, ask=args.ask)
-		# submit
-		elif args.cmd == "submit":
-			name = os.path.basename(args.path)
-			if name in db.manifest and not args.force:
-				sys.exit("msi submit: dataset is already tracked; use --force to re-submit")
-			db.username = args.user
-			db.remote_dbhost = args.remote_host
-			db.remote_dbpath = args.remote_path
-			db.server = args.server
-			db.server_username = args.login
-			db.port = args.port
-			db.submit(args.path,
 				force=args.force,
 				dry_run=args.dry_run, ask=args.ask)
 		# status

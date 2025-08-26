@@ -329,7 +329,7 @@ class expdb:
 	def __init__(self, username, dbpath, dbname,
 		scopes = ("Private", "Protected", "Public"),
 		remote_dbhost = None, remote_dbpath = None,
-		server = None, server_username = None, xfer = "Xfer",
+		server = None, server_username = None,
 		port = 8080, remote_port = 22, verbose = False,
 		autoconnect = True):
 		"""
@@ -342,7 +342,6 @@ class expdb:
 		:param remote_dbpath: The remote database path
 		:param server: The gateway server hostname (optional)
 		:param server_username: Your username on the gateway server (optional)
-		:param xfer: The remote database directory for data transfers
 		:param port: The local port for gateway server SSH forwarding
 		:param remote_port: The remote database host port
 		:param verbose: Print progress messages?
@@ -358,7 +357,6 @@ class expdb:
 		self.remote_dbpath = remote_dbpath
 		self.server = server
 		self.server_username = server_username
-		self.xfer = xfer
 		self.port = port
 		self.remote_port = remote_port
 		self.verbose = verbose
@@ -772,46 +770,6 @@ class expdb:
 				self.open_cache()
 		except Exception:
 			print("a problem occured during syncing")
-		finally:
-			con.close()
-	
-	def submit(self, path, force = False, dry_run = False, ask = False):
-		"""
-		Submit a dataset to the database maintainer(s)
-		:param path: The path to the data directory
-		:param force: Should the dataset be re-submitted if already tracked?
-		:param dry_run: Show what would be done without doing it?
-		:param ask: Confirm before uploading?
-		"""
-		path = fix_path(path, must_exist=False)
-		name = os.path.basename(path)
-		if name in self.manifest and not force:
-			print("dataset is already tracked; use force=True to re-submit")
-			return
-		if self.remote_dbhost is None:
-			raise IOError("remote host is None")
-		if self.remote_dbpath is None:
-			raise IOError("remote path is None")
-		if not os.path.isdir(path):
-			raise NotADirectoryError(f"path must be a directory: {path}")
-		if path[-1] != "/":
-			src = path + "/"
-		else:
-			src = path
-		dest = os.path.join(self.remote_dbdir, self.xfer, name)
-		dest = dest + "/"
-		try:
-			con = rssh(self.username,
-				destination=self.remote_dbhost,
-				server=self.server,
-				server_username=self.server_username,
-				port=self.port,
-				destination_port=self.remote_port)
-			sleep(1) # allow time to connect
-			con.upload(src, dest, dry_run=dry_run, ask=ask)
-			print("submission complete")
-		except Exception:
-			print("a problem occured during submission")
 		finally:
 			con.close()
 	
