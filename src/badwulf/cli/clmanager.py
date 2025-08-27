@@ -28,7 +28,7 @@ class clmanager:
 		restrict = False,
 		username = None,
 		server = None,
-		server_username = False,
+		server_username = None,
 		port = None):
 		"""
 		Initialize a cluster CLI utility program
@@ -40,7 +40,7 @@ class clmanager:
 		:param program: The name of the program (defaults to name)
 		:param head: The head node (optional)
 		:param xfer: The xfer node (optional)
-		:param restrict: Should login be restricted to head node?
+		:param restrict: Should access be restricted to head/xfer nodes?
 		:param username: Your username on the cluster
 		:param server: The gateway server hostname (optional)
 		:param server_username: Your username on the gateway server (optional)
@@ -84,18 +84,23 @@ class clmanager:
 						help=nodename, dest="nodes", const=nodename)
 		if self.head is not None:
 			parser.add_argument("-H", "--head", action="append_const",
-				help=f"{self.name} head node", dest="nodes", const=self.head)
+				help=f"{self.name} head node ({self.head})",
+				dest="nodes", const=self.head)
 		if self.xfer is not None:
 			parser.add_argument("-x", "--xfer", action="append_const",
-				help=f"{self.name} xfer node", dest="nodes", const=self.xfer)
+				help=f"{self.name} xfer node ({self.xfer})",
+				dest="nodes", const=self.xfer)
+		parser.add_argument("-u", "--user", action="store",
+			help=f"{self.name} user (default: {self.username})",
+			default=self.username)
 		parser.add_argument("-p", "--port", action="store",
 			help="port forwarding", default=self.port)
-		parser.add_argument("-u", "--user", action="store",
-			help=f"{self.name} user", default=self.username)
 		parser.add_argument("-L", "--login", action="store",
-			help="gateway server user", default=self.server_username)
+			help=f"gateway server user (default: {self.server_username})",
+			default=self.server_username)
 		parser.add_argument("-S", "--server", action="store",
-			help="gateway server host", default=self.server)
+			help=f"gateway server host (default: {self.server})",
+			default=self.server)
 	
 	def _add_subcommand_run(self, subparsers):
 		"""
@@ -106,10 +111,12 @@ class clmanager:
 			help=f"run command (e.g., shell) on a {self.name} node")
 		self._add_cluster_args(cmd, restrict=self.is_strict_client())
 		cmd.add_argument("remote_command", action="store",
-			help="command to execute on a Magi node", nargs=argparse.OPTIONAL,
+			help="command to execute on a Magi node",
+			nargs=argparse.OPTIONAL,
 			metavar="command")
 		cmd.add_argument("remote_args", action="store",
-			help="command arguments", nargs=argparse.REMAINDER,
+			help="command arguments",
+			nargs=argparse.REMAINDER,
 			metavar="...")
 	
 	def _add_subcommand_copy_id(self, subparsers):

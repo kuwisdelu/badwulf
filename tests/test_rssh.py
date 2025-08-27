@@ -12,7 +12,7 @@ def test_rssh_without_gateway():
 	assert con.destination == "vortex"
 	assert con.hostname == "vortex"
 	assert con.server is None
-	assert con.server_username == "bad-wolf"
+	assert con.server_username is None
 	assert not con.isopen()
 
 def test_rssh_with_gateway():

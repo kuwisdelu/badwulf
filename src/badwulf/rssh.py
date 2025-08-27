@@ -13,7 +13,7 @@ class rssh:
 	"""
 	
 	def __init__(self, username, destination,
-		server = None, server_username = True,
+		server = None, server_username = None,
 		port = 8080, destination_port = 22,
 		autoconnect = True):
 		"""
@@ -26,11 +26,6 @@ class rssh:
 		:param destination_port: The destination port
 		:param autoconnect: Connect on initialization?
 		"""
-		if server_username in (True, False):
-			if server_username:
-				server_username = username
-			else:
-				server_username = ""
 		self.username = username
 		self.destination = destination
 		self.server = server

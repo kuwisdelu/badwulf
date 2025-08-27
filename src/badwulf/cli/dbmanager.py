@@ -29,7 +29,7 @@ class dbmanager:
 		remote_dbhost = None,
 		remote_dbpath = None,
 		server = None,
-		server_username = False,
+		server_username = None,
 		port = None):
 		"""
 		Initialize a cluster CLI utility program
@@ -74,23 +74,40 @@ class dbmanager:
 		self._parser = None
 		self._args = None
 
+	def _add_db_args(self, parser):
+		"""
+		Add database parameters to a parser.
+		:param parser: The parser to update
+		"""
+		parser.add_argument("-n", "--db-name", action="store",
+			help=f"database name (default: {self.dbname})",
+			default=self.dbname)
+		parser.add_argument("-D", "--db-path", action="store",
+			help=f"database path (default: {self.dbpath})",
+			default=self.dbpath)
+
 	def _add_server_args(self, parser):
 		"""
 		Add server parameters to a parser.
 		:param parser: The parser to update
 		"""
+		parser.add_argument("--remote-host", action="store",
+			help=f"remote database host (default: {self.remote_dbhost})",
+			default=self.remote_dbhost)
+		parser.add_argument("--remote-path", action="store",
+			help=f"remote database path (default: {self.remote_dbpath})",
+			default=self.remote_dbpath)
+		parser.add_argument("-u", "--user", action="store",
+			help=f"{self.name} user (default: {self.username})",
+			default=self.username)
 		parser.add_argument("-p", "--port", action="store",
 			help="port forwarding", default=self.port)
-		parser.add_argument("-u", "--user", action="store",
-			help=f"{self.name} user", default=self.username)
 		parser.add_argument("-L", "--login", action="store",
-			help="gateway server user", default=self.server_username)
+			help=f"gateway server user (default: {self.server_username})",
+			default=self.server_username)
 		parser.add_argument("-S", "--server", action="store",
-			help="gateway server host", default=self.server)
-		parser.add_argument("--remote-host", action="store",
-			help="remote database host", default=self.remote_dbhost)
-		parser.add_argument("--remote-path", action="store",
-			help="remote database path", default=self.remote_dbpath)
+			help=f"gateway server host (default: {self.server})",
+			default=self.server)
 	
 	def _add_subcommand_ls(self, subparsers):
 		"""
@@ -99,7 +116,8 @@ class dbmanager:
 		"""
 		cmd = subparsers.add_parser("ls", 
 			help="list all datasets")
-		cmd.add_argument("-l", "--long", action="store_true",
+		self._add_db_args(cmd)
+		cmd.add_argument("-l", "--details", action="store_true",
 			help="show extended details")
 		cmd.add_argument("-s", "--scope", action="store",
 			help="filter by scope")
@@ -113,7 +131,8 @@ class dbmanager:
 		"""
 		cmd = subparsers.add_parser("ls-cache", 
 			help="list cached datasets")
-		cmd.add_argument("-l", "--long", action="store_true",
+		self._add_db_args(cmd)
+		cmd.add_argument("-l", "--details", action="store_true",
 			help="show extended details")
 		cmd.add_argument("-s", "--scope", action="store",
 			help="filter by scope")
@@ -131,6 +150,7 @@ class dbmanager:
 		"""
 		cmd = subparsers.add_parser("search", 
 			help="search all datasets")
+		self._add_db_args(cmd)
 		cmd.add_argument("pattern", action="store",
 			help="search pattern (regex allowed)")
 		cmd.add_argument("-s", "--scope", action="store",
@@ -145,6 +165,7 @@ class dbmanager:
 		"""
 		cmd = subparsers.add_parser("search-cache", 
 			help="search cached datasets")
+		self._add_db_args(cmd)
 		cmd.add_argument("pattern", action="store",
 			help="search pattern (regex allowed)")
 		cmd.add_argument("-s", "--scope", action="store",
@@ -163,6 +184,7 @@ class dbmanager:
 			help="maximum cache size (10, 100, 1000, etc.)", type=float)
 		cmd.add_argument("units", action="store",
 			help="cache size units (MB, GB, TB, etc.)")
+		self._add_db_args(cmd)
 		cmd.add_argument("-s", "--scope", action="store",
 			help="filter by scope")
 		cmd.add_argument("-g", "--group", action="store",
@@ -189,6 +211,7 @@ class dbmanager:
 			help="describe a dataset")
 		cmd.add_argument("id", action="store",
 			help="the identifier of the dataset to describe")
+		self._add_db_args(cmd)
 	
 	def _add_subcommand_sync(self, subparsers):
 		"""
@@ -199,6 +222,7 @@ class dbmanager:
 			help="sync a dataset to local cache")
 		cmd.add_argument("id", action="store",
 			help="the identifier of the dataset to sync")
+		self._add_db_args(cmd)
 		self._add_server_args(cmd)
 		cmd.add_argument("-f", "--force", action="store_true",
 			help="force re-sync if already cached")
@@ -214,7 +238,8 @@ class dbmanager:
 		"""
 		cmd = subparsers.add_parser("status", 
 			help="report status of cache against manifest")
-		cmd.add_argument("-l", "--long", action="store_true",
+		self._add_db_args(cmd)
+		cmd.add_argument("-l", "--details", action="store_true",
 			help="show extended details")
 		cmd.add_argument("-s", "--scope", action="store",
 			help="filter by scope")
@@ -299,14 +324,16 @@ class dbmanager:
 		if args.cmd is None:
 			self._parser.print_help()
 		else:
+			self.dbname = args.db_name
+			self.dbpath = args.db_path
 			db = self.open_db()
 		# ls
 		if args.cmd == "ls":
 			datasets = db.ls(
 				scope=args.scope,
 				group=args.group,
-				details=args.long)
-			if args.long:
+				details=args.details)
+			if args.details:
 				print(format_datasets(datasets))
 			else:
 				for name in datasets:
@@ -317,7 +344,7 @@ class dbmanager:
 			datasets = db.ls_cache(
 				scope=args.scope,
 				group=args.group,
-				details=args.long or sort)
+				details=args.details or sort)
 			if sort:
 				if args.reverse is not None:
 					args.sort = args.reverse
@@ -330,10 +357,10 @@ class dbmanager:
 				elif sortby == "mtime".casefold():
 					datasets.sort(key=lambda x: x.mtime)
 				else:
-					sys.exit(f"msi ls-cache: error: can't sort by attribute: '{args.sort}'")
+					sys.exit(f"{self.program} ls-cache: error: can't sort by attribute: '{args.sort}'")
 				if args.reverse:
 					datasets.reverse()
-			if sort or args.long:
+			if sort or args.details:
 				print(format_datasets(datasets))
 				sizes = [x.size for x in datasets]
 				print(f"~= {format_size(sum(sizes))} total")
@@ -369,7 +396,7 @@ class dbmanager:
 		elif args.cmd == "describe":
 			dataset = db.get(args.id)
 			if dataset is None:
-				sys.exit(f"msi describe: error: no such dataset: '{args.id}'")
+				sys.exit(f"{self.program} describe: error: no such dataset: '{args.id}'")
 			else:
 				print(dataset.describe())
 				if args.id in db.cache:
@@ -377,13 +404,13 @@ class dbmanager:
 		# sync
 		elif args.cmd == "sync":
 			if args.id in db.cache and not args.force:
-				sys.exit("msi sync: dataset is already cached; use --force to re-sync")
+				sys.exit(f"{self.program} sync: dataset is already cached; use --force to re-sync")
 			db.username = args.user
+			db.port = args.port
 			db.remote_dbhost = args.remote_host
 			db.remote_dbpath = args.remote_path
-			db.server = args.server
 			db.server_username = args.login
-			db.port = args.port
+			db.server = args.server
 			db.sync(args.id,
 				force=args.force,
 				dry_run=args.dry_run, ask=args.ask)
@@ -392,11 +419,11 @@ class dbmanager:
 			synced, remoteonly, localonly = db.status(
 				scope=args.scope,
 				group=args.group,
-				details=args.long)
+				details=args.details)
 			msg_synced = "\n~~~~ synced:"
 			msg_remoteonly = "\n>>>> tracked but not cached:"
 			msg_localonly = "\n<<<< cached but not tracked:"
-			if args.long:
+			if args.details:
 				print(msg_synced)
 				print(format_datasets(synced))
 				print(msg_remoteonly)
