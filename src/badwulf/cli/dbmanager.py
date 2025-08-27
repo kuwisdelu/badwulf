@@ -420,9 +420,9 @@ class dbmanager:
 				scope=args.scope,
 				group=args.group,
 				details=args.details)
-			msg_synced = "\n~~~~ synced:"
-			msg_remoteonly = "\n>>>> tracked but not cached:"
-			msg_localonly = "\n<<<< cached but not tracked:"
+			msg_synced = f"\n~~~~ {len(synced)} synced ~~~~"
+			msg_remoteonly = f"\n>>>> {len(remoteonly)} tracked but not cached >>>>"
+			msg_localonly = f"\n<<<< {len(localonly)} cached but not tracked <<<<"
 			if args.details:
 				print(msg_synced)
 				print(format_datasets(synced))
