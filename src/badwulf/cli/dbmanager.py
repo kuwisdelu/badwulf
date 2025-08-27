@@ -323,6 +323,15 @@ class dbmanager:
 		# help
 		if args.cmd is None:
 			self._parser.print_help()
+		# readme
+		elif args.cmd == "readme":
+			if args.pager is None:
+				cmd = ["glow", "-p", "-w", str(args.width)]
+			else:
+				cmd = [args.pager]
+			cmd += [self.readme]
+			subprocess.run(cmd)
+		# ...
 		else:
 			self.dbname = args.db_name
 			self.dbpath = args.db_path
@@ -440,12 +449,4 @@ class dbmanager:
 				print(msg_localonly)
 				for name in localonly:
 					print(f"['{name}']")
-		# readme
-		elif args.cmd == "readme":
-			if args.pager is None:
-				cmd = ["glow", "-p", "-w", str(args.width)]
-			else:
-				cmd = [args.pager]
-			cmd += [self.readme]
-			subprocess.run(cmd)
 		sys.exit()

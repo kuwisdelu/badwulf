@@ -8,6 +8,6 @@ wulfdb = dbmanager("Badwulf DB",
 	date = "2025-08-26",
 	description = "Badwulf database CLI utility",
 	program = "wulfdb",
-	username="bad-wolf")
+	username="root")
 
 wulfdb.main()

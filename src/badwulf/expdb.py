@@ -9,7 +9,6 @@ else:
 	import tomli as tomllib
 
 import shutil
-from time import sleep
 from dataclasses import dataclass
 from dataclasses import asdict
 from datetime import datetime
@@ -821,7 +820,6 @@ class expdb:
 				server_username=self.server_username,
 				port=self.port,
 				destination_port=self.remote_port)
-			sleep(1) # allow time to connect
 			con.download(src, dest, dry_run=dry_run, ask=ask)
 			if os.path.isdir(dest):
 				print("sync complete; refreshing cache metadata")

@@ -2,6 +2,7 @@
 # Restricted SSH manager
 
 import subprocess
+from time import sleep
 
 from .tools import fix_path
 from .tools import askYesNo
@@ -131,6 +132,7 @@ class rssh:
 		try:
 			print(f"connecting as {gateway}")
 			self.process = subprocess.Popen(cmd)
+			sleep(1) # allow time to connect
 			print(f"forwarding to {self.destination} on port {self.port}")
 		except Exception:
 			self.process = None

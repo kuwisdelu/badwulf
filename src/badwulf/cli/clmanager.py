@@ -4,7 +4,6 @@ import platform
 import subprocess
 import argparse
 import datetime
-from time import sleep
 
 from ..rssh import rssh
 from ..tools import is_known_host
@@ -48,6 +47,10 @@ class clmanager:
 		"""
 		self.name = name
 		self.nodes = nodes
+		if isinstance(self.nodes, dict):
+			self.nodenames = self.nodes.values()
+		else:
+			self.nodenames = self.nodes
 		if isinstance(date, datetime.date):
 			self.date = date
 		else:
@@ -109,7 +112,7 @@ class clmanager:
 		"""
 		cmd = subparsers.add_parser("run", 
 			help=f"run command (e.g., shell) on a {self.name} node")
-		self._add_cluster_args(cmd, restrict=self.is_strict_client())
+		self._add_cluster_args(cmd, restrict=self.is_restricted_client())
 		cmd.add_argument("remote_command", action="store",
 			help="command to execute on a Magi node",
 			nargs=argparse.OPTIONAL,
@@ -126,7 +129,7 @@ class clmanager:
 		"""
 		cmd = subparsers.add_parser("copy-id", 
 			help=f"copy ssh keys to a {self.name} node")
-		self._add_cluster_args(cmd, restrict=self.is_strict_client())
+		self._add_cluster_args(cmd, restrict=self.is_restricted_client())
 		cmd.add_argument("identity_file", action="store",
 			help="ssh key identity file")
 	
@@ -137,7 +140,7 @@ class clmanager:
 		"""
 		cmd = subparsers.add_parser("upload", 
 			help=f"upload file(s) to {self.name}")
-		self._add_cluster_args(cmd, restrict=self.is_strict_client())
+		self._add_cluster_args(cmd, restrict=self.is_restricted_client())
 		cmd.add_argument("src", action="store",
 			help="source file/directory")
 		cmd.add_argument("dest", action="store",
@@ -154,7 +157,7 @@ class clmanager:
 		"""
 		cmd = subparsers.add_parser("download", 
 			help=f"download file(s) from {self.name}")
-		self._add_cluster_args(cmd, restrict=self.is_strict_client())
+		self._add_cluster_args(cmd, restrict=self.is_restricted_client())
 		cmd.add_argument("src", action="store",
 			help="source file/directory")
 		cmd.add_argument("dest", action="store",
@@ -198,9 +201,9 @@ class clmanager:
 		Check if the program is running on a remote client
 		:returns: True if running on a remote client, False otherwise
 		"""
-		return not self.is_node()
+		return not is_known_host(self.nodenames)
 	
-	def is_strict_client(self):
+	def is_restricted_client(self):
 		"""
 		Check if the program is running on a restricted remote client
 		:returns: True if nodes should be restricted, False otherwise
@@ -212,27 +215,39 @@ class clmanager:
 		Check if the program is running on a cluster node
 		:returns: True if running on a cluster node, False otherwise
 		"""
-		if isinstance(self.nodes, dict):
-			nodes = self.nodes.values()
-		else:
-			nodes = self.nodes
-		return is_known_host(nodes)
+		return is_known_host(self.nodenames)
 	
 	def resolve_node(self, nodes):
 		"""
-		Get single valid nodename from a list of nodes
+		Get a single valid nodenames from a list of nodes
 		:param nodes: A list of nodenames
+		:returns: A single nodename
 		"""
-		host = platform.node().replace(".local", "")
 		if nodes is None or len(nodes) != 1:
 			sys.exit(f"{self.program}: error: must specify exactly _one_ {self.name} node")
-		node = nodes[0]
-		if self.is_node():
-			if host == node.casefold():
-				node = "localhost"
-			else:
-				node += ".local"
-		return node
+		return self.resolve_nodes(nodes)[0]
+	
+	def resolve_nodes(self, nodes):
+		"""
+		Get one or more valid nodenames from a list of nodes
+		:param nodes: A list of nodenames
+		:returns: A list of nodenames
+		"""
+		if nodes is None or len(nodes) < 1:
+			sys.exit(f"{self.program}: error: must specify at least _one_ {self.name} node")
+		nodenames = [node.casefold() for node in self.nodenames]
+		localhost = platform.node().replace(".local", "")
+		hosts = []
+		for node in nodes:
+			if node.casefold() not in nodenames:
+				sys.exit(f"{self.program}: error: {node} is not a valid {self.name} node")
+			if self.is_node():
+				if node.casefold() == localhost:
+					node = "localhost"
+				else:
+					node += ".local"
+			hosts.append(node)
+		return hosts
 	
 	def open_ssh(self,
 		node,
@@ -265,6 +280,39 @@ class clmanager:
 			autoconnect=True)
 		return self.session
 	
+	def run(self,
+		node,
+		command = None,
+		arglist = None):
+		"""
+		Run a command on a cluster node
+		:param node: The cluster node
+		:param command: The command to run
+		:param arglist: The command arguments
+		:returns: A subprocess instance
+		"""
+		con = self.session
+		if node is not None:
+			con.destination = node
+		if arglist is None:
+			arglist = []
+		if command is None:
+			return con.ssh()
+		elif node == "localhost":
+			cmd = [command] + arglist
+			return subprocess.run(cmd)
+		else:
+			print(f"connecting as {con.username}@{con.destination}")
+			dest = f"{con.username}@{con.hostname}"
+			if con.server is None:
+				cmd = ["ssh", dest]
+			else:
+				cmd = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
+				cmd += ["-p", str(con.port), dest]
+			cmd.append(command)
+			cmd.extend(arglist)
+			return subprocess.run(cmd)
+	
 	def parse_args(self):
 		"""
 		Parse command line arguments
@@ -286,44 +334,9 @@ class clmanager:
 			print(f"{description} (revised {self.date})")
 			print(badwulf_attribution())
 			sys.exit()
-		# open session for ssh commands
-		if args.cmd in ("run", "copy-id", "upload", "download"):
-			self.open_ssh(self.resolve_node(args.nodes),
-				username=args.user,
-				server=args.server,
-				server_username=args.login, 
-				port=args.port)
-			sleep(1) # allow time to connect
-		con = self.session
 		# help
 		if args.cmd is None:
 			self._parser.print_help()
-		# run
-		elif args.cmd == "run":
-			if args.remote_command is None:
-				con.ssh()
-			else:
-				print(f"connecting as {con.username}@{con.destination}")
-				dest = f"{con.username}@{con.hostname}"
-				if con.server is None:
-					cmd = ["ssh", dest]
-				else:
-					cmd = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
-					cmd += ["-p", str(con.port), dest]
-				cmd.append(args.remote_command)
-				cmd.extend(args.remote_args)
-				subprocess.run(cmd)
-		# copy-id
-		elif args.cmd == "copy-id":
-			con.copy_id(args.identity_file)
-		# upload
-		elif args.cmd == "upload":
-			con.upload(args.src, args.dest,
-				dry_run=args.dry_run, ask=args.ask)
-		# download
-		elif args.cmd == "download":
-			con.download(args.src, args.dest,
-				dry_run=args.dry_run, ask=args.ask)
 		# readme
 		elif args.cmd == "readme":
 			if args.pager is None:
@@ -332,4 +345,32 @@ class clmanager:
 				cmd = [args.pager]
 			cmd += [self.readme]
 			subprocess.run(cmd)
+		# ...
+		else:
+			self.username = args.user
+			self.server = args.server
+			self.server_username = args.login
+			self.port = args.port
+			self.open_ssh(None)
+		# run
+		if args.cmd == "run":
+			hosts = self.resolve_nodes(args.nodes)
+			for host in hosts:
+				self.run(host, args.remote_command, args.remote_args)
+		# copy-id
+		elif args.cmd == "copy-id":
+			hosts = self.resolve_nodes(args.nodes)
+			for host in hosts:
+				self.session.destination = host
+				self.session.copy_id(args.identity_file)
+		# upload
+		elif args.cmd == "upload":
+			self.session.destination = self.resolve_node(args.nodes)
+			self.session.upload(args.src, args.dest,
+				dry_run=args.dry_run, ask=args.ask)
+		# download
+		elif args.cmd == "download":
+			self.session.destination = self.resolve_node(args.nodes)
+			self.session.download(args.src, args.dest,
+				dry_run=args.dry_run, ask=args.ask)
 		sys.exit()

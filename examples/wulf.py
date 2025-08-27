@@ -13,6 +13,6 @@ wulf = clmanager("Badwulf",
 	head="Wulf-01",
 	xfer="Wulf-01",
 	restrict=False,
-	username="bad-wolf")
+	username="root")
 
 wulf.main()
