@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "badwulf"
-version = "0.1.19"
+version = "0.1.20"
 authors = [
 	{name = "Kylie A. Bemis", email = "k.bemis@northeastern.edu"}
 ]
@@ -37,6 +37,7 @@ test = ["pytest"]
 
 [external]
 dependencies = [
+	"pkg:generic/zsh",
 	"pkg:generic/ssh",
 	"pkg:generic/rsync",
 ]
