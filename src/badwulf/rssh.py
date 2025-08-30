@@ -16,7 +16,7 @@ class rssh:
 	def __init__(self, username, destination,
 		server = None, server_username = None,
 		port = 8080, destination_port = 22,
-		autoconnect = True):
+		autoconnect = False):
 		"""
 		Initialize an rssh instance
 		:param username: Your username on destination machine
@@ -91,28 +91,6 @@ class rssh:
 		else:
 			return "localhost"
 	
-	def isbatch(self):
-		"""
-		Check if connection can be established without prompts
-		"""
-		dest = f"{self.username}@{self.hostname}"
-		if self.server is None:
-			cmd = ["ssh", dest]
-			cmd += ["-o", "BatchMode=yes"]
-		else:
-			cmd = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
-			cmd += ["-o", "BatchMode=yes"]
-			cmd += ["-p", str(self.port), dest]
-		cmd += ["true"]
-		proc = subprocess.run(cmd)
-		return proc.returncode == 0
-	
-	def isopen(self):
-		"""
-		Check if the gateway server connection is open
-		"""
-		return self.process is not None
-	
 	def open(self):
 		"""
 		Open the connection to the gateway server
@@ -138,6 +116,29 @@ class rssh:
 			self.process = None
 			print("failed to open connection")
 	
+	def isopen(self):
+		"""
+		Check if the gateway server connection is open
+		"""
+		return self.process is not None
+	
+	def isbatch(self):
+		"""
+		Check if connection can be established without prompts
+		"""
+		dest = f"{self.username}@{self.hostname}"
+		if self.server is None:
+			cmd = ["ssh", dest]
+			cmd += ["-o", "BatchMode=yes"]
+		else:
+			self.open()
+			cmd = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
+			cmd += ["-o", "BatchMode=yes"]
+			cmd += ["-p", str(self.port), dest]
+		cmd += ["true"]
+		proc = subprocess.run(cmd)
+		return proc.returncode == 0
+	
 	def ls(self, file = None, all_names = False, details = False):
 		"""
 		List files on the destination machine
@@ -149,6 +150,7 @@ class rssh:
 		if self.server is None:
 			cmd = ["ssh", host]
 		else:
+			self.open()
 			cmd = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 			cmd += ["-p", str(self.port), host]
 		cmd += ["ls"]
@@ -182,6 +184,7 @@ class rssh:
 		if self.server is None:
 			cmd += [truehost]
 		else:
+			self.open()
 			cmd += ["-o", "NoHostAuthenticationForLocalhost=yes"]
 			cmd += ["-p", str(self.port)]
 			cmd += [truehost]
@@ -209,6 +212,7 @@ class rssh:
 		if self.server is None:
 			cmd = ["rsync", "-aP", truesrc, dest]
 		else:
+			self.open()
 			rsh = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 			rsh = " ".join(rsh + ["-p", str(self.port)])
 			cmd = ["rsync", "-aP", "--rsh", rsh, truesrc, dest]
@@ -238,6 +242,7 @@ class rssh:
 		if self.server is None:
 			cmd = ["rsync", "-aP", src, truedest]
 		else:
+			self.open()
 			rsh = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 			rsh = " ".join(rsh + ["-p", str(self.port)])
 			cmd = ["rsync", "-aP", "--rsh", rsh, src, truedest]
@@ -254,6 +259,7 @@ class rssh:
 		if self.server is None:
 			cmd = ["ssh", dest]
 		else:
+			self.open()
 			cmd = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 			cmd += ["-p", str(self.port), dest]
 		return subprocess.run(cmd)
