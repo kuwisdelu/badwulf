@@ -351,6 +351,7 @@ class clmanager:
 			self.server = args.server
 			self.server_username = args.login
 			self.port = args.port
+			self.open_ssh(None)
 		# run
 		if args.cmd == "run":
 			hosts = self.resolve_nodes(args.nodes)
