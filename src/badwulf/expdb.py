@@ -377,6 +377,16 @@ class expsearch:
 			sl.append(f"  >{field}: {match}")
 		sl.append(" }")
 		return "\n".join(["{"] + sl + ["}"])
+	
+	@property
+	def flag(self):
+		"""
+		String to display to flag the dataset
+		"""
+		if len(self.hits) > 0:
+			return f" >> {len(self.hits)}"
+		else:
+			return ""
 
 class expdb:
 	"""
