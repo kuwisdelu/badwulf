@@ -307,6 +307,7 @@ class clmanager:
 			if con.server is None:
 				cmd = ["ssh", dest]
 			else:
+				con.open()
 				cmd = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
 				cmd += ["-p", str(con.port), dest]
 			cmd.append(command)
