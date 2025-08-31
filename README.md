@@ -23,8 +23,8 @@ A command line utility named `wulf` for a hypothetical "Badwulf" cluster with co
 ```
 #!/usr/bin/env python3
 
+import os
 from badwulf.cli import clmanager
-from badwulf.tools import getenv
 
 wulf = clmanager("Badwulf",
 	nodes = {
@@ -33,9 +33,9 @@ wulf = clmanager("Badwulf",
 		"03": "Wulf-03"},
 	date = "2024-12-27",
 	description = "Badwulf CLI utility",
-	username = getenv("BADWULF_USER"),
-	server = getenv("BADWULF_GATEWAY_SERVER", empty=None),
-	server_username = getenv("BADWULF_GATEWAY_USER"),
+	username = os.getenv("BADWULF_USER"),
+	server = os.getenv("BADWULF_GATEWAY_SERVER"),
+	server_username = os.getenv("BADWULF_GATEWAY_USER"),
 	program = "wulf")
 
 wulf.main()

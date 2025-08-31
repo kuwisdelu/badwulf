@@ -27,7 +27,7 @@ def test_rssh_without_gateway():
 	assert not con.isopen()
 
 def test_rssh_download_file():
-	con = rssh(getenv("USER"), "localhost")
+	con = rssh(os.getenv("USER"), "localhost")
 	if con.isbatch():
 		tmpdir = tempfile.gettempdir()
 		tmp1 = os.path.join(tmpdir, "__badwulf_test_down")
@@ -40,7 +40,7 @@ def test_rssh_download_file():
 		file_remove(tmp2)
 
 def test_rssh_upload_file():
-	con = rssh(getenv("USER"), "localhost")
+	con = rssh(os.getenv("USER"), "localhost")
 	if con.isbatch():
 		tmpdir = tempfile.gettempdir()
 		tmp1 = os.path.join(tmpdir, "__badwulf_test_up")
