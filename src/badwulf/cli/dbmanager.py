@@ -91,17 +91,18 @@ class dbmanager:
 		Add server parameters to a parser.
 		:param parser: The parser to update
 		"""
-		parser.add_argument("--remote-host", action="store",
-			help=f"remote database host (default: {self.remote_dbhost})",
-			default=self.remote_dbhost)
-		parser.add_argument("--remote-path", action="store",
-			help=f"remote database path (default: {self.remote_dbpath})",
-			default=self.remote_dbpath)
 		parser.add_argument("-u", "--user", action="store",
 			help=f"{self.name} user (default: {self.username})",
 			default=self.username)
 		parser.add_argument("-p", "--port", action="store",
-			help="port forwarding", default=self.port)
+			help="port forwarding",
+			default=self.port)
+		parser.add_argument("-H", "--remote-host", action="store",
+			help=f"remote database host (default: {self.remote_dbhost})",
+			default=self.remote_dbhost)
+		parser.add_argument("-P", "--remote-path", action="store",
+			help=f"remote database path (default: {self.remote_dbpath})",
+			default=self.remote_dbpath)
 		parser.add_argument("-L", "--login", action="store",
 			help=f"gateway server user (default: {self.server_username})",
 			default=self.server_username)
