@@ -414,15 +414,13 @@ class expdb:
 		:param verbose: Print progress messages?
 		:param autoconnect: Connect on initialization?
 		"""
-		if remote_dbhost is not None and remote_dbpath is None:
-			remote_dbpath = dbpath
 		self.username = username
 		self.dbpath = fix_path(dbpath, must_exist=True)
 		self.dbname = dbname
 		self.scopes = scopes
 		self.remote_dbhost = remote_dbhost
 		self.remote_dbpath = remote_dbpath
-		self.server = server
+		self.server = server if server != "" else None
 		self.server_username = server_username
 		self.port = port
 		self.remote_port = remote_port
