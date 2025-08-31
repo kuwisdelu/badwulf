@@ -2,7 +2,7 @@
 
 from badwulf.cli import dbmanager
 
-wulfdb = dbmanager("Badwulf DB", 
+wulfdb = dbmanager(
 	dbpath="examples/exampledb",
 	dbname=None,
 	date = "2025-08-26",

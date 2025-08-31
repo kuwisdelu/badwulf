@@ -68,6 +68,16 @@ def askYesNo(msg = "Continue? (yes/no): "):
 		else:
 			print("Invalid input. Please enter yes/no.")
 
+def getenv(key, default = None, empty = ""):
+	"""
+	Get an shell environment variable
+	:param key: The environment variable name
+	:param default: The value to use if unset
+	:param empty: The value to use for empty strings
+	"""
+	value = os.getenv(key, default=default)
+	return value if value != "" else empty
+
 def squote(s, q = "'"):
 	"""
 	Wrap a string in quotes

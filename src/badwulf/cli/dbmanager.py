@@ -17,7 +17,6 @@ class dbmanager:
 	"""
 	
 	def __init__(self,
-		name,
 		dbpath,
 		dbname,
 		date,
@@ -33,7 +32,6 @@ class dbmanager:
 		port = None):
 		"""
 		Initialize a cluster CLI utility program
-		:param name: The name of the cluster/server
 		:param dbpath: The local database path
 		:param dbname: The database name
 		:param date: The date of the program's last revision
@@ -48,7 +46,6 @@ class dbmanager:
 		:param server_username: Your username on the gateway server (optional)
 		:param port: The local port for gateway server SSH forwarding
 		"""
-		self.name = name
 		self.dbpath = dbpath
 		self.dbname = dbname
 		if isinstance(date, datetime.date):
@@ -58,7 +55,7 @@ class dbmanager:
 		self.description = description
 		self.readme = readme
 		if program is None:
-			self.program = name.casefold()
+			self.program = dbname.casefold()
 		else:
 			self.program = program
 		self.scopes = scopes
@@ -91,18 +88,18 @@ class dbmanager:
 		Add server parameters to a parser.
 		:param parser: The parser to update
 		"""
-		parser.add_argument("-u", "--user", action="store",
-			help=f"{self.name} user (default: {self.username})",
-			default=self.username)
-		parser.add_argument("-p", "--port", action="store",
-			help="port forwarding",
-			default=self.port)
-		parser.add_argument("-H", "--remote-host", action="store",
+		parser.add_argument("-R", "--remote-host", action="store",
 			help=f"remote database host (default: {self.remote_dbhost})",
 			default=self.remote_dbhost)
 		parser.add_argument("-P", "--remote-path", action="store",
 			help=f"remote database path (default: {self.remote_dbpath})",
 			default=self.remote_dbpath)
+		parser.add_argument("-u", "--user", action="store",
+			help="remote user (default: {self.username})",
+			default=self.username)
+		parser.add_argument("-p", "--port", action="store",
+			help="port forwarding",
+			default=self.port)
 		parser.add_argument("-L", "--login", action="store",
 			help=f"gateway server user (default: {self.server_username})",
 			default=self.server_username)
