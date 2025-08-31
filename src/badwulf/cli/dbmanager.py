@@ -95,7 +95,7 @@ class dbmanager:
 			help=f"remote database path (default: {self.remote_dbpath})",
 			default=self.remote_dbpath)
 		parser.add_argument("-u", "--user", action="store",
-			help="remote user (default: {self.username})",
+			help=f"remote user (default: {self.username})",
 			default=self.username)
 		parser.add_argument("-p", "--port", action="store",
 			help="port forwarding",
