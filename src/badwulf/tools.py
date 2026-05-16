@@ -53,14 +53,15 @@ def to_bytes(x, units = "bytes"):
 		raise ValueError(f"invalid units: {units}")
 	return x
 
-def askYesNo(msg = "Continue? (yes/no): "):
+def confirm(text, suffix = " (yes/no): "):
 	"""
 	Ask a user to confirm yes or no
-	:param msg: The message to print
+	:param text: The message to print
+	:param suffix: The message to print
 	:returns: True if yes, False if no
 	"""
 	while True:
-		confirm = input(msg).casefold()
+		confirm = input(text + suffix).casefold()
 		if confirm in ("y", "yes"):
 			return True
 		elif confirm in ("n", "no"):
@@ -144,7 +145,7 @@ def ls(path = ".", all_names = False):
 			in os.listdir(path)
 			if not f.startswith(".")]
 
-def dirsize(path, all_names = False):
+def dir_size(path, all_names = False):
 	"""
 	Get size of a directory
 	:param path: The directory
@@ -158,12 +159,12 @@ def dirsize(path, all_names = False):
 			continue
 		file = os.path.join(path, file)
 		if os.path.isdir(file):
-			size += dirsize(file, all_names=all_names)
+			size += dir_size(file, all_names=all_names)
 		else:
 			size += os.path.getsize(file)
 	return size
 
-def dirfiles(path, pattern, recursive = False, all_names = False):
+def dir_find(path, pattern, recursive = False, all_names = False):
 	"""
 	Get files in a directory matching a pattern
 	:param path: The directory
@@ -178,7 +179,7 @@ def dirfiles(path, pattern, recursive = False, all_names = False):
 			continue
 		file = os.path.join(path, file)
 		if os.path.isdir(file) and recursive:
-			matches.extend(dirfiles(file, pattern, all_names=all_names))
+			matches.extend(dir_find(file, pattern, all_names=all_names))
 		elif grep1(pattern, file) is not None:
 			matches.append(file)
 	return matches

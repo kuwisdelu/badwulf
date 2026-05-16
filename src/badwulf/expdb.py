@@ -16,10 +16,10 @@ from datetime import datetime
 from .rssh import rssh
 from .tools import ls
 from .tools import fix_path
-from .tools import dirsize
-from .tools import dirfiles
+from .tools import dir_size
+from .tools import dir_find
 from .tools import to_bytes
-from .tools import askYesNo
+from .tools import confirm
 from .tools import grep1
 from .tools import grepl
 
@@ -281,7 +281,7 @@ class expcache:
 			files = []
 			fmts = [f"{fmt}$" for fmt in printformats]
 			for pattern in fmts:
-				files.extend(dirfiles(self.path, pattern, recursive=True))
+				files.extend(dir_find(self.path, pattern, recursive=True))
 			files = [f" file {str(i + 1)}: '{file}'" 
 				for i, file 
 				in enumerate(files)]
@@ -590,7 +590,7 @@ class expdb:
 		"""
 		path = os.path.join(self.dbdir, scope, group, dataset)
 		path = fix_path(path, must_exist=True)
-		size = dirsize(path, all_names=True)
+		size = dir_size(path, all_names=True)
 		atime = os.path.getatime(path)
 		mtime = os.path.getmtime(path)
 		expected = self.get(dataset)
@@ -781,7 +781,7 @@ class expdb:
 		print(f"~= {format_size(sum(sizes[:target]))} will be freed")
 		if not target:
 			return
-		if ask and not askYesNo():
+		if ask and not confirm("Continue?"):
 			return
 		if not dry_run:
 			for x in cache[:target]:

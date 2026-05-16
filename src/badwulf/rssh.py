@@ -5,7 +5,7 @@ import subprocess
 from time import sleep
 
 from .tools import fix_path
-from .tools import askYesNo
+from .tools import confirm
 from .tools import dquote
 
 class rssh:
@@ -177,7 +177,7 @@ class rssh:
 		id_file = fix_path(id_file, must_exist=True, escape_spaces=False)
 		print(f"key will be uploaded from: '{id_file}'")
 		print(f"key will be uploaded to: '{showhost}'")
-		if ask and not askYesNo():
+		if ask and not confirm("Continue?"):
 			return
 		print(f"copying key as {showhost}")
 		cmd = ["ssh-copy-id", "-i", id_file]
@@ -206,7 +206,7 @@ class rssh:
 			dest += "/"
 		print(f"data will be downloaded from: '{showsrc}'")
 		print(f"data will be downloaded to: '{dest}'")
-		if ask and not askYesNo():
+		if ask and not confirm("Continue?"):
 			return
 		print(f"downloading data as {self.username}@{self.destination}")
 		if self.server is None:
@@ -236,7 +236,7 @@ class rssh:
 			src += "/"
 		print(f"data will be uploaded from: '{src}'")
 		print(f"data will be uploaded to: '{showdest}'")
-		if ask and not askYesNo():
+		if ask and not confirm("Continue?"):
 			return
 		print(f"uploading data as {self.username}@{self.destination}")
 		if self.server is None:
