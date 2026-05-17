@@ -33,7 +33,7 @@ class site:
 	datapath: str | None
 	cluster: profile | None = None
 	server: profile | None = None
-	meta: dict[str, str] | None = None
+	meta: dict[str, Any] | None = None
 
 	def __post_init__(self):
 		if self.prefix is None:
