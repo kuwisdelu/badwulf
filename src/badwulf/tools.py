@@ -14,7 +14,7 @@ def badwulf_version():
 	"""
 	return version("badwulf")
 
-def badwulf_attribution(copyright = True):
+def badwulf_attribution():
 	"""
 	Get badwulf package attribution
 	"""
