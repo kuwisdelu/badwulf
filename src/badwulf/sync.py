@@ -2,18 +2,45 @@
 # Synchronize projects and datasets
 
 import json
-from dataclasses import dataclass
+from dataclasses import asdict
+
 from .sites import site
-from .rssh import rssh
 from .tools import fix_path
 
-@dataclass
 class syncer:
 	"""
 	Sync projects and datasets between sites
-	:ivar sites: Dictionary of aliases-to-sites
 	"""
-	sites: dict[str, site]
+
+	def __init__(self, sites: dict[str, site]):
+		"""
+		Initializes a syncer instance
+		:param sites: Dictionary of aliases-to-sites
+		"""
+		if "local" not in sites:
+			raise ValueError("required site 'local' is missing")
+		if "origin" not in sites:
+			raise ValueError("required site 'origin' is missing")
+		if sites["local"].prefix is None:
+			raise ValueError("'prefix' is required for site 'local'")
+		self.sites = sites
+
+	def to_dict(self):
+		"""
+		Create a syncer from a dict (usually parsed from json)
+		:param d: A dictionary
+		:returns: A syncer object
+		"""
+		return asdict(self.sites)
+
+	@classmethod
+	def from_dict(cls, d):
+		"""
+		Create a syncer from a dict (usually parsed from json)
+		:param d: A dictionary
+		:returns: A syncer object
+		"""
+		return cls({k: site.from_dict(v) for k, v in d.items()})
 
 	@classmethod
 	def from_config(cls, path):
@@ -24,5 +51,5 @@ class syncer:
 		"""
 		path = fix_path(path, must_exist=True)
 		with open(path) as file:
-			p = json.load(file)
-		return cls({k: site(**v) for k, v in p.items()})
+			d = json.load(file)
+		return cls.from_dict(d)

@@ -2,11 +2,8 @@
 # Server user and hostname/url information
 
 import os
-
 from dataclasses import dataclass
-
-from .rssh import rssh
-from .tools import fix_path
+from .tools import is_template
 
 @dataclass
 class profile:
@@ -30,7 +27,6 @@ class site:
 	:ivar datapath: The path to the datasets directory
 	:ivar cluster: Optional profile for a site cluster
 	:ivar server: Optional profile for a site server
-	:ivar con: An SSH connection
 	"""
 	prefix: str | None
 	projpath: str | None
@@ -38,7 +34,6 @@ class site:
 	cluster: profile | None = None
 	server: profile | None = None
 	meta: dict[str, str] | None = None
-	con: rssh | None = None
 
 	def __post_init__(self):
 		if self.prefix is None:
@@ -56,6 +51,16 @@ class site:
 				raise ValueError("'cluster' must have 'nodes'")
 			if self.cluster.xfer is None:
 				raise ValueError("'cluster' must specify 'xfer' node")
+		if self.projpath is not None and is_template(self.projpath):
+			self.projpath = self.projpath.format(
+				prefix=self.prefix, 
+				cluster=self.cluster, 
+				server=self.server)
+		if self.datapath is not None and is_template(self.datapath):
+			self.datapath = self.datapath.format(
+				prefix=self.prefix, 
+				cluster=self.cluster, 
+				server=self.server)
 
 	@classmethod
 	def from_dict(cls, d):
@@ -72,6 +77,5 @@ class site:
 			datapath=d.get("datapath"),
 			cluster=cluster,
 			server=server,
-			meta=d.get("meta"),
-			con=None)
+			meta=d.get("meta"))
 
