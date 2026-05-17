@@ -3,7 +3,7 @@
 
 import os
 from dataclasses import dataclass
-from .tools import is_template
+from .tools import maybe_template
 
 @dataclass
 class profile:
@@ -51,12 +51,12 @@ class site:
 				raise ValueError("'cluster' must have 'nodes'")
 			if self.cluster.xfer is None:
 				raise ValueError("'cluster' must specify 'xfer' node")
-		if self.projpath is not None and is_template(self.projpath):
+		if self.projpath is not None and maybe_template(self.projpath):
 			self.projpath = self.projpath.format(
 				prefix=self.prefix, 
 				cluster=self.cluster, 
 				server=self.server)
-		if self.datapath is not None and is_template(self.datapath):
+		if self.datapath is not None and maybe_template(self.datapath):
 			self.datapath = self.datapath.format(
 				prefix=self.prefix, 
 				cluster=self.cluster, 

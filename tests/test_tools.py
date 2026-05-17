@@ -10,14 +10,6 @@ def test_is_known_host():
 	host = platform.node().replace(".local", "")
 	assert is_known_host([host])
 
-def test_is_template():
-	assert is_template("{}")
-	assert is_template("{prefix}/{user}")
-	assert is_template("path/with {space}/x")
-	assert not is_template("/time/vortex.txt")
-	assert not is_template("weird}_path")
-	assert not is_template("escaped {{braces}}")
-
 def test_to_bytes():
 	assert to_bytes(1) == 1
 	assert to_bytes(1, "KB") == 1_000
@@ -70,3 +62,11 @@ def test_grep1_context(string_list):
 def test_grepl(string_list):
 	qs = grepl("bad wolf", string_list)
 	assert qs == [True, False, False, False]
+
+def test_maybe_template():
+	assert maybe_template("{}")
+	assert maybe_template("{prefix}/{user}")
+	assert maybe_template("path/with {space}/x")
+	assert not maybe_template("/time/vortex.txt")
+	assert not maybe_template("weird}_path")
+	assert not maybe_template("escaped {{braces}}")

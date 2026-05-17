@@ -30,16 +30,6 @@ def is_known_host(nodes):
 	nodes = [nodename.casefold() for nodename in nodes]
 	return host.casefold() in nodes
 
-def is_template(s):
-	"""
-	Checks if a string is likely an unformatted f-string template
-	:param s: String to check
-	:returns: True if an f-string template, False otherwise
-	"""
-	pattern = re.compile(r"\{[^{}]*\}")
-	s = s.replace("{{", "").replace("}}", "")
-	return pattern.search(s) is not None
-
 def to_bytes(x, units = "bytes"):
 	"""
 	Convert a size to bytes
@@ -281,3 +271,12 @@ def grepl(pattern, x, ignore_case = True):
 			for match 
 			in grep(pattern, x, ignore_case=ignore_case)]
 
+def maybe_template(s):
+	"""
+	Checks if a string is likely an unformatted f-string template
+	:param s: String to check
+	:returns: True if an f-string template, False otherwise
+	"""
+	pattern = re.compile(r"\{[^{}]*\}")
+	s = s.replace("{{", "").replace("}}", "")
+	return pattern.search(s) is not None
