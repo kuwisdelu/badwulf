@@ -6,6 +6,7 @@ import re
 import platform
 import socket
 import random
+import math
 from importlib.metadata import version
 
 def badwulf_version():
@@ -52,6 +53,46 @@ def to_bytes(x, units = "bytes"):
 	else:
 		raise ValueError(f"invalid units: {units}")
 	return x
+
+def format_bytes(x, units = "auto"):
+	"""
+	Format bytes
+	:param x: The number of bytes
+	:param units: The units (B, KB, MB, etc.)
+	:returns: A string
+	"""
+	if units == "auto":
+		if x >= 1000 ** 5:
+			units = "PB"
+		elif x >= 1000 ** 4:
+			units = "TB"
+		elif x >= 1000 ** 3:
+			units = "GB"
+		elif x >= 1000 ** 2:
+			units = "MB"
+		elif x >= 1000:
+			units = "KB"
+		else:
+			units = "bytes"
+	if units in ("bytes", "B"):
+		if x == 1 and units == "bytes":
+			units = "byte"
+		x = int(x)
+	else:
+		if units == "KB":
+			x /= 1000
+		elif units == "MB":
+			x /= 1000 ** 2
+		elif units == "GB":
+			x /= 1000 ** 3
+		elif units == "TB":
+			x /= 1000 ** 4
+		elif units == "PB":
+			x /= 1000 ** 5
+		else:
+			raise ValueError(f"invalid units: {units}")
+		x = float(round(x, ndigits=2))
+	return f"{x} {units}"
 
 def confirm(text, suffix = " (yes/no): "):
 	"""
@@ -136,53 +177,61 @@ def ls(path = ".", all_names = False):
 	if not os.path.isdir(path):
 		raise NotADirectoryError(f"path must be a directory: {path}")
 	if all_names:
-		return [f 
-			for f 
-			in os.listdir(path)]
+		return [f for f in os.listdir(path)]
 	else:
-		return [f 
-			for f 
-			in os.listdir(path)
-			if not f.startswith(".")]
+		return [f for f in os.listdir(path) if not f.startswith(".")]
 
-def dir_size(path, all_names = False):
+def dir_find(path, pattern, recursive = False):
+	"""
+	Find files in a directory matching a pattern
+	:param path: The directory
+	:param pattern: The pattern
+	:returns: A list of matching file paths
+	"""
+	matches = []
+	it = os.scandir(path)
+	with os.scandir(path) as it:
+		for file in it:
+			if file.is_dir(follow_symlinks=False) and recursive:
+				matches.extend(dir_find(file.path, pattern))
+			elif grep1(pattern, file.name) is not None:
+				matches.append(file.path)
+	return matches
+
+def dir_stat(path, skip = None):
+	"""
+	Recursively summarize atime, mtime, and size of a directory
+	:param path: Path of directory to summarize
+	:param skip: A list of file names to skip (for atime and mtime)
+	:returns: A dict containing atime, mtime, and size
+	"""
+	atime = -math.inf
+	mtime = os.path.getmtime(path)
+	size = 0
+	it = os.scandir(path)
+	with os.scandir(path) as it:
+		for file in it:
+			if file.is_dir(follow_symlinks=False):
+				st = dir_stat(file.path, skip=skip)
+			else:
+				st = file.stat()
+				st = {
+					"atime": st.st_atime, 
+					"mtime": st.st_mtime, 
+					"size": st.st_size}
+			if skip is None or file.name not in skip:
+				atime = max(atime, st["atime"])
+				mtime = max(mtime, st["mtime"])
+			size += st["size"]
+	return {"atime": atime, "mtime": mtime, "size": size}
+
+def dir_size(path):
 	"""
 	Get size of a directory
 	:param path: The directory
-	:param all_names: Should hidden files be included?
 	:returns: The size of the directory in bytes
 	"""
-	size = 0
-	files = ls(path, all_names=all_names)
-	for file in files:
-		if file in (".", ".."):
-			continue
-		file = os.path.join(path, file)
-		if os.path.isdir(file):
-			size += dir_size(file, all_names=all_names)
-		else:
-			size += os.path.getsize(file)
-	return size
-
-def dir_find(path, pattern, recursive = False, all_names = False):
-	"""
-	Get files in a directory matching a pattern
-	:param path: The directory
-	:param pattern: The pattern
-	:param all_names: Should hidden files be included?
-	:returns: The size of the directory in bytes
-	"""
-	matches = []
-	files = ls(path, all_names=all_names)
-	for file in files:
-		if file in (".", ".."):
-			continue
-		file = os.path.join(path, file)
-		if os.path.isdir(file) and recursive:
-			matches.extend(dir_find(file, pattern, all_names=all_names))
-		elif grep1(pattern, file) is not None:
-			matches.append(file)
-	return matches
+	return dir_stat(path)["size"]
 
 def checkport(port):
 	"""

@@ -9,7 +9,7 @@ from .tools import maybe_template
 class profile:
 	"""
 	Profile information required for opening a connection
-	:ivar user: The profile username; ask user interactively if None
+	:ivar user: The profile username
 	:ivar head: Default hostname/url for a login connection
 	:ivar xfer: Optional hostname/url for a data transfer
 	:ivar nodes: Optional nodealiases-to-hostnames dict if a cluster
@@ -63,10 +63,10 @@ class site:
 				server=self.server)
 
 	@classmethod
-	def from_dict(cls, d):
+	def from_dict(cls, d: dict):
 		"""
-		Create a site from a dict (usually parsed from json)
-		:param d: A dictionary
+		Create a site from a dict 
+		:param d: A dict (parsed from json)
 		:returns: A site object
 		"""
 		cluster = profile(**d["cluster"]) if "cluster" in d else None

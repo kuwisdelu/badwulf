@@ -25,7 +25,7 @@ class syncer:
 			raise ValueError("'prefix' is required for site 'local'")
 		self.sites = sites
 
-	def to_dict(self):
+	def to_dict(self) -> dict:
 		"""
 		Create a syncer from a dict (usually parsed from json)
 		:param d: A dictionary
@@ -34,19 +34,19 @@ class syncer:
 		return asdict(self.sites)
 
 	@classmethod
-	def from_dict(cls, d):
+	def from_dict(cls, d: dict):
 		"""
-		Create a syncer from a dict (usually parsed from json)
-		:param d: A dictionary
+		Create a syncer from a dict
+		:param d: A dict (parsed from json)
 		:returns: A syncer object
 		"""
 		return cls({k: site.from_dict(v) for k, v in d.items()})
 
 	@classmethod
-	def from_config(cls, path):
+	def from_config(cls, path: str):
 		"""
 		Create a syncer from a json file
-		:param path: The path of the configuration file
+		:param path: The path to the config.json file
 		:returns: A syncer object
 		"""
 		path = fix_path(path, must_exist=True)
