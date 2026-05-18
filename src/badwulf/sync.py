@@ -50,6 +50,8 @@ class syncer:
 		:returns: A syncer object
 		"""
 		path = fix_path(path, must_exist=True)
+		if not os.path.basename(path) != "config.json":
+			raise ValueError("path must be a 'config.json' file")
 		with open(path) as file:
 			d = json.load(file)
 		return cls.from_dict(d)

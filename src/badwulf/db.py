@@ -13,15 +13,10 @@ from dataclasses import dataclass
 from dataclasses import asdict
 from datetime import datetime
 
-from .rssh import rssh
-from .tools import ls
 from .tools import fix_path
 from .tools import dir_stat
-from .tools import dir_find
-from .tools import to_bytes
-from .tools import confirm
+from .tools import format_bytes
 from .tools import grep1
-from .tools import grepl
 
 @dataclass
 class expmeta:
@@ -41,12 +36,6 @@ class expmeta:
 	formats: list[str] | None = None
 	keywords: list[str] | None = None
 	notes: list[str] | None = None
-	
-	def __str__(self):
-		"""
-		Return str(self)
-		"""
-		return self.describe(self.printwidth)
 
 	def has_scope(self, pattern: str) -> bool:
 		"""
@@ -83,13 +72,68 @@ class expmeta:
 		name = next(iter(d))
 		return cls(name=name, **d[name])
 
+@dataclass
+class expdata:
+	"""
+	Experimental metadata and stats for a locally stored dataset
+	"""
+	path: str
+	atime: float
+	mtime: float
+	size: int
+	_meta: expmeta | None = None
+
+	@property
+	def atime_dt(self):
+		"""
+		Get last accessed timestamp
+		"""
+		return datetime.fromtimestamp(self.atime)
+
+	@property
+	def mtime_dt(self):
+		"""
+		Get last accessed timestamp
+		"""
+		return datetime.fromtimestamp(self.atime)
+
+	@property
+	def size_human(self):
+		"""
+		Get size in a human-readable string
+		"""
+		return format_bytes(self.size)
+
+	@property
+	def meta(self):
+		"""
+		Get experimental metadata
+		"""
+		if self._meta is None:
+			with open(self.path, "rb") as file:
+				d = tomllib.load(file)
+			self._meta = expmeta.from_dict(d)
+		return self._meta
+
 	@classmethod
-	def from_metadata(cls, path: str):
+	def from_metadata(cls, path: str, all_files = False):
 		"""
-		Create an expmeta from a toml file
+		Create an expdata from a toml file
 		:param path: The path to the metadata.toml file
-		:returns: An expmeta object
+		:param all_files: Should the stats summarize the full directory?
+		:returns: An expdata object
 		"""
-		with open(path, "rb") as file:
-			d = tomllib.load(file)
-		return cls.from_dict(d)
+		path = fix_path(path, must_exist=True)
+		if os.path.basename(path) != "metadata.toml":
+			raise ValueError("path must be a 'metadata.toml' file")
+		d = {"path": path}
+		if all_files:
+			d.update(dir_stat(path))
+		else:
+			st = os.stat(path)
+			d.update({
+				"atime": st.st_atime,
+				"mtime": st.st_mtime,
+				"size": st.st_size})
+		return cls(**d)
+
