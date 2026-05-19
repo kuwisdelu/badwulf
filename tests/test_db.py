@@ -30,3 +30,4 @@ def test_expmeta_expdata_expsearch():
 	s3 = e.meta.search("Rose")
 	assert s1.hits == {"contact": [{"name": "Bad Wolf"}]}
 	assert "contact" in s2.hits and "url" in s2.hits
+	assert s3 is None
