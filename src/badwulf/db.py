@@ -18,6 +18,7 @@ from .tools import fix_path
 from .tools import dir_stat
 from .tools import format_bytes
 from .tools import grep
+from .tools import prune_none
 
 @dataclass
 class expmeta:
