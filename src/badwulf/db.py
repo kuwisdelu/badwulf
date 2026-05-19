@@ -23,6 +23,19 @@ from .tools import prune_none
 class expmeta:
 	"""
 	Experimental metadata for a scientific dataset
+	:ivar name: The dataset identifier
+	:ivar title: A short title for the dataset
+	:ivar group: The research group or data repository
+	:ivar scope: The scoping for how the data can be used
+	:ivar description: A long description of the experiment
+	:ivar sample_processing: Sample preparation and protocols
+	:ivar data_processing: Data processing and analysis
+	:ivar contact: List of entries for people responsible
+	:ivar url: Key-values of relevant URLs (publications, repositories, etc.)
+	:ivar date: Key-values of relevant dates (created, received, etc.)
+	:ivar formats: List of relevant file formats in the dataset
+	:ivar keywords: List of keywords for the dataset/experiment
+	:ivar note: List of free form notes
 	"""
 	name: str
 	title: str
@@ -114,11 +127,18 @@ class expmeta:
 class expdata:
 	"""
 	Experimental metadata and file stats for a local dataset
+	:ivar path: The path to the metadata.toml file
+	:ivar atime: Last access time for the metadata/dataset
+	:ivar atime: Last modified time for the metadata/dataset
+	:ivar size: Size of the metadata/dataset
+	:ivar all_files: Do the stats refer to all files or metadata only?
+	:ivar _meta: The experimental metadata (parsed lazily)
 	"""
 	path: str
 	atime: float
 	mtime: float
 	size: int
+	all_files: bool = False
 	_meta: expmeta | None = None
 
 	@property
@@ -157,7 +177,7 @@ class expdata:
 		p = fix_path(p, must_exist=True)
 		if os.path.basename(p) != "metadata.toml":
 			raise ValueError("path must be a 'metadata.toml' file")
-		d = {"path": p}
+		d = {"path": p, "all_files": all_files}
 		if all_files:
 			d.update(dir_stat(p))
 		else:
@@ -172,6 +192,12 @@ class expdata:
 class expsearch:
 	"""
 	Experimental metadata search hits
+	:ivar name: The dataset identifier
+	:ivar title: A short title for the dataset
+	:ivar group: The research group or data repository
+	:ivar scope: The scoping for how the data can be used
+	:ivar pattern: The search pattern
+	:ivar hits: Mapping of search hits
 	"""
 	name: str
 	title: str
