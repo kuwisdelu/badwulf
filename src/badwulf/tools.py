@@ -7,6 +7,7 @@ import platform
 import socket
 import random
 import math
+import shutil
 from importlib.metadata import version
 
 def badwulf_version():
@@ -112,18 +113,7 @@ def confirm(msg: str, suffix: str = " (yes/no): ") -> bool:
 		else:
 			print("Invalid input. Please enter yes/no.")
 
-def squote(s: str, q: str = "'") -> str:
-	"""
-	Wrap a string in quotes
-	:param s: The string to quote
-	:returns: A quoted string
-	"""
-	if s[0] != q and s[-1] != q:
-		return q + s + q
-	else:
-		return s
-
-def dquote(s: str, q: str = '"') -> str:
+def quote(s: str, q: str = '"') -> str:
 	"""
 	Wrap a string in quotes
 	:param s: The string to quote
@@ -154,6 +144,22 @@ def fix_path(
 		path = path.replace(" ", r"\ ")
 	return path
 
+def ls(path: str = ".", all_names: bool = False) -> list[str]:
+	"""
+	List files in a directory
+	:param path: The directory
+	:param all_names: Should hidden files be included?
+	:raises NotADirectoryError: If path isn't a directory
+	:returns: A list of file names
+	"""
+	path = fix_path(path)
+	if not os.path.isdir(path):
+		raise NotADirectoryError(f"path must be a directory: {path}")
+	if all_names:
+		return [f for f in os.listdir(path)]
+	else:
+		return [f for f in os.listdir(path) if not f.startswith(".")]
+
 def file_create(path: str) -> None:
 	"""
 	Create a file
@@ -172,27 +178,41 @@ def file_remove(path: str) -> None:
 	if os.path.exists(path):
 		os.remove(path)
 
-def ls(path: str = ".", all_names: bool = False) -> list[str]:
+def dir_create(path: str, force: bool = False) -> None:
 	"""
-	List files in a directory
-	:param path: The directory
-	:param all_names: Should hidden files be included?
-	:raises NotADirectoryError: If path isn't a directory
-	:returns: A list of file names
+	Create a directory
+	:param path: The directory to create
+	:param force: Create intermediate directories if they don't exist?
 	"""
-	path = fix_path(path)
-	if not os.path.isdir(path):
-		raise NotADirectoryError(f"path must be a directory: {path}")
-	if all_names:
-		return [f for f in os.listdir(path)]
-	else:
-		return [f for f in os.listdir(path) if not f.startswith(".")]
+	path = fix_path(path, must_exist=False)
+	if not os.path.exists(path):
+		if force:
+			os.makedirs(path)
+		else:
+			os.mkdir(path)
 
-def dir_find(path: str, pattern: str, recursive: bool = False) -> list[str]:
+def dir_remove(path: str, force: bool = False) -> None:
+	"""
+	Delete a directory
+	:param path: The directory to delete
+	:param force: Delete all directory contents if not empty?
+	"""
+	path = fix_path(path, must_exist=False)
+	if os.path.exists(path):
+		if force:
+			shutil.rmtree(path)
+		else:
+			os.rmdir(path)
+
+def dir_find(
+	path: str, 
+	pattern: str, 
+	recursive: bool = False) -> list[str]:
 	"""
 	Find files in a directory matching a pattern
 	:param path: The directory
 	:param pattern: The pattern
+	:param recursive: Recursively search subdirectories?
 	:returns: A list of matching file paths
 	"""
 	matches = []
@@ -205,13 +225,19 @@ def dir_find(path: str, pattern: str, recursive: bool = False) -> list[str]:
 				matches.append(file.path)
 	return matches
 
-def dir_stat(path: str, skip: list[str] = None) -> tuple[float, float, int]:
+def dir_stat(
+	path: str, 
+	time_exclude: set[str] = None,
+	size_exclude: set[str] = None) -> dict[str, int | float]:
 	"""
-	Recursively summarize atime, mtime, and size of a directory
+	Recursively summarize atime, mtime, and size of a directory's contents
 	:param path: Path of directory to summarize
-	:param skip: A list of file names to skip (for atime and mtime)
+	:param time_exclude: A set of file names to exclude from time stats
+	:param size_exclude: A set of file names to exclude from size stats
 	:returns: A dict containing atime, mtime, and size
 	"""
+	if not os.path.isdir(path):
+		raise NotADirectoryError(f"path must be a directory: {path}")
 	atime = -math.inf
 	mtime = os.path.getmtime(path)
 	size = 0
@@ -219,17 +245,20 @@ def dir_stat(path: str, skip: list[str] = None) -> tuple[float, float, int]:
 	with os.scandir(path) as it:
 		for file in it:
 			if file.is_dir(follow_symlinks=False):
-				st = dir_stat(file.path, skip=skip)
+				st = dir_stat(file.path, 
+					time_exclude=time_exclude,
+					size_exclude=size_exclude)
 			else:
 				st = file.stat()
 				st = {
 					"atime": st.st_atime, 
 					"mtime": st.st_mtime, 
 					"size": st.st_size}
-			if skip is None or file.name not in skip:
+			if time_exclude is None or file.name not in time_exclude:
 				atime = max(atime, st["atime"])
 				mtime = max(mtime, st["mtime"])
-			size += st["size"]
+			if size_exclude is None or file.name not in size_exclude:
+				size += st["size"]
 	return {"atime": atime, "mtime": mtime, "size": size}
 
 def dir_size(path: str) -> int:
