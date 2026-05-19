@@ -304,19 +304,33 @@ def grep1(
 
 def grep(
 	pattern: str, 
-	x: list[str], 
-	ignore_case: bool = True) -> list[re.Match | None]:
+	x: str | list | dict | None, 
+	ignore_case: bool = True,
+	context_width: int | None = None) -> str | list | dict | None:
 	"""
-	Search for a pattern in an iterable
+	Recursively search for a pattern in anything
 	:param pattern: The pattern to find
-	:param x: An iterable
+	:param x: A string or iterable
 	:param ignore_case: Should case be ignored?
-	:returns: A list of matches
+	:param context_width: Width of a context window to return
+	:raises TypeError: If x is an unsupported type
+	:returns: Matches in the same shape as x
 	"""
-	if x is None:
-		return []
-	else:
-		return [grep1(pattern, xi, ignore_case) for xi in x]
+	match x:
+		case str():
+			return grep1(pattern, x, ignore_case, context_width)
+		case list():
+			return [
+				grep(pattern, xi, ignore_case, context_width) 
+				for xi in x]
+		case dict():
+			return {
+				k: grep(pattern, v, ignore_case, context_width) 
+				for k, v in x.items()}
+		case None:
+			return None
+		case _:
+			raise TypeError("unsupported type")
 
 def grepl(
 	pattern: str, 
@@ -329,10 +343,9 @@ def grepl(
 	:param ignore_case: Should case be ignored?
 	:returns: A list of bools
 	"""
-	if x is None:
-		return []
-	else:
-		return [match is not None for match in grep(pattern, x, ignore_case)]
+	return [
+		match is not None 
+		for match in grep(pattern, x, ignore_case)]
 
 def maybe_template(s: str) -> bool:
 	"""

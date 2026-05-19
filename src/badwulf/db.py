@@ -31,7 +31,7 @@ class expmeta:
 	description: str | None = None
 	sample_processing: str | None = None
 	data_processing: str | None = None
-	contact: dict[str, str] | None = None
+	contact: list[dict[str, str]] | None = None
 	url: dict[str, str] | None = None
 	date: dict[str, str] | None = None
 	formats: list[str] | None = None
@@ -73,7 +73,13 @@ class expmeta:
 			if where is not None and f.name not in where:
 				continue
 			v = d[f]
-			# TODO
+			match v:
+				case None:
+					continue
+				case str():
+					res = grep1(pattern, v, ignore_case, context_width)
+				case list():
+					res = grep1(pattern, v, ignore_case, context_width)
 		pass
 
 
