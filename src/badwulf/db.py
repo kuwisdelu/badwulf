@@ -16,7 +16,6 @@ from datetime import datetime
 
 from .tools import fix_path
 from .tools import dir_stat
-from .tools import format_bytes
 from .tools import grep
 from .tools import prune_none
 
@@ -135,13 +134,6 @@ class expdata:
 		Get last accessed timestamp
 		"""
 		return datetime.fromtimestamp(self.atime)
-
-	@property
-	def size_human(self) -> str:
-		"""
-		Get size in a human-readable string
-		"""
-		return format_bytes(self.size)
 
 	@property
 	def meta(self) -> expmeta:
