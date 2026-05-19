@@ -6,7 +6,7 @@ from time import sleep
 
 from .tools import fix_path
 from .tools import confirm
-from .tools import dquote
+from .tools import quote
 
 class rssh:
 	"""
@@ -198,8 +198,8 @@ class rssh:
 		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before downloading?
 		"""
-		truesrc = f"{self.username}@{self.hostname}:{dquote(src)}"
-		showsrc = f"{self.username}@{self.destination}:{dquote(src)}"
+		truesrc = f"{self.username}@{self.hostname}:{quote(src)}"
+		showsrc = f"{self.username}@{self.destination}:{quote(src)}"
 		has_trailing_slash = dest[-1] == "/"
 		dest = fix_path(dest, must_exist=False, escape_spaces=False)
 		if dest[-1] != "/" and has_trailing_slash:
@@ -228,8 +228,8 @@ class rssh:
 		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before uploading?
 		"""
-		truedest = f"{self.username}@{self.hostname}:{dquote(dest)}"
-		showdest = f"{self.username}@{self.destination}:{dquote(dest)}"
+		truedest = f"{self.username}@{self.hostname}:{quote(dest)}"
+		showdest = f"{self.username}@{self.destination}:{quote(dest)}"
 		has_trailing_slash = src[-1] == "/"
 		src = fix_path(src, must_exist=True, escape_spaces=False)
 		if src[-1] != "/" and has_trailing_slash:

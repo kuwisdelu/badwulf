@@ -361,9 +361,9 @@ def grep(
 		case _:
 			raise TypeError("unsupported type")
 
-def prune_none(x: list | dict, recursive: bool = True) -> list | dict:
+def prune(x: list | dict, recursive: bool = True) -> list | dict:
 	"""
-	Recursively prune None from lists and dicts
+	Recursively remove None and empty lists and dicts
 	:param x: An iterable to prune
 	:param recursive: Should collections in x also be pruned?
 	:raises TypeError: If x is an unsupported type
@@ -373,22 +373,40 @@ def prune_none(x: list | dict, recursive: bool = True) -> list | dict:
 		case list():
 			pruned = []
 			for xi in x:
+				if isinstance(xi, (list, dict)) and recursive:
+					xi = prune(xi)
+					if len(xi) == 0:
+						continue
 				if xi is not None:
-					if isinstance(xi, (list, dict)) and recursive:
-						pruned.append(prune_none(xi))
-					else:
-						pruned.append(xi)
+					pruned.append(xi)
 		case dict():
 			pruned = {}
 			for k, v, in x.items():
+				if isinstance(v, (list, dict)) and recursive:
+					v = prune(v)
+					if len(v) == 0:
+						continue
 				if v is not None:
-					if isinstance(v, (list, dict)) and recursive:
-						pruned[k] = prune_none(v)
-					else:
-						pruned[k] = v
+					pruned[k] = v
 		case _:
 			raise TypeError("unsupported type")
 	return pruned
+
+def rekey_kebab_to_snake(d: dict) -> dict:
+	"""
+	Rekeys a dict from kebab-case to snake_case
+	:param d: The dict to rekey
+	:returns: A rekeyed dict
+	"""
+	return {k.replace("-", "_"): v for k, v in d.items()}
+
+def rekey_snake_to_kebab(d: dict) -> dict:
+	"""
+	Rekeys a dict from snake-case to kebab-case
+	:param d: The dict to rekey
+	:returns: A rekeyed dict
+	"""
+	return {k.replace("_", "-"): v for k, v in d.items()}
 
 def maybe_template(s: str) -> bool:
 	"""

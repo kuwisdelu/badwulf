@@ -91,14 +91,24 @@ def test_grep():
 	assert qs2["First"] == "Bad Wolf"
 	assert qs2["Final"] == ["Bad Wolf", None, None, None]
 
-def test_prune_none():
+def test_prune():
 	l = [1, 2, None]
-	assert prune_none(l) == [1, 2]
+	assert prune(l) == [1, 2]
 	d = {"a": 1, "b": 2, "c": None}
-	assert prune_none(d) == {"a": 1, "b": 2}
-	x = [l, d]
-	assert prune_none(x)[0] == [1, 2]
-	assert prune_none(x)[1] == {"a": 1, "b": 2}
+	assert prune(d) == {"a": 1, "b": 2}
+	x1 = [l, d]
+	assert prune(x)[0] == [1, 2]
+	assert prune(x)[1] == {"a": 1, "b": 2}
+	x2 = [{"b": None}]
+	assert prune(x2) == []
+	x3 = {"a": {"b": None}}
+	assert prune(x3) == {}
+
+def test_rekey():
+	d_kebab = {"key-0": 0, "key-1": 1}
+	d_snake = {"key_0": 0, "key_1": 1}
+	assert rekey_kebab_to_snake(d_kebab) == d_snake
+	assert rekey_snake_to_kebab(d_snake) == d_kebab
 
 def test_maybe_template():
 	assert maybe_template("{}")

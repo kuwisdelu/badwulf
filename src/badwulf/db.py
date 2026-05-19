@@ -17,7 +17,9 @@ from datetime import datetime
 from .tools import fix_path
 from .tools import dir_stat
 from .tools import grep
-from .tools import prune_none
+from .tools import prune
+from .tools import rekey_kebab_to_snake
+from .tools import rekey_snake_to_kebab
 
 @dataclass
 class expmeta:
@@ -88,7 +90,7 @@ class expmeta:
 			v = d[f.name]
 			matches = grep(pattern, v, ignore_case, context_width)
 			if isinstance(matches, (list, dict)):
-				matches = prune_none(matches)
+				matches = prune(matches)
 				if len(matches) == 0:
 					matches = None
 			if matches is not None:
@@ -111,6 +113,7 @@ class expmeta:
 		"""
 		d = asdict(self)
 		d = {k: v for k, v in d.items() if k != "name" and v is not None}
+		d = rekey_snake_to_kebab(d)
 		return {self.name: d}
 
 	@classmethod
@@ -121,7 +124,8 @@ class expmeta:
 		:returns: An expmeta object
 		"""
 		name = next(iter(d))
-		return cls(name=name, **d[name])
+		d = rekey_kebab_to_snake(d[name])
+		return cls(name=name, **d)
 
 @dataclass
 class expdata:
