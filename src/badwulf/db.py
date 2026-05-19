@@ -17,7 +17,7 @@ from datetime import datetime
 from .tools import fix_path
 from .tools import dir_stat
 from .tools import format_bytes
-from .tools import grep1
+from .tools import grep
 
 @dataclass
 class expmeta:
@@ -44,7 +44,7 @@ class expmeta:
 		:param pattern: The scope pattern
 		:returns: True the expmeta has the scope, False otherwise
 		"""
-		return grep1(pattern, self.scope) is not None
+		return grep(pattern, self.scope) is not None
 
 	def has_group(self, pattern: str) -> bool:
 		"""
@@ -52,36 +52,44 @@ class expmeta:
 		:param pattern: The group pattern
 		:returns: True the expmeta has the group, False otherwise
 		"""
-		return grep1(pattern, self.group) is not None
+		return grep(pattern, self.group) is not None
 
 	def search(self, 
 		pattern: str, 
 		where: set[str] | None = None,
 		ignore_case: bool = True,
-		context_width: int = 60) -> expsearch:
+		context_width: int = 60) -> expsearch | None:
 		"""
 		Search metadata for a regular expression
 		:param pattern: The search pattern
 		:param where: List of metadata fields to search; None means all
 		:param ignore_case: Should case be ignored?
 		:param context_width: Width of a context window for hits
-		:returns: An expsearch object
+		:returns: An expsearch object or None if no hits
 		"""
 		hits = {}
 		d = asdict(self)
 		for f in fields(self):
 			if where is not None and f.name not in where:
 				continue
-			v = d[f]
-			match v:
-				case None:
-					continue
-				case str():
-					res = grep1(pattern, v, ignore_case, context_width)
-				case list():
-					res = grep1(pattern, v, ignore_case, context_width)
-		pass
-
+			v = d[f.name]
+			matches = grep(pattern, v, ignore_case, context_width)
+			if isinstance(matches, (list, dict)):
+				matches = prune_none(matches)
+				if len(matches) == 0:
+					matches = None
+			if matches is not None:
+				hits[f.name] = matches
+		if len(hits) > 0:
+			return expsearch(
+				name=self.name,
+				title=self.title,
+				group=self.group,
+				scope=self.scope,
+				pattern=pattern,
+				hits=hits)
+		else:
+			return None
 
 	def to_dict(self) -> dict:
 		"""

@@ -21,7 +21,6 @@ from .tools import dir_find
 from .tools import to_bytes
 from .tools import confirm
 from .tools import grep1
-from .tools import grepl
 
 def format_size(x, units = "auto"):
 	"""
