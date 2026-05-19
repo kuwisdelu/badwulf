@@ -21,7 +21,7 @@ def badwulf_attribution():
 	"""
 	return "powered by badwulf v" + badwulf_version()
 
-def is_known_host(nodes):
+def is_known_host(nodes: list[str]) -> bool:
 	"""
 	Check if the program is running on a known host
 	:param nodes: A list of hostnames
@@ -31,11 +31,12 @@ def is_known_host(nodes):
 	nodes = [nodename.casefold() for nodename in nodes]
 	return host.casefold() in nodes
 
-def to_bytes(x, units = "bytes"):
+def to_bytes(x: int, units: str = "bytes") -> int:
 	"""
 	Convert a size to bytes
 	:param x: A positive number
 	:param units: The units for x (KB, MB, GB, etc.)
+	:raises ValueError: If units is an invalid string
 	:returns: The number of bytes
 	"""
 	if units in ("bytes", "B"):
@@ -54,11 +55,12 @@ def to_bytes(x, units = "bytes"):
 		raise ValueError(f"invalid units: {units}")
 	return x
 
-def format_bytes(x, units = "auto"):
+def format_bytes(x: int, units: str = "auto") -> str:
 	"""
 	Format bytes
 	:param x: The number of bytes
 	:param units: The units (B, KB, MB, etc.)
+	:raises ValueError: If units is an invalid string
 	:returns: A string
 	"""
 	if units == "auto":
@@ -94,15 +96,15 @@ def format_bytes(x, units = "auto"):
 		x = float(round(x, ndigits=2))
 	return f"{x} {units}"
 
-def confirm(text, suffix = " (yes/no): "):
+def confirm(msg: str, suffix: str = " (yes/no): ") -> bool:
 	"""
 	Ask a user to confirm yes or no
-	:param text: The message to print
+	:param msg: The message to print
 	:param suffix: The message to print
 	:returns: True if yes, False if no
 	"""
 	while True:
-		confirm = input(text + suffix).casefold()
+		confirm = input(msg + suffix).casefold()
 		if confirm in ("y", "yes"):
 			return True
 		elif confirm in ("n", "no"):
@@ -110,7 +112,7 @@ def confirm(text, suffix = " (yes/no): "):
 		else:
 			print("Invalid input. Please enter yes/no.")
 
-def squote(s, q = "'"):
+def squote(s: str, q: str = "'") -> str:
 	"""
 	Wrap a string in quotes
 	:param s: The string to quote
@@ -121,7 +123,7 @@ def squote(s, q = "'"):
 	else:
 		return s
 
-def dquote(s, q = '"'):
+def dquote(s: str, q: str = '"') -> str:
 	"""
 	Wrap a string in quotes
 	:param s: The string to quote
@@ -132,11 +134,15 @@ def dquote(s, q = '"'):
 	else:
 		return s
 
-def fix_path(path, must_exist = True, escape_spaces = False):
+def fix_path(
+	path: str, 
+	must_exist: bool = True, 
+	escape_spaces: bool = False) -> str:
 	"""
 	Normalize and expand paths
 	:param path: The path to normalize
 	:param must_exist: Must the path exist?
+	:raises FileNotFoundError: If the file doesn't exist
 	:returns: The normalized path
 	"""
 	if "~" in path:
@@ -148,7 +154,7 @@ def fix_path(path, must_exist = True, escape_spaces = False):
 		path = path.replace(" ", r"\ ")
 	return path
 
-def file_create(path):
+def file_create(path: str) -> None:
 	"""
 	Create a file
 	:param path: The file to create
@@ -157,7 +163,7 @@ def file_create(path):
 	with open(path, "a"):
 		os.utime(path, None)
 
-def file_remove(path):
+def file_remove(path: str) -> None:
 	"""
 	Delete a file
 	:param path: The file to delete
@@ -166,11 +172,12 @@ def file_remove(path):
 	if os.path.exists(path):
 		os.remove(path)
 
-def ls(path = ".", all_names = False):
+def ls(path: str = ".", all_names: bool = False) -> list[str]:
 	"""
 	List files in a directory
 	:param path: The directory
 	:param all_names: Should hidden files be included?
+	:raises NotADirectoryError: If path isn't a directory
 	:returns: A list of file names
 	"""
 	path = fix_path(path)
@@ -181,7 +188,7 @@ def ls(path = ".", all_names = False):
 	else:
 		return [f for f in os.listdir(path) if not f.startswith(".")]
 
-def dir_find(path, pattern, recursive = False):
+def dir_find(path: str, pattern: str, recursive: bool = False) -> list[str]:
 	"""
 	Find files in a directory matching a pattern
 	:param path: The directory
@@ -198,7 +205,7 @@ def dir_find(path, pattern, recursive = False):
 				matches.append(file.path)
 	return matches
 
-def dir_stat(path, skip = None):
+def dir_stat(path: str, skip: list[str] = None) -> tuple[float, float, int]:
 	"""
 	Recursively summarize atime, mtime, and size of a directory
 	:param path: Path of directory to summarize
@@ -225,7 +232,7 @@ def dir_stat(path, skip = None):
 			size += st["size"]
 	return {"atime": atime, "mtime": mtime, "size": size}
 
-def dir_size(path):
+def dir_size(path: str) -> int:
 	"""
 	Get size of a directory
 	:param path: The directory
@@ -233,7 +240,7 @@ def dir_size(path):
 	"""
 	return dir_stat(path)["size"]
 
-def checkport(port):
+def checkport(port: int) -> int:
 	"""
 	Check if a port is open (i.e., if it is in use)
 	:param port: The port to check
@@ -244,10 +251,11 @@ def checkport(port):
 	sock.close()
 	return result
 
-def findport(attempts = 10):
+def findport(attempts: int = 10) -> int:
 	"""
 	Find an available port (for SSH forwarding)
 	:param attempts: How many random ports to attempt
+	:raises IOError: If a port can't be found
 	:returns: The port number
 	"""
 	for i in range(attempts):
@@ -256,7 +264,11 @@ def findport(attempts = 10):
 			return port
 	raise IOError("couldn't find an available port")
 
-def grep1(pattern, x, ignore_case = True, context_width = None):
+def grep1(
+	pattern: str, 
+	x: str, 
+	ignore_case: bool = True, 
+	context_width: int | None = None) -> re.Match | None:
 	"""
 	Search for a pattern in a string
 	:param pattern: The pattern to find
@@ -290,7 +302,10 @@ def grep1(pattern, x, ignore_case = True, context_width = None):
 			post = "..."
 		return pre + x[start:stop] + post
 
-def grep(pattern, x, ignore_case = True):
+def grep(
+	pattern: str, 
+	x: list[str], 
+	ignore_case: bool = True) -> list[re.Match | None]:
 	"""
 	Search for a pattern in an iterable
 	:param pattern: The pattern to find
@@ -301,11 +316,12 @@ def grep(pattern, x, ignore_case = True):
 	if x is None:
 		return []
 	else:
-		return [grep1(pattern, xi, ignore_case=ignore_case) 
-			for xi 
-			in x]
+		return [grep1(pattern, xi, ignore_case) for xi in x]
 
-def grepl(pattern, x, ignore_case = True):
+def grepl(
+	pattern: str, 
+	x: list[str], 
+	ignore_case: bool = True) -> list[bool]:
 	"""
 	Search for a pattern in an iterable
 	:param pattern: The pattern to find
@@ -316,15 +332,13 @@ def grepl(pattern, x, ignore_case = True):
 	if x is None:
 		return []
 	else:
-		return [match is not None 
-			for match 
-			in grep(pattern, x, ignore_case=ignore_case)]
+		return [match is not None for match in grep(pattern, x, ignore_case)]
 
-def maybe_template(s):
+def maybe_template(s: str) -> bool:
 	"""
 	Checks if a string is likely an unformatted f-string template
 	:param s: String to check
-	:returns: True if an f-string template, False otherwise
+	:returns: True if likely an f-string template, False otherwise
 	"""
 	pattern = re.compile(r"\{[^{}]*\}")
 	s = s.replace("{{", "").replace("}}", "")

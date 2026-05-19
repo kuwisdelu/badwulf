@@ -2,6 +2,8 @@
 # Synchronize projects and datasets
 
 import json
+import io
+from pathlib import Path
 from dataclasses import asdict
 
 from .sites import site
@@ -43,15 +45,21 @@ class syncer:
 		return cls({k: site.from_dict(v) for k, v in d.items()})
 
 	@classmethod
-	def from_config(cls, path: str):
+	def from_file(cls, f: io.TextIOBase | io.BufferedIOBase):
 		"""
 		Create a syncer from a json file
-		:param path: The path to the config.json file
+		:param f: An open json file
 		:returns: A syncer object
 		"""
-		path = fix_path(path, must_exist=True)
-		if not os.path.basename(path) != "config.json":
-			raise ValueError("path must be a 'config.json' file")
-		with open(path) as file:
-			d = json.load(file)
-		return cls.from_dict(d)
+		return cls.from_dict(json.load(f))
+
+	@classmethod
+	def from_path(cls, p: str):
+		"""
+		Create a syncer from a json file
+		:param p: The path to the json file
+		:returns: A syncer object
+		"""
+		p = fix_path(p, must_exist=True)
+		with open(p) as f:
+			return cls.from_file(f)

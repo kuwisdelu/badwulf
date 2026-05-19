@@ -11,6 +11,7 @@ else:
 import shutil
 from dataclasses import dataclass
 from dataclasses import asdict
+from dataclasses import fields
 from datetime import datetime
 
 from .tools import fix_path
@@ -53,6 +54,29 @@ class expmeta:
 		"""
 		return grep1(pattern, self.group) is not None
 
+	def search(self, 
+		pattern: str, 
+		where: set[str] | None = None,
+		ignore_case: bool = True,
+		context_width: int = 60) -> expsearch:
+		"""
+		Search metadata for a regular expression
+		:param pattern: The search pattern
+		:param where: List of metadata fields to search; None means all
+		:param ignore_case: Should case be ignored?
+		:param context_width: Width of a context window for hits
+		:returns: An expsearch object
+		"""
+		hits = {}
+		d = asdict(self)
+		for f in fields(self):
+			if where is not None and f.name not in where:
+				continue
+			v = d[f]
+			# TODO
+		pass
+
+
 	def to_dict(self) -> dict:
 		"""
 		Format appropriately for writing json or toml
@@ -75,7 +99,7 @@ class expmeta:
 @dataclass
 class expdata:
 	"""
-	Experimental metadata and stats for a locally stored dataset
+	Experimental metadata and file stats for a local dataset
 	"""
 	path: str
 	atime: float
@@ -84,30 +108,30 @@ class expdata:
 	_meta: expmeta | None = None
 
 	@property
-	def atime_dt(self):
+	def atime_dt(self) -> datetime:
 		"""
 		Get last accessed timestamp
 		"""
 		return datetime.fromtimestamp(self.atime)
 
 	@property
-	def mtime_dt(self):
+	def mtime_dt(self) -> datetime:
 		"""
 		Get last accessed timestamp
 		"""
 		return datetime.fromtimestamp(self.atime)
 
 	@property
-	def size_human(self):
+	def size_human(self) -> str:
 		"""
 		Get size in a human-readable string
 		"""
 		return format_bytes(self.size)
 
 	@property
-	def meta(self):
+	def meta(self) -> expmeta:
 		"""
-		Get experimental metadata
+		Get experimental metadata as an expmeta object
 		"""
 		if self._meta is None:
 			with open(self.path, "rb") as file:
@@ -116,24 +140,36 @@ class expdata:
 		return self._meta
 
 	@classmethod
-	def from_metadata(cls, path: str, all_files = False):
+	def from_path(cls, p: str, all_files: bool = False):
 		"""
 		Create an expdata from a toml file
-		:param path: The path to the metadata.toml file
-		:param all_files: Should the stats summarize the full directory?
+		:param p: The path to the metadata.toml file
+		:param all_files: Get stats for full dataset not just metadata.toml?
 		:returns: An expdata object
 		"""
-		path = fix_path(path, must_exist=True)
-		if os.path.basename(path) != "metadata.toml":
+		p = fix_path(p, must_exist=True)
+		if os.path.basename(p) != "metadata.toml":
 			raise ValueError("path must be a 'metadata.toml' file")
-		d = {"path": path}
+		d = {"path": p}
 		if all_files:
-			d.update(dir_stat(path))
+			d.update(dir_stat(p))
 		else:
-			st = os.stat(path)
+			st = os.stat(p)
 			d.update({
 				"atime": st.st_atime,
 				"mtime": st.st_mtime,
 				"size": st.st_size})
 		return cls(**d)
+
+@dataclass
+class expsearch:
+	"""
+	Experimental metadata search hits
+	"""
+	name: str
+	title: str
+	group: str
+	scope: str
+	pattern: str
+	hits: dict[str: list[Any]] | None = None
 
