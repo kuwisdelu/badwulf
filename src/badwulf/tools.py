@@ -332,20 +332,34 @@ def grep(
 		case _:
 			raise TypeError("unsupported type")
 
-def grepl(
-	pattern: str, 
-	x: list[str], 
-	ignore_case: bool = True) -> list[bool]:
+def prune_none(x: list | dict, recursive: bool = True) -> list | dict:
 	"""
-	Search for a pattern in an iterable
-	:param pattern: The pattern to find
-	:param x: An iterable
-	:param ignore_case: Should case be ignored?
-	:returns: A list of bools
+	Recursively prune None from lists and dicts
+	:param x: An iterable to prune
+	:param recursive: Should collections in x also be pruned?
+	:raises TypeError: If x is an unsupported type
+	:returns: A pruned result in the same shape as x
 	"""
-	return [
-		match is not None 
-		for match in grep(pattern, x, ignore_case)]
+	match x:
+		case list():
+			pruned = []
+			for xi in x:
+				if xi is not None:
+					if isinstance(xi, (list, dict)) and recursive:
+						pruned.append(prune_none(xi))
+					else:
+						pruned.append(xi)
+		case dict():
+			pruned = {}
+			for k, v, in x.items():
+				if v is not None:
+					if isinstance(v, (list, dict)) and recursive:
+						pruned[k] = prune_none(v)
+					else:
+						pruned[k] = v
+		case _:
+			raise TypeError("unsupported type")
+	return pruned
 
 def maybe_template(s: str) -> bool:
 	"""
