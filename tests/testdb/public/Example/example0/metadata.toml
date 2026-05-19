@@ -1,0 +1,29 @@
+[example0]
+scope = "public"
+group = "Example"
+title = "This is an example title"
+description = """\
+	This is a description of the experiment or study, \
+	including the purpose why the data was collected, \
+	and the overall goals of the research project.\
+	"""
+sample-processing = """\
+	Describe the sample preparation and \
+	the data collection protocol.\
+	"""
+data-processing = """\
+	Describe any computational processing \
+	applied to the data or files.\
+	"""
+contact = [
+	{name = "Bad Wolf", email = "entity@the-moment.time"}
+]
+url.doi = "not.a.valid.doi/or.is.it"
+url.pub = "bad.wolf.corporation"
+date.created = "1 Jan 1970"
+date.received = "1 Jan 1970"
+formats = []
+keywords = ["example", "documentation"]
+notes = [
+	"Fields 'scope', 'group', 'title', 'description' are required.",
+	"Everything else is optional (but strongly recommended)."]
