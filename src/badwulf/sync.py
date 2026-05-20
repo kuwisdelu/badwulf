@@ -69,7 +69,7 @@ class site:
 				server=self.server)
 
 	@classmethod
-	def from_dict(cls, d: dict):
+	def from_dict(cls, d: dict[str: Any]):
 		"""
 		Create a site from a dict 
 		:param d: A dict (parsed from json)
@@ -103,16 +103,16 @@ class syncer:
 			raise ValueError("'prefix' is required for site 'local'")
 		self.sites = sites
 
-	def to_dict(self) -> dict:
+	def to_dict(self) -> dict[str: site]:
 		"""
-		Create a syncer from a dict (usually parsed from json)
+		Convert to a dict representation
 		:param d: A dictionary
 		:returns: A syncer object
 		"""
 		return asdict(self.sites)
 
 	@classmethod
-	def from_dict(cls, d: dict):
+	def from_dict(cls, d: dict[str, Any]):
 		"""
 		Create a syncer from a dict
 		:param d: A dict (parsed from json)

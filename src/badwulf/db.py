@@ -8,7 +8,6 @@ if sys.version_info >= (3, 11):
 else:
 	import tomli as tomllib
 
-import shutil
 from dataclasses import dataclass
 from dataclasses import asdict
 from dataclasses import fields
@@ -32,9 +31,10 @@ class expmeta:
 	:ivar description: A long description of the experiment
 	:ivar sample_processing: Sample preparation and protocols
 	:ivar data_processing: Data processing and analysis
-	:ivar contact: List of entries for people responsible
-	:ivar url: Key-values of relevant URLs (publications, repositories, etc.)
-	:ivar date: Key-values of relevant dates (created, received, etc.)
+	:ivar contact: List of key-value entries for people/orgs responsible
+	:ivar log: List of key-value entries of changes (by version or date)
+	:ivar url: Key-values of URLs (doi, publications, repositories, etc.)
+	:ivar date: Key-values of events (created, received, etc.)
 	:ivar formats: List of relevant file formats in the dataset
 	:ivar keywords: List of keywords for the dataset/experiment
 	:ivar note: List of free form notes
@@ -47,6 +47,7 @@ class expmeta:
 	sample_processing: str | None = None
 	data_processing: str | None = None
 	contact: list[dict[str, str]] | None = None
+	log: list[dict[str, str]] | None = None
 	url: dict[str, str] | None = None
 	date: dict[str, str] | None = None
 	formats: list[str] | None = None
@@ -106,9 +107,9 @@ class expmeta:
 		else:
 			return None
 
-	def to_dict(self) -> dict:
+	def to_dict(self) -> dict[str: Any]:
 		"""
-		Format appropriately for writing json or toml
+		Format appropriately for serialization (to json or toml)
 		:returns: A dict representation
 		"""
 		d = asdict(self)
@@ -117,7 +118,7 @@ class expmeta:
 		return {self.name: d}
 
 	@classmethod
-	def from_dict(cls, d: dict):
+	def from_dict(cls, d: dict[str: Any]):
 		"""
 		Create an expmeta from a dict
 		:param d: A dict (parsed from json or toml)
@@ -132,64 +133,115 @@ class expdata:
 	"""
 	Experimental metadata and file stats for a local dataset
 	:ivar path: The path to the metadata.toml file
-	:ivar atime: Last access time for the metadata/dataset
-	:ivar atime: Last modified time for the metadata/dataset
-	:ivar size: Size of the metadata/dataset
-	:ivar all_files: Do the stats refer to all files or metadata only?
-	:ivar _meta: The experimental metadata (parsed lazily)
+	:ivar atime: Last access time for the metadata
+	:ivar atime: Last modified time for the metadata
+	:ivar size: Size of the metadata
+	:ivar _meta: Experimental metadata (lazy)
+	:ivar _stat: File statistics for the directory (lazy)
 	"""
 	path: str
 	atime: float
 	mtime: float
 	size: int
-	all_files: bool = False
 	_meta: expmeta | None = None
+	_stat: dict[str: int | float] | None = None
 
-	@property
-	def atime_dt(self) -> datetime:
+	def _get_meta(self, force = False) -> expmeta:
 		"""
-		Get last accessed timestamp
+		Load experimental metadata
 		"""
-		return datetime.fromtimestamp(self.atime)
+		if self._meta is None or force:
+			fp = os.path.join(self.path, "metadata.toml")
+			with open(fp, "rb") as file:
+				d = tomllib.load(file)
+			self._meta = expmeta.from_dict(d)
+		return self._meta
 
-	@property
-	def mtime_dt(self) -> datetime:
+	def _get_stat(self, force = False) -> dict[str: int | float]:
 		"""
-		Get last accessed timestamp
+		Load directory statistics
 		"""
-		return datetime.fromtimestamp(self.atime)
+		if self._stat is None or force:
+			self._stat = dir_stat(self.path, 
+				time_exclude={"metadata.toml"})
+		return self._stat
 
 	@property
 	def meta(self) -> expmeta:
 		"""
 		Get experimental metadata as an expmeta object
 		"""
-		if self._meta is None:
-			with open(self.path, "rb") as file:
-				d = tomllib.load(file)
-			self._meta = expmeta.from_dict(d)
-		return self._meta
+		return self._get_meta()
+
+	@property
+	def dir_atime(self) -> float:
+		"""
+		Get last accessed timestamp for the directory
+		"""
+		return self._get_stat()["atime"]
+
+	@property
+	def dir_mtime(self) -> float:
+		"""
+		Get last accessed timestamp for the directory
+		"""
+		return self._get_stat()["mtime"]
+
+	@property
+	def dir_size(self) -> int:
+		"""
+		Get size of the directory in bytes
+		"""
+		return self._get_stat()["size"]
+
+	def move(self, path: str) -> None:
+		"""
+		Move the dataset to a new location (locally)
+		"""
+		pass
+
+	def sync(self, dest: str, con: rssh) -> None:
+		"""
+		Sync the dataset to a new location (anywhere)
+		"""
+		pass
+
+	def unlink(self) -> None:
+		"""
+		Delete the dataset directory and all its contents
+		"""
+		pass
+
+	def to_dict(self, format_bytes = True) -> dict:
+		"""
+		Format appropriately for serialization (to json or toml)
+		:returns: A dict representation
+		"""
+		return {
+			"path": self.path,
+			"atime": self.atime,
+			"mtime": self.mtime,
+			"size": self.size}
 
 	@classmethod
-	def from_path(cls, p: str, all_files: bool = False):
+	def from_path(cls, p: str):
 		"""
-		Create an expdata from a toml file
-		:param p: The path to the metadata.toml file
-		:param all_files: Get stats for full dataset not just metadata.toml?
+		Create an expdata from a file path or directory
+		:param p: The path to a directory or a metadata.toml file
 		:returns: An expdata object
 		"""
 		p = fix_path(p, must_exist=True)
-		if os.path.basename(p) != "metadata.toml":
-			raise ValueError("path must be a 'metadata.toml' file")
-		d = {"path": p, "all_files": all_files}
-		if all_files:
-			d.update(dir_stat(p))
-		else:
-			st = os.stat(p)
-			d.update({
-				"atime": st.st_atime,
-				"mtime": st.st_mtime,
-				"size": st.st_size})
+		if not os.path.isdir(p):
+			p = os.path.dirname(p)
+		fp = os.path.join(p, "metadata.toml")
+		if not os.path.exists(fp):
+			raise ValueError(f"missing metadata file: {fp}")
+		st = os.stat(fp)
+		d = {
+			"path": p,
+			"atime": st.st_atime,
+			"mtime": st.st_mtime,
+			"size": st.st_size}
 		return cls(**d)
 
 @dataclass
@@ -209,4 +261,41 @@ class expsearch:
 	scope: str
 	pattern: str
 	hits: dict[str: list[Any]] | None = None
+
+@dataclass
+class expdb:
+	"""
+	Database of experimental datasets
+	:ivar manifest: The manifest of tracked datasets and metadata
+	:ivar datasets: The collection of locally stored datasets
+	"""
+	manifest: dict[str, expmeta] | None = None
+	datasets: dict[str, expdata] | None = None
+
+	@classmethod
+	def from_path(cls, p: str):
+		"""
+		Create an expdb from a file path or directory
+		:param p: The path to directory or a manifest file
+		:returns: An expdb object
+		"""
+		pass
+
+	@classmethod
+	def from_dir(cls, p: str):
+		"""
+		Create an expdb from a directory of datasets
+		:param p: A directory path to walk to find metadata.toml files
+		:returns: An expdb object
+		"""
+		pass
+
+	@classmethod
+	def from_file(cls, f: io.TextIOBase | io.BufferedIOBase):
+		"""
+		Create an expdb from a json file
+		:param f: An open json file
+		:returns: An expdb object
+		"""
+		pass
 

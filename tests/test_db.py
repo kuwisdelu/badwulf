@@ -9,16 +9,17 @@ else:
 
 from badwulf.db import expmeta
 from badwulf.db import expdata
+from badwulf.db import expdb
 
 def test_expmeta_expdata_expsearch():
 	root = globals().get("__file__", "..")
 	path = os.path.join(root, "tests", "testdb", 
-		"public", "Example", "example0", "metadata.toml")
+		"public", "Example", "example0")
 	e = expdata.from_path(path)
 	m = e.meta
 	assert isinstance(e, expdata)
 	assert isinstance(m, expmeta)
-	with open(path, "rb") as f:
+	with open(os.path.join(path, "metadata.toml"), "rb") as f:
 		d = tomllib.load(f)
 	assert m.to_dict() == d
 	assert m.has_scope("public")
