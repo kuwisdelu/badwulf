@@ -6,7 +6,6 @@ import re
 import platform
 import socket
 import random
-import math
 import shutil
 from importlib.metadata import version
 
@@ -225,12 +224,12 @@ def dir_find(
 				matches.append(file.path)
 	return matches
 
-def dir_stat(
+def tree_stat(
 	path: str, 
 	time_exclude: set[str] = None,
 	size_exclude: set[str] = None) -> dict[str, int | float]:
 	"""
-	Recursively summarize atime, mtime, and size of a directory's contents
+	Recursively summarize max atime, max mtime, and total size of a tree
 	:param path: Path of directory to summarize
 	:param time_exclude: A set of file names to exclude from time stats
 	:param size_exclude: A set of file names to exclude from size stats
@@ -238,14 +237,14 @@ def dir_stat(
 	"""
 	if not os.path.isdir(path):
 		raise NotADirectoryError(f"path must be a directory: {path}")
-	atime = -math.inf
+	atime = 0
 	mtime = os.path.getmtime(path)
 	size = 0
 	it = os.scandir(path)
 	with os.scandir(path) as it:
 		for file in it:
 			if file.is_dir(follow_symlinks=False):
-				st = dir_stat(file.path, 
+				st = tree_stat(file.path, 
 					time_exclude=time_exclude,
 					size_exclude=size_exclude)
 			else:
@@ -261,13 +260,13 @@ def dir_stat(
 				size += st["size"]
 	return {"atime": atime, "mtime": mtime, "size": size}
 
-def dir_size(path: str) -> int:
+def tree_size(path: str) -> int:
 	"""
-	Get size of a directory
+	Get size of a directory's contents
 	:param path: The directory
 	:returns: The size of the directory in bytes
 	"""
-	return dir_stat(path)["size"]
+	return tree_stat(path)["size"]
 
 def checkport(port: int) -> int:
 	"""

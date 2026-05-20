@@ -1,8 +1,8 @@
 
+import pytest
 import os
 import platform
 import tempfile
-import pytest
 
 from badwulf.tools import *
 
@@ -57,9 +57,9 @@ def test_dir_create_remove_stat():
 	assert os.path.isdir(dtmp)
 	with open(tmp, "a") as f:
 		f.write("I am the Bad Wolf.")
-	st = dir_stat(dtmp)
+	st = tree_stat(dtmp)
 	assert st["size"] == 18
-	assert st["size"] == dir_size(tmpdir)
+	assert st["size"] == tree_size(dtmp)
 	dir_remove(dtmp, force=True)
 	assert not os.path.exists(dtmp)
 

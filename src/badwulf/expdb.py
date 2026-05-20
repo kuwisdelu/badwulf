@@ -16,7 +16,7 @@ from datetime import datetime
 from .rssh import rssh
 from .tools import ls
 from .tools import fix_path
-from .tools import dir_size
+from .tools import tree_size
 from .tools import dir_find
 from .tools import to_bytes
 from .tools import confirm
@@ -589,7 +589,7 @@ class expdb:
 		"""
 		path = os.path.join(self.dbdir, scope, group, dataset)
 		path = fix_path(path, must_exist=True)
-		size = dir_size(path, all_names=True)
+		size = tree_size(path, all_names=True)
 		atime = os.path.getatime(path)
 		mtime = os.path.getmtime(path)
 		expected = self.get(dataset)

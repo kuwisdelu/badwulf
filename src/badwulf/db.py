@@ -14,7 +14,7 @@ from dataclasses import fields
 from datetime import datetime
 
 from .tools import fix_path
-from .tools import dir_stat
+from .tools import tree_stat
 from .tools import grep
 from .tools import prune
 from .tools import rekey_kebab_to_snake
@@ -114,8 +114,7 @@ class expmeta:
 		"""
 		d = asdict(self)
 		d = {k: v for k, v in d.items() if k != "name" and v is not None}
-		d = rekey_snake_to_kebab(d)
-		return {self.name: d}
+		return {self.name: rekey_snake_to_kebab(d)}
 
 	@classmethod
 	def from_dict(cls, d: dict[str: Any]):
@@ -133,22 +132,18 @@ class expdata:
 	"""
 	Experimental metadata and file stats for a local dataset
 	:ivar path: The path to the metadata.toml file
-	:ivar atime: Last access time for the metadata
-	:ivar atime: Last modified time for the metadata
-	:ivar size: Size of the metadata
-	:ivar _meta: Experimental metadata (lazy)
-	:ivar _stat: File statistics for the directory (lazy)
+	:ivar _meta: Experimental metadata
+	:ivar _meta_stat: File stats for metadata.toml
+	:ivar _tree_stat: File stats for directory contents
 	"""
 	path: str
-	atime: float
-	mtime: float
-	size: int
 	_meta: expmeta | None = None
-	_stat: dict[str: int | float] | None = None
+	_meta_stat: dict[str: int | float] | None = None
+	_tree_stat: dict[str: int | float] | None = None
 
 	def _get_meta(self, force = False) -> expmeta:
 		"""
-		Load experimental metadata
+		Get experimental metadata
 		"""
 		if self._meta is None or force:
 			fp = os.path.join(self.path, "metadata.toml")
@@ -157,14 +152,29 @@ class expdata:
 			self._meta = expmeta.from_dict(d)
 		return self._meta
 
-	def _get_stat(self, force = False) -> dict[str: int | float]:
+	def _get_meta_stat(self, force = False) -> dict[str: int | float]:
 		"""
-		Load directory statistics
+		Get stats for metadata.toml
 		"""
-		if self._stat is None or force:
-			self._stat = dir_stat(self.path, 
+		if self._meta_stat is None or force:
+			fp = os.path.join(self.path, "metadata.toml")
+			if not os.path.exists(fp):
+				raise ValueError(f"missing metadata file: {fp}")
+			st = os.stat(fp)
+			self._meta_stat = {
+				"atime": st.st_atime,
+				"mtime": st.st_mtime,
+				"size": st.st_size}
+		return self._meta_stat
+
+	def _get_tree_stat(self, force = False) -> dict[str: int | float]:
+		"""
+		Get stats for directory contents
+		"""
+		if self._tree_stat is None or force:
+			self._tree_stat = tree_stat(self.path, 
 				time_exclude={"metadata.toml"})
-		return self._stat
+		return self._tree_stat
 
 	@property
 	def meta(self) -> expmeta:
@@ -174,35 +184,62 @@ class expdata:
 		return self._get_meta()
 
 	@property
-	def dir_atime(self) -> float:
+	def meta_atime(self) -> float:
 		"""
-		Get last accessed timestamp for the directory
+		Get last accessed timestamp for metadata.toml
 		"""
-		return self._get_stat()["atime"]
+		return self._get_meta_stat()["atime"]
 
 	@property
-	def dir_mtime(self) -> float:
+	def meta_mtime(self) -> float:
 		"""
-		Get last accessed timestamp for the directory
+		Get last modified timestamp for metadata.toml
 		"""
-		return self._get_stat()["mtime"]
+		return self._get_meta_stat()["mtime"]
 
 	@property
-	def dir_size(self) -> int:
+	def meta_size(self) -> int:
 		"""
-		Get size of the directory in bytes
+		Get size of metadata.toml
 		"""
-		return self._get_stat()["size"]
+		return self._get_meta_stat()["size"]
+
+	@property
+	def tree_atime(self) -> float:
+		"""
+		Get last accessed timestamp for the directory contents
+		"""
+		return self._get_tree_stat()["atime"]
+
+	@property
+	def tree_mtime(self) -> float:
+		"""
+		Get last modified timestamp for the directory contents
+		"""
+		return self._get_tree_stat()["mtime"]
+
+	@property
+	def tree_size(self) -> int:
+		"""
+		Get size of the directory contents in bytes
+		"""
+		return self._get_tree_stat()["size"]
 
 	def move(self, path: str) -> None:
 		"""
-		Move the dataset to a new location (locally)
+		Move the dataset to a new location
+		"""
+		pass
+
+	def copy(self, path: str) -> expdata:
+		"""
+		Copy the dataset to a new location and return the copy
 		"""
 		pass
 
 	def sync(self, dest: str, con: rssh) -> None:
 		"""
-		Sync the dataset to a new location (anywhere)
+		Sync the dataset to another location over a connection
 		"""
 		pass
 
@@ -212,16 +249,16 @@ class expdata:
 		"""
 		pass
 
-	def to_dict(self, format_bytes = True) -> dict:
+	def to_dict(self) -> dict:
 		"""
 		Format appropriately for serialization (to json or toml)
 		:returns: A dict representation
 		"""
 		return {
 			"path": self.path,
-			"atime": self.atime,
-			"mtime": self.mtime,
-			"size": self.size}
+			"meta": self.meta.to_dict(),
+			"meta_stat": self._get_meta_stat(),
+			"tree_stat": self._get_tree_stat()}
 
 	@classmethod
 	def from_path(cls, p: str):
@@ -236,13 +273,7 @@ class expdata:
 		fp = os.path.join(p, "metadata.toml")
 		if not os.path.exists(fp):
 			raise ValueError(f"missing metadata file: {fp}")
-		st = os.stat(fp)
-		d = {
-			"path": p,
-			"atime": st.st_atime,
-			"mtime": st.st_mtime,
-			"size": st.st_size}
-		return cls(**d)
+		return cls(path=p)
 
 @dataclass
 class expsearch:
