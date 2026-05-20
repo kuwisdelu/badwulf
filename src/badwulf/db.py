@@ -141,13 +141,18 @@ class expdata:
 	_meta_stat: dict[str: int | float] | None = None
 	_tree_stat: dict[str: int | float] | None = None
 
+	def __post_init__(self):
+		fp = self.meta_path
+		if not os.path.exists(fp):
+			raise ValueError(f"missing metadata file: {fp}")
+		self._get_meta_stat(True)
+
 	def _get_meta(self, force = False) -> expmeta:
 		"""
 		Get experimental metadata
 		"""
 		if self._meta is None or force:
-			fp = os.path.join(self.path, "metadata.toml")
-			with open(fp, "rb") as file:
+			with open(self.meta_path, "rb") as file:
 				d = tomllib.load(file)
 			self._meta = expmeta.from_dict(d)
 		return self._meta
@@ -157,10 +162,7 @@ class expdata:
 		Get stats for metadata.toml
 		"""
 		if self._meta_stat is None or force:
-			fp = os.path.join(self.path, "metadata.toml")
-			if not os.path.exists(fp):
-				raise ValueError(f"missing metadata file: {fp}")
-			st = os.stat(fp)
+			st = os.stat(self.meta_path)
 			self._meta_stat = {
 				"atime": st.st_atime,
 				"mtime": st.st_mtime,
@@ -182,6 +184,13 @@ class expdata:
 		Get experimental metadata as an expmeta object
 		"""
 		return self._get_meta()
+
+	@property
+	def meta_path(self) -> str:
+		"""
+		Get metadata.toml path
+		"""
+		return os.path.join(self.path, "metadata.toml")
 
 	@property
 	def meta_atime(self) -> float:
@@ -270,9 +279,6 @@ class expdata:
 		p = fix_path(p, must_exist=True)
 		if not os.path.isdir(p):
 			p = os.path.dirname(p)
-		fp = os.path.join(p, "metadata.toml")
-		if not os.path.exists(fp):
-			raise ValueError(f"missing metadata file: {fp}")
 		return cls(path=p)
 
 @dataclass
