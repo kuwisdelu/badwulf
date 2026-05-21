@@ -19,7 +19,7 @@ def test_expmeta_expdata_expsearch():
 	m = e.meta
 	assert isinstance(e, expdata)
 	assert isinstance(m, expmeta)
-	assert e.meta_size == e.tree_size
+	assert e.size == e.meta_size
 	with open(os.path.join(path, "metadata.toml"), "rb") as f:
 		d = tomllib.load(f)
 	assert m.to_dict() == d

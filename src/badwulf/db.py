@@ -179,6 +179,27 @@ class expdata:
 		return self._tree_stat
 
 	@property
+	def atime(self) -> float:
+		"""
+		Get last accessed timestamp for the dataset directory contents
+		"""
+		return self._get_tree_stat()["atime"]
+
+	@property
+	def mtime(self) -> float:
+		"""
+		Get last modified timestamp for the dataset directory contents
+		"""
+		return self._get_tree_stat()["mtime"]
+
+	@property
+	def size(self) -> int:
+		"""
+		Get size of the dataset directory contents in bytes
+		"""
+		return self._get_tree_stat()["size"]
+
+	@property
 	def meta(self) -> expmeta:
 		"""
 		Get experimental metadata as an expmeta object
@@ -213,27 +234,6 @@ class expdata:
 		"""
 		return self._get_meta_stat()["size"]
 
-	@property
-	def tree_atime(self) -> float:
-		"""
-		Get last accessed timestamp for the directory contents
-		"""
-		return self._get_tree_stat()["atime"]
-
-	@property
-	def tree_mtime(self) -> float:
-		"""
-		Get last modified timestamp for the directory contents
-		"""
-		return self._get_tree_stat()["mtime"]
-
-	@property
-	def tree_size(self) -> int:
-		"""
-		Get size of the directory contents in bytes
-		"""
-		return self._get_tree_stat()["size"]
-
 	def move(self, path: str) -> None:
 		"""
 		Move the dataset to a new location
@@ -257,17 +257,6 @@ class expdata:
 		Delete the dataset directory and all its contents
 		"""
 		pass
-
-	def to_dict(self) -> dict:
-		"""
-		Format appropriately for serialization (to json or toml)
-		:returns: A dict representation
-		"""
-		return {
-			"path": self.path,
-			"meta": self.meta.to_dict(),
-			"meta_stat": self._get_meta_stat(),
-			"tree_stat": self._get_tree_stat()}
 
 	@classmethod
 	def from_path(cls, p: str):
