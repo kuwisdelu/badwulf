@@ -14,6 +14,7 @@ def test_to_bytes():
 	assert to_bytes(1) == 1
 	assert to_bytes(1, "KB") == 1_000
 	assert to_bytes(1, "MB") == 1_000_000
+	assert to_bytes(1, "GB") == 1_000_000_000
 
 def test_format_bytes():
 	assert format_bytes(1) == "1 byte"
@@ -73,21 +74,21 @@ def test_grep():
 		"I create myself.",
 		"I take the words, I scatter them in time and space.",
 		"A message to lead myself here."]
-	sd = {
+	d = {
 		"First": "I am the Bad Wolf.",
 		"Final": sl}
-	q1 = grep1("bad wolf", sl[0])
+	q1 = grep("bad wolf", sl[0], ignore_case=True)
 	assert q1 is not None
 	assert q1.span() == (9, 17)
-	q2 = grep1("bad wolf", sl[0], context_width=8)
+	q2 = grep("bad wolf", sl[0], ignore_case=True, context_width=8)
 	assert q2 == "Bad Wolf"
-	q3 = grep1("bad wolf", sl[0], context_width=20)
+	q3 = grep("bad wolf", sl[0], ignore_case=True, context_width=20)
 	assert q3 == sl[0]
-	q4 = grep1("bad wolf", sl[0], ignore_case=False)
+	q4 = grep("bad wolf", sl[0], ignore_case=False)
 	assert q4 is None
-	qs1 = grep("bad wolf", sl, context_width=0)
+	qs1 = grep("bad wolf", sl, ignore_case=True, context_width=0)
 	assert qs1 == ["Bad Wolf", None, None, None]
-	qs2 = grep("bad wolf", sd, context_width=0)
+	qs2 = grep("bad wolf", d, ignore_case=True, context_width=0)
 	assert qs2["First"] == "Bad Wolf"
 	assert qs2["Final"] == ["Bad Wolf", None, None, None]
 
@@ -97,8 +98,7 @@ def test_prune():
 	d = {"a": 1, "b": 2, "c": None}
 	assert prune(d) == {"a": 1, "b": 2}
 	x1 = [l, d]
-	assert prune(x)[0] == [1, 2]
-	assert prune(x)[1] == {"a": 1, "b": 2}
+	assert prune(x1) == [[1, 2], {"a": 1, "b": 2}]
 	x2 = [{"b": None}]
 	assert prune(x2) == []
 	x3 = {"a": {"b": None}}

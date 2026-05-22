@@ -17,7 +17,7 @@ from .rssh import rssh
 from .tools import ls
 from .tools import fix_path
 from .tools import tree_size
-from .tools import dir_find
+from .tools import tree_find
 from .tools import to_bytes
 from .tools import confirm
 from .tools import grep1
@@ -280,7 +280,7 @@ class expcache:
 			files = []
 			fmts = [f"{fmt}$" for fmt in printformats]
 			for pattern in fmts:
-				files.extend(dir_find(self.path, pattern, recursive=True))
+				files.extend(tree_find(self.path, pattern, recursive=True))
 			files = [f" file {str(i + 1)}: '{file}'" 
 				for i, file 
 				in enumerate(files)]

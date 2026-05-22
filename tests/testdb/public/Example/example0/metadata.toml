@@ -18,6 +18,12 @@ data-processing = """\
 contact = [
 	{name = "Bad Wolf", email = "entity@the-moment.time"}
 ]
+log = [
+	{v3 = "A message to lead myself here."},
+	{v2 = "I take the words, I scatter them in time and space."},
+	{v1 = "I create myself."},
+	{v0 = "I am the Bad Wolf."}
+]
 url.doi = "not.a.valid.doi/or.is.it"
 url.pub = "bad.wolf.corporation"
 date.created = "1 Jan 1970"

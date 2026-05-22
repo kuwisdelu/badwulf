@@ -15,6 +15,7 @@ from dataclasses import fields
 from datetime import datetime
 
 from .tools import fix_path
+from .tools import tree_find
 from .tools import tree_stat
 from .tools import grep
 from .tools import prune
@@ -33,7 +34,7 @@ class expmeta:
 	:ivar sample_processing: Sample preparation and protocols
 	:ivar data_processing: Data processing and analysis
 	:ivar contact: List of key-value entries for people/orgs responsible
-	:ivar log: List of key-value entries of changes (by version or date)
+	:ivar log: List of key-value entries of changes
 	:ivar url: Key-values of URLs (doi, publications, repositories, etc.)
 	:ivar date: Key-values of events (created, received, etc.)
 	:ivar formats: List of relevant file formats in the dataset
@@ -61,7 +62,7 @@ class expmeta:
 		:param pattern: The scope pattern
 		:returns: True the expmeta has the scope, False otherwise
 		"""
-		return grep(pattern, self.scope) is not None
+		return grep(pattern, self.scope, ignore_case=True) is not None
 
 	def has_group(self, pattern: str) -> bool:
 		"""
@@ -69,7 +70,7 @@ class expmeta:
 		:param pattern: The group pattern
 		:returns: True the expmeta has the group, False otherwise
 		"""
-		return grep(pattern, self.group) is not None
+		return grep(pattern, self.group, ignore_case=True) is not None
 
 	def search(self, 
 		pattern: str, 
@@ -319,7 +320,11 @@ class expdb:
 		:param p: The path to directory or a manifest file
 		:returns: An expdb object
 		"""
-		pass
+		p = fix_path(p, must_exist=True)
+		if os.path.isdir(p):
+			return cls.from_dir(p)
+		else:
+			return cls.from_file(p)
 
 	@classmethod
 	def from_dir(cls, p: str):
@@ -328,7 +333,18 @@ class expdb:
 		:param p: A directory path to walk to find metadata.toml files
 		:returns: An expdb object
 		"""
-		pass
+		p = fix_path(p, must_exist=True)
+		manifest_path = os.path.join(p, "manifest.json")
+		metadata_paths = tree_find(p, r"^metadata\.toml$", prune_on_match=True)
+		datasets = [expdata.from_path(path) for path in metadata_paths]
+		if os.path.exists(manifest_path):
+			manifest_mtime = os.path.getmtime(manifest_path)
+			metadata_mtime = max(e.meta_mtime for e in datasets)
+			if manifest_mtime > metadata_mtime:
+				pass
+		else:
+			datasets = {data.meta.name: data for data in datasets}
+			return cls(datasets=datasets)
 
 	@classmethod
 	def from_file(cls, f: io.TextIOBase | io.BufferedIOBase):

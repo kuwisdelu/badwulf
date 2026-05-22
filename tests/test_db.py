@@ -6,11 +6,15 @@ import tempfile
 
 from badwulf.db import expdata
 
+def _testdb():
+	try:
+		return os.path.join(os.path.dirname(__file__), "tests", "testdb")
+	except NameError:
+		return os.path.join("..", "tests", "testdb")
+
 def test_expdata_meta_search():
 	p = ("public", "Example", "example0")
-	root = os.path.join(globals().get("__file__", ".."))
-	path = os.path.join(root, "tests", "testdb", *p)
-	e = expdata.from_path(path)
+	e = expdata.from_path(os.path.join(_testdb(), *p))
 	assert e.size == e.meta_size
 	with open(os.path.join(path, "metadata.toml"), "rb") as f:
 		d = tomllib.load(f)
@@ -28,9 +32,7 @@ def test_expdata_meta_search():
 
 def test_expdata_move_copy_unlink():
 	p = ("public", "Example", "example0")
-	root = os.path.join(globals().get("__file__", ".."))
-	path = os.path.join(root, "tests", "testdb", *p)
-	e = expdata.from_path(path)
+	e = expdata.from_path(os.path.join(_testdb(), *p))
 	with tempfile.TemporaryDirectory() as tmp:
 		dst_cp = os.path.join(tmp, "cp", *p)
 		dst_mv = os.path.join(tmp, "mv", *p)

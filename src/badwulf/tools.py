@@ -203,25 +203,26 @@ def dir_remove(path: str, force: bool = False) -> None:
 		else:
 			os.rmdir(path)
 
-def dir_find(
+def tree_find(
 	path: str, 
-	pattern: str, 
-	recursive: bool = False) -> list[str]:
+	pattern: str,
+	ignore_case: bool = False,
+	prune_on_match: bool = False) -> list[str]:
 	"""
 	Find files in a directory matching a pattern
 	:param path: The directory
 	:param pattern: The pattern
-	:param recursive: Recursively search subdirectories?
+	:param ignore_case: Should case be ignored?
+	:param prune_on_match: Prevent descending past matches?
 	:returns: A list of matching file paths
 	"""
 	matches = []
-	it = os.scandir(path)
-	with os.scandir(path) as it:
-		for file in it:
-			if file.is_dir(follow_symlinks=False) and recursive:
-				matches.extend(dir_find(file.path, pattern))
-			elif grep1(pattern, file.name) is not None:
-				matches.append(file.path)
+	for dirpath, dirnames, filenames in os.walk(path):
+		for name in filenames:
+			if grep1(pattern, name, ignore_case) is not None:
+				matches.append(os.path.join(dirpath, name))
+				if prune_on_match:
+					dirnames.clear()
 	return matches
 
 def tree_stat(
@@ -295,7 +296,7 @@ def findport(attempts: int = 10) -> int:
 def grep1(
 	pattern: str, 
 	x: str, 
-	ignore_case: bool = True, 
+	ignore_case: bool = False, 
 	context_width: int | None = None) -> re.Match | None:
 	"""
 	Search for a pattern in a string
@@ -303,6 +304,7 @@ def grep1(
 	:param x: A string
 	:param ignore_case: Should case be ignored?
 	:param context_width: Width of a context window to return
+	:param fixed_string: Interpret pattern as fixed string
 	:returns: A Match or None
 	"""
 	if x is None:
@@ -333,7 +335,7 @@ def grep1(
 def grep(
 	pattern: str, 
 	x: str | list | dict | None, 
-	ignore_case: bool = True,
+	ignore_case: bool = False,
 	context_width: int | None = None) -> str | list | dict | None:
 	"""
 	Recursively search for a pattern in anything
