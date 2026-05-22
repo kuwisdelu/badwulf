@@ -111,7 +111,7 @@ class expmeta:
 
 	def to_dict(self) -> dict[str: Any]:
 		"""
-		Format appropriately for serialization (to json or toml)
+		Format appropriately for serialization (to json, toml, etc.)
 		:returns: A dict representation
 		"""
 		d = asdict(self)
@@ -122,7 +122,7 @@ class expmeta:
 	def from_dict(cls, d: dict[str: Any]):
 		"""
 		Create an expmeta from a dict
-		:param d: A dict (parsed from json or toml)
+		:param d: A dict (parsed from json, toml, etc.)
 		:returns: An expmeta object
 		"""
 		name = next(iter(d))
@@ -165,7 +165,7 @@ class expdata:
 		fp = self.meta_path
 		if not os.path.exists(fp):
 			raise ValueError(f"missing metadata file: {fp}")
-		self._get_meta_stat(True)
+		self._get_meta_stat()
 
 	def _get_meta(self, force = False) -> expmeta:
 		"""
@@ -197,27 +197,6 @@ class expdata:
 			self._tree_stat = tree_stat(self.path, 
 				time_exclude={"metadata.toml"})
 		return self._tree_stat
-
-	@property
-	def atime(self) -> float:
-		"""
-		Get last accessed timestamp for the dataset directory contents
-		"""
-		return self._get_tree_stat()["atime"]
-
-	@property
-	def mtime(self) -> float:
-		"""
-		Get last modified timestamp for the dataset directory contents
-		"""
-		return self._get_tree_stat()["mtime"]
-
-	@property
-	def size(self) -> int:
-		"""
-		Get size of the dataset directory contents in bytes
-		"""
-		return self._get_tree_stat()["size"]
 
 	@property
 	def meta(self) -> expmeta:
@@ -253,6 +232,27 @@ class expdata:
 		Get size of metadata.toml
 		"""
 		return self._get_meta_stat()["size"]
+
+	@property
+	def atime(self) -> float:
+		"""
+		Get last accessed timestamp for the dataset directory contents
+		"""
+		return self._get_tree_stat()["atime"]
+
+	@property
+	def mtime(self) -> float:
+		"""
+		Get last modified timestamp for the dataset directory contents
+		"""
+		return self._get_tree_stat()["mtime"]
+
+	@property
+	def size(self) -> int:
+		"""
+		Get size of the dataset directory contents in bytes
+		"""
+		return self._get_tree_stat()["size"]
 
 	def move(self, dst: str) -> None:
 		"""
@@ -291,6 +291,30 @@ class expdata:
 		self._meta_stat = None
 		self._tree_stat = None
 
+	def to_dict(self) -> dict[str: Any]:
+		"""
+		Format appropriately for serialization (to json, toml, etc.)
+		:returns: A dict representation
+		"""
+		return {
+			"path": self.path,
+			"meta": self.meta,
+			"meta_stat": self._get_meta_stat(),
+			"tree_stat": self._get_tree_stat()}
+
+	@classmethod
+	def from_dict(cls, d: dict[str: Any]):
+		"""
+		Create an expmeta from a dict
+		:param d: A dict (parsed from json, toml, etc.)
+		:returns: An expmeta object
+		"""
+		return cls(
+			path=d["path"],
+			_meta=d["meta"],
+			_meta_stat=d.get("meta_stat"),
+			_tree_stat=d.get("tree_stat"))
+
 	@classmethod
 	def from_path(cls, p: str):
 		"""
@@ -303,55 +327,30 @@ class expdata:
 			p = os.path.dirname(p)
 		return cls(path=p)
 
-@dataclass
 class expdb:
 	"""
 	Database of experimental datasets
-	:ivar manifest: The manifest of tracked datasets and metadata
-	:ivar datasets: The collection of locally stored datasets
+	:ivar path: The path to the database root
+	:ivar _manifest: Manifest of datasets by name
+	:ivar _datalist: List of datasets
 	"""
-	manifest: dict[str, expmeta] | None = None
-	datasets: dict[str, expdata] | None = None
+	root: str
+	_manifest: dict[str, expdata] | None = None
+	_datalist: list[expdata] | None = None
 
-	@classmethod
-	def from_path(cls, p: str):
+	def __init__(self, root: str):
 		"""
-		Create an expdb from a file path or directory
-		:param p: The path to directory or a manifest file
-		:returns: An expdb object
+		Create an expdb from a database directory
+		:param root: The path to the root database directory
 		"""
-		p = fix_path(p, must_exist=True)
-		if os.path.isdir(p):
-			return cls.from_dir(p)
-		else:
-			return cls.from_file(p)
+		self.root = fix_path(self.root, must_exist=True)
+		if not os.path.isdir(self.root):
+			raise NotADirectoryError(f"root must be a directory: {self.root}")
+		paths = tree_find(self.root, r"^metadata\.toml$", prune_on_match=True)
+		self._datalist = [expdata.from_path(p) for p in paths]
 
-	@classmethod
-	def from_dir(cls, p: str):
+	def _build_manifest(self):
 		"""
-		Create an expdb from a directory of datasets
-		:param p: A directory path to walk to find metadata.toml files
-		:returns: An expdb object
+		Builds the database manifest
 		"""
-		p = fix_path(p, must_exist=True)
-		manifest_path = os.path.join(p, "manifest.json")
-		metadata_paths = tree_find(p, r"^metadata\.toml$", prune_on_match=True)
-		datasets = [expdata.from_path(path) for path in metadata_paths]
-		if os.path.exists(manifest_path):
-			manifest_mtime = os.path.getmtime(manifest_path)
-			metadata_mtime = max(e.meta_mtime for e in datasets)
-			if manifest_mtime > metadata_mtime:
-				pass
-		else:
-			datasets = {data.meta.name: data for data in datasets}
-			return cls(datasets=datasets)
-
-	@classmethod
-	def from_file(cls, f: io.TextIOBase | io.BufferedIOBase):
-		"""
-		Create an expdb from a json file
-		:param f: An open json file
-		:returns: An expdb object
-		"""
-		pass
-
+		self._manifest = {d.meta.name: d for d in self._datalist}

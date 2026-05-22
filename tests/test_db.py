@@ -16,9 +16,9 @@ def test_expdata_meta_search():
 	p = ("public", "Example", "example0")
 	e = expdata.from_path(os.path.join(_testdb(), *p))
 	assert e.size == e.meta_size
-	with open(os.path.join(path, "metadata.toml"), "rb") as f:
-		d = tomllib.load(f)
-	assert e.meta.to_dict() == d
+	with open(os.path.join(_testdb(), *p, "metadata.toml"), "rb") as f:
+		m = tomllib.load(f)
+	assert e.meta.to_dict() == m
 	assert e.meta.has_scope("public")
 	assert e.meta.has_group("Example")
 	assert not e.meta.has_scope("private")
@@ -29,6 +29,8 @@ def test_expdata_meta_search():
 	assert s1.hits == {"contact": [{"name": "Bad Wolf"}]}
 	assert "contact" in s2.hits and "url" in s2.hits
 	assert s3 is None
+	d = e.to_dict()
+	assert expdata.from_dict(d) == e
 
 def test_expdata_move_copy_unlink():
 	p = ("public", "Example", "example0")
