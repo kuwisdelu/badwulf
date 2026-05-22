@@ -3,12 +3,10 @@
 
 import os
 import shutil
-import sys
-if sys.version_info >= (3, 11):
-	import tomllib
-else:
-	import tomli as tomllib
+import json
+import tomllib
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from dataclasses import asdict
 from dataclasses import fields
@@ -206,6 +204,13 @@ class expdata:
 		return self._get_meta()
 
 	@property
+	def meta_hash(self) -> int:
+		"""
+		Get a hash to compare if metadata has changed
+		"""
+		return hash((self.path, self.meta_mtime, self.meta_size))
+
+	@property
 	def meta_path(self) -> str:
 		"""
 		Get metadata.toml path
@@ -327,30 +332,100 @@ class expdata:
 			p = os.path.dirname(p)
 		return cls(path=p)
 
-class expdb:
+class expdb(Mapping):
 	"""
 	Database of experimental datasets
 	:ivar path: The path to the database root
-	:ivar _manifest: Manifest of datasets by name
-	:ivar _datalist: List of datasets
+	:ivar _datalist: List of datasets detected under root
+	:ivar _database: Mapping of validated datasets by name
 	"""
 	root: str
-	_manifest: dict[str, expdata] | None = None
-	_datalist: list[expdata] | None = None
+	_datalist: list[expdata]
+	_database: dict[str, expdata] | None = None
 
 	def __init__(self, root: str):
 		"""
 		Create an expdb from a database directory
 		:param root: The path to the root database directory
 		"""
-		self.root = fix_path(self.root, must_exist=True)
+		self.root = fix_path(root, must_exist=True)
 		if not os.path.isdir(self.root):
 			raise NotADirectoryError(f"root must be a directory: {self.root}")
 		paths = tree_find(self.root, r"^metadata\.toml$", prune_on_match=True)
 		self._datalist = [expdata.from_path(p) for p in paths]
+		self._ensure()
 
-	def _build_manifest(self):
+	def __getitem__(self, key: str) -> expdata | None:
 		"""
-		Builds the database manifest
+		Gets an expdata item from the database
 		"""
-		self._manifest = {d.meta.name: d for d in self._datalist}
+		if self._database is None:
+			raise KeyError("database is empty")
+		else:
+			return self._database[key]
+
+	def __len__(self) -> int:
+		"""
+		Gets the number of datasets in the database
+		"""
+		if self._database is None:
+			return 0
+		else:
+			return len(self._database)
+
+	def __iter__(self):
+		"""
+		Gets an iterator over the database keys
+		"""
+		if self._database is None:
+			return iter({})
+		else:
+			return iter(self._database)
+
+	def _ensure(self) -> None:
+		"""
+		Ensures the database is in a valid state
+		"""
+		if self.manifest_exists():
+			self._refresh()
+		else:
+			self._rebuild()
+
+	def _rebuild(self) -> None:
+		"""
+		Rebuilds the database from the datalist alone
+		"""
+		self._database = {d.meta.name: d for d in self._datalist}
+
+	def _refresh(self) -> None:
+		"""
+		Refreshes the database from the datalist + manifest
+		"""
+		with open(self.manifest_path, "r") as f:
+			d = json.load(f)
+		manifest = {k: expdata.from_dict(v) for k, v in d}
+		# TODO: merge datalist and manifest
+		self._database = manifest
+
+	def _dump(self) -> None:
+		"""
+		Dumps the database to manifest.json
+		"""
+		self._ensure()
+		d = {k: v.to_dict() for k, v in self._database.items()}
+		with open(self.manifest_path, "w") as f:
+			json.dump(d, f)
+
+	@property
+	def manifest_path(self) -> str:
+		"""
+		Gets path to the database manifest
+		"""
+		return os.path.join(self.root, "manifest.json")	
+
+	def manifest_exists(self) -> bool:
+		"""
+		Checks if the database manifest exists
+		"""
+		return os.path.exists(self.manifest_path)
+

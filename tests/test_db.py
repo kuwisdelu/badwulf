@@ -1,10 +1,10 @@
 
-import pytest
 import os
 import tomllib
 import tempfile
 
 from badwulf.db import expdata
+from badwulf.db import expdb
 
 def _testdb():
 	try:
@@ -36,8 +36,8 @@ def test_expdata_move_copy_unlink():
 	p = ("public", "Example", "example0")
 	e = expdata.from_path(os.path.join(_testdb(), *p))
 	with tempfile.TemporaryDirectory() as tmp:
-		dst_cp = os.path.join(tmp, "cp", *p)
-		dst_mv = os.path.join(tmp, "mv", *p)
+		dst_cp = os.path.join(tmp, "testcp", *p)
+		dst_mv = os.path.join(tmp, "testmv", *p)
 		e2 = e.copy(dst_cp)
 		assert os.path.exists(e.path)
 		assert os.path.exists(e2.path)
@@ -53,3 +53,6 @@ def test_expdata_move_copy_unlink():
 		e2.unlink()
 		assert not os.path.exists(e2.path)
 		assert os.path.exists(e.path)
+
+def test_expdb():
+	db = expdb(_testdb())

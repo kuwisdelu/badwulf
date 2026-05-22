@@ -19,7 +19,7 @@ contact = [
 	{name = "Bad Wolf", email = "entity@the-moment.time"}
 ]
 log = [
-	{v1 = "I create myself."}
+	{1970-01-01 = "I create myself."}
 ]
 url.doi = "not.a.valid.doi/or.is.it"
 url.pub = "bad.wolf.corporation"
