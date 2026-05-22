@@ -2,6 +2,7 @@
 # Experiment data manager
 
 import os
+import shutil
 import sys
 if sys.version_info >= (3, 11):
 	import tomllib
@@ -128,6 +129,24 @@ class expmeta:
 		return cls(name=name, **d)
 
 @dataclass
+class expsearch:
+	"""
+	Experimental metadata search hits
+	:ivar name: The dataset identifier
+	:ivar title: A short title for the dataset
+	:ivar group: The research group or data repository
+	:ivar scope: The scoping for how the data can be used
+	:ivar pattern: The search pattern
+	:ivar hits: Mapping of search hits
+	"""
+	name: str
+	title: str
+	group: str
+	scope: str
+	pattern: str
+	hits: dict[str: list[Any]] | None = None
+
+@dataclass
 class expdata:
 	"""
 	Experimental metadata and file stats for a local dataset
@@ -234,19 +253,29 @@ class expdata:
 		"""
 		return self._get_meta_stat()["size"]
 
-	def move(self, path: str) -> None:
+	def move(self, dst: str) -> None:
 		"""
 		Move the dataset to a new location
 		"""
-		pass
+		if os.path.exists(dst):
+			raise FileExistsError(f"move destination already exists: {dst}")
+		else:
+			shutil.move(self.path, dst)
+		self.path = dst
+		self._tree_stat = None
+		self._get_meta_stat(True)
 
-	def copy(self, path: str) -> expdata:
+	def copy(self, dst: str) -> expdata:
 		"""
 		Copy the dataset to a new location and return the copy
 		"""
-		pass
+		if os.path.exists(dst):
+			raise FileExistsError(f"copy destination already exists: {dst}")
+		else:
+			shutil.copytree(self.path, dst)
+		return expdata.from_path(dst)
 
-	def sync(self, dest: str, con: rssh) -> None:
+	def sync(self, dst: str, con: rssh) -> None:
 		"""
 		Sync the dataset to another location over a connection
 		"""
@@ -256,7 +285,10 @@ class expdata:
 		"""
 		Delete the dataset directory and all its contents
 		"""
-		pass
+		shutil.rmtree(self.path)
+		self._meta = None
+		self._meta_stat = None
+		self._tree_stat = None
 
 	@classmethod
 	def from_path(cls, p: str):
@@ -269,24 +301,6 @@ class expdata:
 		if not os.path.isdir(p):
 			p = os.path.dirname(p)
 		return cls(path=p)
-
-@dataclass
-class expsearch:
-	"""
-	Experimental metadata search hits
-	:ivar name: The dataset identifier
-	:ivar title: A short title for the dataset
-	:ivar group: The research group or data repository
-	:ivar scope: The scoping for how the data can be used
-	:ivar pattern: The search pattern
-	:ivar hits: Mapping of search hits
-	"""
-	name: str
-	title: str
-	group: str
-	scope: str
-	pattern: str
-	hits: dict[str: list[Any]] | None = None
 
 @dataclass
 class expdb:
