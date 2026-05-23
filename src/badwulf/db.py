@@ -206,7 +206,7 @@ class expdata:
 	@property
 	def meta_hash(self) -> int:
 		"""
-		Get a hash to compare if metadata has changed
+		Get a hash to compare if metadata has likely changed
 		"""
 		return hash((self.path, self.meta_mtime, self.meta_size))
 
@@ -237,6 +237,23 @@ class expdata:
 		Get size of metadata.toml
 		"""
 		return self._get_meta_stat()["size"]
+
+	def meta_differs(self, 
+		other: expdata | None,
+		hash_only: bool = True):
+		"""
+		Compare meta hash to another expdata or None
+		:param other: The other expdata object
+		:param hash_only: Compare only file stat hashes?
+		:returns: True if different, False otherwise
+		"""
+		if other is None:
+			return True
+		else:
+			if hash_only:
+				return self.meta_hash != other.meta_hash
+			else:
+				return self.meta != other.meta
 
 	@property
 	def atime(self) -> float:
@@ -396,6 +413,7 @@ class expdb(Mapping):
 		Rebuilds the database from the datalist alone
 		"""
 		self._database = {d.meta.name: d for d in self._datalist}
+		self._dump()
 
 	def _refresh(self) -> None:
 		"""
@@ -403,15 +421,24 @@ class expdb(Mapping):
 		"""
 		with open(self.manifest_path, "r") as f:
 			d = json.load(f)
-		manifest = {k: expdata.from_dict(v) for k, v in d}
-		# TODO: merge datalist and manifest
-		self._database = manifest
+		manifest = {e.path: expdata.from_dict(e) for e in d.values()}
+		self._database = {}
+		num_changed = 0
+		for e in self._datalist:
+			cached = manifest.get(e.path)
+			if e.meta_differs(cached):
+				num_changed += 1
+				self._database[e.meta.name] = e
+			else:
+				e._meta = cached.meta
+				self._database[cached.meta.name] = e
+		if num_changed > 0:
+			self._dump()
 
 	def _dump(self) -> None:
 		"""
 		Dumps the database to manifest.json
 		"""
-		self._ensure()
 		d = {k: v.to_dict() for k, v in self._database.items()}
 		with open(self.manifest_path, "w") as f:
 			json.dump(d, f)
