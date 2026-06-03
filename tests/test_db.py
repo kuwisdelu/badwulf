@@ -38,7 +38,7 @@ def test_expdata_meta_search():
 	s2 = e.meta.search("Bad")
 	s3 = e.meta.search("Rose")
 	s4 = e.meta.search("example")
-	s5 = e.meta.search("example", where={"keywords"})
+	s5 = e.meta.search("example", within={"keywords"})
 	assert s1.hits == {"contact": [{"name": "Bad Wolf"}]}
 	assert "contact" in s2.hits
 	assert s3 is None
@@ -101,8 +101,8 @@ def test_expindex():
 	assert len(d.subset(group={"Example"})) == 1
 	assert len(d.subset(group={"Bad Wolf Corporation"})) == 4
 	hits1 = d.search("Bad")
-	hits2 = d.search("Bad", where={"title"})
-	hits3 = d.search("bad", where={"title"}, ignore_case=True)
+	hits2 = d.search("Bad", within={"title"})
+	hits3 = d.search("bad", within={"title"}, ignore_case=True)
 	assert len(hits1) == 5
 	assert len(hits2) == 1
 	assert len(hits3) == 1

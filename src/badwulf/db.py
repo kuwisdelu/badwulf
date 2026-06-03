@@ -8,10 +8,10 @@ import tomllib
 
 from collections.abc import Mapping
 from collections.abc import Callable
-from operator import attrgetter
 from dataclasses import dataclass
 from dataclasses import asdict
 from dataclasses import fields
+from operator import attrgetter
 from datetime import datetime
 
 from .tools import fix_path
@@ -74,13 +74,13 @@ class expmeta:
 
 	def search(self, 
 		pattern: str, 
-		where: set[str] | None = None,
+		within: set[str] | None = None,
 		ignore_case: bool = False,
 		context_width: int = 60) -> expsearch | None:
 		"""
 		Search metadata for a regular expression
 		:param pattern: The search pattern
-		:param where: List of metadata fields to search; None means all
+		:param within: List of metadata fields to search; None means all
 		:param ignore_case: Should case be ignored?
 		:param context_width: Width of a context window for hits
 		:returns: An expsearch object or None if no hits
@@ -88,7 +88,7 @@ class expmeta:
 		hits = {}
 		d = asdict(self)
 		for f in fields(self):
-			if where is not None and f.name not in where:
+			if within is not None and f.name not in within:
 				continue
 			v = d[f.name]
 			matches = grep(pattern, v, ignore_case, context_width)
@@ -376,19 +376,19 @@ class expindex(Mapping):
 
 	def __getitem__(self, key: str) -> expdata:
 		"""
-		Gets an expdata item from the index
+		Get an expdata item from the index
 		"""
 		return self._index[key]
 
 	def __len__(self) -> int:
 		"""
-		Gets the number of datasets in the index
+		Get the number of datasets in the index
 		"""
 		return len(self._index)
 
 	def __iter__(self):
 		"""
-		Gets an iterator over the database keys
+		Get an iterator over the database keys
 		"""
 		return iter(self._index)
 
@@ -449,20 +449,20 @@ class expindex(Mapping):
 
 	def search(self, 
 		pattern: str, 
-		where: set[str] | None = None,
+		within: set[str] | None = None,
 		ignore_case: bool = False,
 		context_width: int = 60) -> dict[str, expsearch]:
 		"""
 		Search indexed metadata for a regular expression
 		:param pattern: The search pattern
-		:param where: List of metadata fields to search; None means all
+		:param within: List of metadata fields to search; None means all
 		:param ignore_case: Should case be ignored?
 		:param context_width: Width of a context window for hits
 		:returns: A dict of expsearch objects with nonzero hits
 		"""
 		d = {}
 		for k, v in self.items():
-			hits = v.meta.search(pattern, where, ignore_case, context_width)
+			hits = v.meta.search(pattern, within, ignore_case, context_width)
 			if hits is not None:
 				d[k] = hits
 		return d
@@ -471,7 +471,7 @@ class expindex(Mapping):
 	def from_list(cls, lst: list[expdata]):
 		"""
 		Create an expindex from a list
-		:param l: A list of expdata objects
+		:param lst: A list of expdata objects
 		:returns: An expindex object:
 		"""
 		return cls({e.meta.name: e for e in lst})
@@ -526,19 +526,19 @@ class expdb(Mapping):
 
 	def __getitem__(self, key: str) -> expdata | None:
 		"""
-		Gets an expdata item from the database
+		Get an expdata item from the database
 		"""
 		return self.index[key]
 
 	def __len__(self) -> int:
 		"""
-		Gets the number of datasets in the database
+		Get the number of datasets in the database
 		"""
 		return len(self.index)
 
 	def __iter__(self):
 		"""
-		Gets an iterator over the database keys
+		Get an iterator over the database keys
 		"""
 		return iter(self.index)
 
@@ -603,7 +603,7 @@ class expdb(Mapping):
 	@property
 	def manifest_path(self) -> str:
 		"""
-		Gets path to the database manifest
+		Get path to the database manifest
 		"""
 		return os.path.join(self.root, "manifest.json")	
 
