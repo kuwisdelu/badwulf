@@ -85,11 +85,23 @@ def test_expindex():
 	assert [k for k, v, in d.items()] == list(d.keys())
 	assert [v for k, v, in d.items()] == list(d.values())
 	assert not d["example0"].is_local()
+	sizes1 = [e.size for e in d.sorted_by("size")]
+	sizes2 = [e.size for e in d.sorted_by("size", reverse=True)]
+	assert sizes1 == sorted(sizes1)
+	assert sizes2 == sorted(sizes2, reverse=True)
 	assert len(d.subset({"data0", "data1"})) == 2
 	assert len(d.subset(scope={"public"})) == 1
 	assert len(d.subset(scope={"private"})) == 4
 	assert len(d.subset({"data0"}, scope={"public"})) == 0
 	assert len(d.subset({"data0"}, scope={"private"})) == 1
+	assert len(d.subset(group={"Example"})) == 1
+	assert len(d.subset(group={"Bad Wolf Corporation"})) == 4
+	hits1 = d.search("Bad")
+	hits2 = d.search("Bad", where={"title"})
+	hits3 = d.search("bad", where={"title"}, ignore_case=True)
+	assert len(hits1) == 5
+	assert len(hits2) == 1
+	assert len(hits3) == 1
 	assert d["example0"] == d.get("example0")
 	assert d.get("Bad Wolf") is None
 

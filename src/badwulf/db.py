@@ -7,6 +7,8 @@ import json
 import tomllib
 
 from collections.abc import Mapping
+from collections.abc import Callable
+from operator import attrgetter
 from dataclasses import dataclass
 from dataclasses import asdict
 from dataclasses import fields
@@ -359,49 +361,36 @@ class expdata:
 class expindex(Mapping):
 	"""
 	Index of experimental datasets
-	:ivar _data: Mapping of datasets by name
+	:ivar _index: Mapping of datasets by name
 	"""
-	_data: dict[str, expdata]
+	_index: dict[str, expdata]
 
 	def __init__(self, d: dict[str, expdata] | None = None):
 		"""
 		Create an expindex from a dict
 		"""
 		if d is None:
-			self._data = {}
+			self._index = {}
 		else:
-			self._data = d
+			self._index = d
 
 	def __getitem__(self, key: str) -> expdata:
 		"""
 		Gets an expdata item from the index
 		"""
-		if self._data is None:
-			raise KeyError(f"no dataset named: {key}")
-		else:
-			return self._data[key]
+		return self._index[key]
 
 	def __len__(self) -> int:
 		"""
 		Gets the number of datasets in the index
 		"""
-		return len(self._data)
+		return len(self._index)
 
 	def __iter__(self):
 		"""
 		Gets an iterator over the database keys
 		"""
-		return iter(self._data)
-
-	def sorted(self,
-		by: str,
-		reverse: bool = False) -> list[str]:
-		"""
-		Return dataset names sorted by directory file stats
-		:param by: One of 'size', 'mtime', or 'atime'
-		:param reverse: Sort in decreasing order?
-		"""
-		pass
+		return iter(self._index)
 
 	def subset(self,
 		names: set[str] | None = None,
@@ -428,6 +417,29 @@ class expindex(Mapping):
 			d[k] = v
 		return expindex(d)
 
+	def sorted(self,
+		key: Callable[[expdata], Any],
+		reverse: bool = False) -> list[expdata]:
+		"""
+		Return datasets in ascending sort order based on a key function
+		:param key: A function taking an expdata returning a comparable key
+		:param reverse: Sort in descending order?
+		"""
+		return sorted(self.values(), key=key, reverse=reverse)
+
+	def sorted_by(self,
+		*stats: str,
+		reverse: bool = False) -> list[expdata]:
+		"""
+		Return datasets in ascending sort order by directory file stats
+		:param stats: One or more of 'size', 'mtime', or 'atime'
+		:param reverse: Sort in descending order?
+		"""
+		expected = ("atime", "mtime", "size")
+		if stats is None or not all(st in expected for st in stats):
+			raise ValueError(f"expected one or more of: {expected}")
+		return self.sorted(key=attrgetter(*stats), reverse=reverse)
+
 	def search(self, 
 		pattern: str, 
 		where: set[str] | None = None,
@@ -441,7 +453,12 @@ class expindex(Mapping):
 		:param context_width: Width of a context window for hits
 		:returns: A dict of expsearch objects with nonzero hits
 		"""
-		pass
+		d = {}
+		for k, v in self.items():
+			hits = v.meta.search(pattern, where, ignore_case, context_width)
+			if hits is not None:
+				d[k] = hits
+		return d
 
 	@classmethod
 	def from_list(cls, lst: list[expdata]):
@@ -483,7 +500,7 @@ class expdb(Mapping):
 	"""
 	root: str
 	datasets: list[expdata]
-	use_manifest: bool
+	use_manifest: bool = True
 	_index: expindex | None = None
 
 	def __init__(self, root: str, use_manifest = True):
