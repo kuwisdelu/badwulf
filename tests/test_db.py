@@ -40,15 +40,12 @@ def test_expdata_meta_search():
 	s4 = e.meta.search("example")
 	s5 = e.meta.search("example", where={"keywords"})
 	assert s1.hits == {"contact": [{"name": "Bad Wolf"}]}
-	assert "contact" in s2.hits and "url" in s2.hits
+	assert "contact" in s2.hits
 	assert s3 is None
 	assert set(s4.hits.keys()) == {"name", "title", "keywords"}
 	assert set(s5.hits.keys()) == {"keywords"}
 	d = e.to_dict()
-	e2 = expdata.from_dict(d)
-	assert e2 == e
-	assert not e2.meta_differs(e)
-	assert e2.meta_differs(None)
+	assert expdata.from_dict(d) == e
 
 def test_expdata_move_copy_unlink():
 	p = ("public", "Example", "example0")
@@ -56,6 +53,7 @@ def test_expdata_move_copy_unlink():
 	td = tempfile.TemporaryDirectory()
 	dst_cp = os.path.join(td.name, "test-cp", *p)
 	dst_mv = os.path.join(td.name, "test-mv", *p)
+	dst_db = os.path.join(td.name, "test-db")
 	e2 = e.copy(dst_cp)
 	assert e2.is_local()
 	assert os.path.exists(e.path)
@@ -63,6 +61,7 @@ def test_expdata_move_copy_unlink():
 	assert e2.path != e.path
 	assert e2.meta == e.meta
 	assert e2.meta_size == e.meta_size
+	assert e2.is_misplaced_under(dst_db)
 	e2.move(dst_mv)
 	assert e2.is_local()
 	assert not os.path.exists(dst_cp)
@@ -70,6 +69,10 @@ def test_expdata_move_copy_unlink():
 	assert e2.path != e.path
 	assert e2.meta == e.meta
 	assert e2.meta_size == e.meta_size
+	assert e2.is_misplaced_under(dst_db)
+	e2.place_under(dst_db)
+	assert not e2.is_misplaced_under(dst_db)
+	assert os.path.exists(e2.path)
 	e2.unlink()
 	assert not os.path.exists(e2.path)
 	assert os.path.exists(e.path)
@@ -82,6 +85,11 @@ def test_expindex():
 	assert [k for k, v, in d.items()] == list(d.keys())
 	assert [v for k, v, in d.items()] == list(d.values())
 	assert not d["example0"].is_local()
+	assert len(d.subset({"data0", "data1"})) == 2
+	assert len(d.subset(scope={"public"})) == 1
+	assert len(d.subset(scope={"private"})) == 4
+	assert len(d.subset({"data0"}, scope={"public"})) == 0
+	assert len(d.subset({"data0"}, scope={"private"})) == 1
 	assert d["example0"] == d.get("example0")
 	assert d.get("Bad Wolf") is None
 

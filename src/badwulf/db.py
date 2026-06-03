@@ -149,7 +149,7 @@ class expsearch:
 class expdata:
 	"""
 	Experimental metadata and file stats for a dataset
-	:ivar path: The path to the metadata.toml file
+	:ivar path: The (real) path to the dataset directory
 	:ivar _meta: Experimental metadata
 	:ivar _meta_stat: File stats for metadata.toml
 	:ivar _tree_stat: File stats for directory contents
@@ -158,16 +158,6 @@ class expdata:
 	_meta: expmeta | None = None
 	_meta_stat: dict[str: int | float] | None = None
 	_tree_stat: dict[str: int | float] | None = None
-
-	def _get_meta(self, force = False) -> expmeta:
-		"""
-		Get experimental metadata
-		"""
-		if self._meta is None or force:
-			with open(self.meta_path, "rb") as file:
-				d = tomllib.load(file)
-			self._meta = expmeta.from_dict(d)
-		return self._meta
 
 	def _get_meta_stat(self, force = False) -> dict[str: int | float]:
 		"""
@@ -193,9 +183,20 @@ class expdata:
 	@property
 	def meta(self) -> expmeta:
 		"""
-		Get experimental metadata as an expmeta object
+		Get experimental metadata
 		"""
-		return self._get_meta()
+		if self._meta is None:
+			with open(self.meta_path, "rb") as file:
+				d = tomllib.load(file)
+			self._meta = expmeta.from_dict(d)
+		return self._meta
+
+	@meta.setter
+	def meta(self, value: expmeta) -> None:
+		"""
+		Set experimental metadata
+		"""
+		self._meta = value
 
 	@property
 	def meta_hash(self) -> int:
@@ -207,7 +208,7 @@ class expdata:
 	@property
 	def meta_path(self) -> str:
 		"""
-		Get metadata.toml path
+		Get (real) metadata.toml path
 		"""
 		return os.path.join(self.path, "metadata.toml")
 
@@ -232,30 +233,6 @@ class expdata:
 		"""
 		return self._get_meta_stat()["size"]
 
-	def meta_differs(self, 
-		other: expdata | None,
-		hash_only: bool = True) -> bool:
-		"""
-		Compare metadata (file stats) to another expdata (or None)
-		:param other: The other expdata object
-		:param hash_only: Compare only file stat hashes or full metadata?
-		:returns: True if different, False otherwise
-		"""
-		if other is None:
-			return True
-		else:
-			if hash_only:
-				return self.meta_hash != other.meta_hash
-			else:
-				return self.meta != other.meta
-
-	def meta_update(self, other: expdata) -> None:
-		"""
-		Update experimental metadata based on another expdata (or None)
-		:param other: The other expdata object
-		"""
-		self._meta = other.meta
-
 	@property
 	def atime(self) -> float:
 		"""
@@ -277,11 +254,34 @@ class expdata:
 		"""
 		return self._get_tree_stat()["size"]
 
+	@property
+	def canonical_path(self) -> str:
+		"""
+		Get the (relative) canonical path (defined as scope/group/name)
+		"""
+		return os.path.join(self.meta.scope, self.meta.group, self.meta.name)
+
 	def is_local(self) -> bool:
 		"""
 		Check if the dataset (including metadata.toml) exists locally
 		"""
 		return os.path.exists(self.meta_path)
+
+	def is_misplaced_under(self, root: str) -> bool:
+		"""
+		Check if dataset is located at its canonical path under root
+		"""
+		expected = os.path.join(root, self.canonical_path)
+		if os.path.exists(expected):
+			return not os.path.samefile(expected, self.path)
+		else:
+			return True
+
+	def place_under(self, root: str) -> None:
+		"""
+		Move the dataset to its canonical path under root
+		"""
+		self.move(os.path.join(root, self.canonical_path))
 
 	def move(self, dst: str) -> None:
 		"""
@@ -336,7 +336,7 @@ class expdata:
 		"""
 		Create an expmeta from a dict
 		:param d: A dict (parsed from json, toml, etc.)
-		:returns: An expmeta object
+		:returns: An expdata object
 		"""
 		return cls(
 			path=d["path"],
@@ -393,6 +393,56 @@ class expindex(Mapping):
 		"""
 		return iter(self._data)
 
+	def sorted(self,
+		by: str,
+		reverse: bool = False) -> list[str]:
+		"""
+		Return dataset names sorted by directory file stats
+		:param by: One of 'size', 'mtime', or 'atime'
+		:param reverse: Sort in decreasing order?
+		"""
+		pass
+
+	def subset(self,
+		names: set[str] | None = None,
+		scope: set[str] | None = None,
+		group: set[str] | None = None) -> expindex:
+		"""
+		Subset the datasets and return a new expindex
+		:param names: A set of dataset names to keep
+		:param scope: A set of scopes to keep
+		:param group: A set of groups to keep
+		:returns: A new expindex object (referencing original datasets)
+		"""
+		d = {}
+		for k, v in self.items():
+			if names is not None:
+				if k not in names:
+					continue
+			if scope is not None:
+				if not any(v.meta.has_scope(s) for s in scope):
+					continue
+			if group is not None:
+				if not any(v.meta.has_group(g) for g in group):
+					continue
+			d[k] = v
+		return expindex(d)
+
+	def search(self, 
+		pattern: str, 
+		where: set[str] | None = None,
+		ignore_case: bool = False,
+		context_width: int = 60) -> dict[str, expsearch]:
+		"""
+		Search indexed metadata for a regular expression
+		:param pattern: The search pattern
+		:param where: List of metadata fields to search; None means all
+		:param ignore_case: Should case be ignored?
+		:param context_width: Width of a context window for hits
+		:returns: A dict of expsearch objects with nonzero hits
+		"""
+		pass
+
 	@classmethod
 	def from_list(cls, lst: list[expdata]):
 		"""
@@ -427,14 +477,14 @@ class expdb(Mapping):
 	"""
 	Database of experimental datasets
 	:ivar root: The path to the database root
+	:ivar datasets: List of datasets detected under root
 	:ivar use_manifest: Read/write a manifest.json?
-	:ivar _datalist: List of datasets detected under root
-	:ivar _db: Mapping of datasets by name
+	:ivar _index: Mapping of datasets by name
 	"""
 	root: str
+	datasets: list[expdata]
 	use_manifest: bool
-	_datalist: list[expdata]
-	_db: expindex | None = None
+	_index: expindex | None = None
 
 	def __init__(self, root: str, use_manifest = True):
 		"""
@@ -446,7 +496,7 @@ class expdb(Mapping):
 		if not os.path.isdir(self.root):
 			raise NotADirectoryError(f"root must be a directory: {self.root}")
 		paths = tree_find(self.root, r"^metadata\.toml$", prune_on_match=True)
-		self._datalist = [expdata.from_path(p) for p in paths]
+		self.datasets = [expdata.from_path(p) for p in paths]
 		self.use_manifest = use_manifest
 		self.ensure()
 
@@ -454,28 +504,28 @@ class expdb(Mapping):
 		"""
 		Gets an expdata item from the database
 		"""
-		if self._db is None:
-			raise KeyError("database is empty")
-		else:
-			return self._db[key]
+		return self.index[key]
 
 	def __len__(self) -> int:
 		"""
 		Gets the number of datasets in the database
 		"""
-		if self._db is None:
-			return 0
-		else:
-			return len(self._db)
+		return len(self.index)
 
 	def __iter__(self):
 		"""
 		Gets an iterator over the database keys
 		"""
-		if self._db is None:
-			return iter({})
-		else:
-			return iter(self._db)
+		return iter(self.index)
+
+	@property
+	def index(self) -> expindex:
+		"""
+		Get the database index
+		"""
+		if self._index is None:
+			self.ensure()
+		return self._index
 
 	def ensure(self) -> None:
 		"""
@@ -490,7 +540,7 @@ class expdb(Mapping):
 		"""
 		Rebuilds the database from the datalist alone
 		"""
-		self._db = expindex.from_list(self._datalist)
+		self._index = expindex.from_list(self.datasets)
 		if self.use_manifest:
 			self.dump()
 
@@ -498,26 +548,33 @@ class expdb(Mapping):
 		"""
 		Refreshes the database from the datalist + manifest
 		"""
-		manifest = expindex.from_path(self.manifest_path)
-		self._db = {}
+		with open(self.manifest_path) as f:
+			manifest = json.load(f)
+		cache = {v.path: expdata.from_dict(v) for v in manifest.values()}
+		db = {}
 		num_changed = 0
-		for e in self._datalist:
-			cached = manifest.get(e.path)
-			if e.meta_differs(cached):
+		for e in self.datasets:
+			c = cache.get(e.path)
+			if c is None or e.meta_hash != c.meta_hash:
 				num_changed += 1
 			else:
-				e.meta_update(cached)
-			self._db[e.meta.name] = e
+				e.meta = c.meta
+			db[e.meta.name] = e
+		self._index = expindex(db)
 		if num_changed > 0 and self.use_manifest:
 			self.dump()
 
-	def dump(self, indent: int = 2) -> None:
+	def dump(self, 
+		indent: int = 2, 
+		sort_keys: bool = True) -> None:
 		"""
 		Dumps the database to manifest.json
+		:param indent: Number of spaces to indent json
+		:param sort_keys: Should the manifest be sorted?
 		"""
-		d = {k: v.to_dict() for k, v in self._db.items()}
+		d = {k: v.to_dict() for k, v in self._index.items()}
 		with open(self.manifest_path, "w") as f:
-			json.dump(d, f, indent=2)
+			json.dump(d, f, indent=2, sort_keys=sort_keys)
 
 	@property
 	def manifest_path(self) -> str:

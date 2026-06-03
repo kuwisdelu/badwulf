@@ -50,26 +50,6 @@
       "size": 892
     }
   },
-  "data1": {
-    "path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/private/Bad Wolf Corporation/data1",
-    "meta": {
-      "data1": {
-        "title": "I create myself.",
-        "group": "Bad Wolf Corporation",
-        "scope": "private"
-      }
-    },
-    "meta_stat": {
-      "atime": 1779123746.1920218,
-      "mtime": 1779076404.891377,
-      "size": 84
-    },
-    "tree_stat": {
-      "atime": 0,
-      "mtime": 1779074900.0166216,
-      "size": 84
-    }
-  },
   "data0": {
     "path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/private/Bad Wolf Corporation/data0",
     "meta": {
@@ -88,6 +68,26 @@
       "atime": 0,
       "mtime": 1779074847.6330843,
       "size": 86
+    }
+  },
+  "data1": {
+    "path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/private/Bad Wolf Corporation/data1",
+    "meta": {
+      "data1": {
+        "title": "I create myself.",
+        "group": "Bad Wolf Corporation",
+        "scope": "private"
+      }
+    },
+    "meta_stat": {
+      "atime": 1779123746.1920218,
+      "mtime": 1779076404.891377,
+      "size": 84
+    },
+    "tree_stat": {
+      "atime": 0,
+      "mtime": 1779074900.0166216,
+      "size": 84
     }
   },
   "data2": {
