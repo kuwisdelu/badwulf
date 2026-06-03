@@ -89,6 +89,10 @@ def test_expindex():
 	sizes2 = [e.size for e in d.sorted_by("size", reverse=True)]
 	assert sizes1 == sorted(sizes1)
 	assert sizes2 == sorted(sizes2, reverse=True)
+	mtimes1 = [e.mtime for e in d.sorted_by("mtime")]
+	mtimes2 = [e.mtime for e in d.sorted_by("mtime", reverse=True)]
+	assert mtimes1 == sorted(mtimes1)
+	assert mtimes2 == sorted(mtimes2, reverse=True)
 	assert len(d.subset({"data0", "data1"})) == 2
 	assert len(d.subset(scope={"public"})) == 1
 	assert len(d.subset(scope={"private"})) == 4

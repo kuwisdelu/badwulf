@@ -392,6 +392,14 @@ class expindex(Mapping):
 		"""
 		return iter(self._index)
 
+	def filter(self, function: Callable[[expdata], bool]) -> expindex:
+		"""
+		Filter the datasets and return a new expindex
+		:param function: A function returning True for expdata to keep
+		:returns: A new expindex object (referencing original datasets)
+		"""
+		return expindex({k: v for k, v in self.items() if function(v)})
+
 	def subset(self,
 		names: set[str] | None = None,
 		scope: set[str] | None = None,
@@ -403,19 +411,18 @@ class expindex(Mapping):
 		:param group: A set of groups to keep
 		:returns: A new expindex object (referencing original datasets)
 		"""
-		d = {}
-		for k, v in self.items():
+		def subsetter(e):
 			if names is not None:
-				if k not in names:
-					continue
+				if e.meta.name not in names:
+					return False
 			if scope is not None:
-				if not any(v.meta.has_scope(s) for s in scope):
-					continue
+				if not any(e.meta.has_scope(s) for s in scope):
+					return False
 			if group is not None:
-				if not any(v.meta.has_group(g) for g in group):
-					continue
-			d[k] = v
-		return expindex(d)
+				if not any(e.meta.has_group(g) for g in group):
+					return False
+			return True
+		return self.filter(subsetter)
 
 	def sorted(self,
 		key: Callable[[expdata], Any],
