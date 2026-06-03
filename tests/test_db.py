@@ -2,9 +2,19 @@
 import os
 import tomllib
 import tempfile
+import shutil
 
 from badwulf.db import expdata
+from badwulf.db import expindex
 from badwulf.db import expdb
+
+def _testindex():
+	try:
+		return os.path.join(os.path.dirname(__file__), 
+			"tests", "testindex", "manifest.json")
+	except NameError:
+		return os.path.join("..", 
+			"tests", "testindex", "manifest.json")
 
 def _testdb():
 	try:
@@ -15,6 +25,7 @@ def _testdb():
 def test_expdata_meta_search():
 	p = ("public", "Example", "example0")
 	e = expdata.from_path(os.path.join(_testdb(), *p))
+	assert e.is_local()
 	assert e.size == e.meta_size
 	with open(os.path.join(_testdb(), *p, "metadata.toml"), "rb") as f:
 		m = tomllib.load(f)
@@ -23,36 +34,67 @@ def test_expdata_meta_search():
 	assert e.meta.has_group("Example")
 	assert not e.meta.has_scope("private")
 	assert not e.meta.has_group("Bad Wolf Corporation")
-	s1 = e.meta.search("bad wolf")
-	s2 = e.meta.search("bad")
+	s1 = e.meta.search("bad wolf", ignore_case=True)
+	s2 = e.meta.search("Bad")
 	s3 = e.meta.search("Rose")
+	s4 = e.meta.search("example")
+	s5 = e.meta.search("example", where={"keywords"})
 	assert s1.hits == {"contact": [{"name": "Bad Wolf"}]}
 	assert "contact" in s2.hits and "url" in s2.hits
 	assert s3 is None
+	assert set(s4.hits.keys()) == {"name", "title", "keywords"}
+	assert set(s5.hits.keys()) == {"keywords"}
 	d = e.to_dict()
-	assert expdata.from_dict(d) == e
+	e2 = expdata.from_dict(d)
+	assert e2 == e
+	assert not e2.meta_differs(e)
+	assert e2.meta_differs(None)
 
 def test_expdata_move_copy_unlink():
 	p = ("public", "Example", "example0")
 	e = expdata.from_path(os.path.join(_testdb(), *p))
-	with tempfile.TemporaryDirectory() as tmp:
-		dst_cp = os.path.join(tmp, "testcp", *p)
-		dst_mv = os.path.join(tmp, "testmv", *p)
-		e2 = e.copy(dst_cp)
-		assert os.path.exists(e.path)
-		assert os.path.exists(e2.path)
-		assert e2.path != e.path
-		assert e2.meta == e.meta
-		assert e2.meta_size == e.meta_size
-		e2.move(dst_mv)
-		assert not os.path.exists(dst_cp)
-		assert os.path.exists(e2.path)
-		assert e2.path != e.path
-		assert e2.meta == e.meta
-		assert e2.meta_size == e.meta_size
-		e2.unlink()
-		assert not os.path.exists(e2.path)
-		assert os.path.exists(e.path)
+	td = tempfile.TemporaryDirectory()
+	dst_cp = os.path.join(td.name, "test-cp", *p)
+	dst_mv = os.path.join(td.name, "test-mv", *p)
+	e2 = e.copy(dst_cp)
+	assert e2.is_local()
+	assert os.path.exists(e.path)
+	assert os.path.exists(e2.path)
+	assert e2.path != e.path
+	assert e2.meta == e.meta
+	assert e2.meta_size == e.meta_size
+	e2.move(dst_mv)
+	assert e2.is_local()
+	assert not os.path.exists(dst_cp)
+	assert os.path.exists(e2.path)
+	assert e2.path != e.path
+	assert e2.meta == e.meta
+	assert e2.meta_size == e.meta_size
+	e2.unlink()
+	assert not os.path.exists(e2.path)
+	assert os.path.exists(e.path)
+	td.cleanup()
 
-def test_expdb():
-	db = expdb(_testdb())
+def test_expindex():
+	d = expindex.from_path(_testindex())
+	assert "example0" in d
+	assert isinstance(d["example0"], expdata)
+	assert [k for k, v, in d.items()] == list(d.keys())
+	assert [v for k, v, in d.items()] == list(d.values())
+	assert not d["example0"].is_local()
+	assert d["example0"] == d.get("example0")
+	assert d.get("Bad Wolf") is None
+
+def test_expdb_without_manifest():
+	db = expdb(_testdb(), use_manifest=False)
+	assert "example0" in db
+	assert not db.manifest_exists()
+
+def test_expdb_with_manifest():
+	td = tempfile.TemporaryDirectory()
+	root = shutil.copytree(_testdb(), os.path.join(td.name, "testdb"))
+	db = expdb(root, use_manifest=True)
+	assert "example0" in db
+	assert db.manifest_exists()
+	td.cleanup()
+

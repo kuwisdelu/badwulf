@@ -73,7 +73,7 @@ class expmeta:
 	def search(self, 
 		pattern: str, 
 		where: set[str] | None = None,
-		ignore_case: bool = True,
+		ignore_case: bool = False,
 		context_width: int = 60) -> expsearch | None:
 		"""
 		Search metadata for a regular expression
@@ -148,7 +148,7 @@ class expsearch:
 @dataclass
 class expdata:
 	"""
-	Experimental metadata and file stats for a local dataset
+	Experimental metadata and file stats for a dataset
 	:ivar path: The path to the metadata.toml file
 	:ivar _meta: Experimental metadata
 	:ivar _meta_stat: File stats for metadata.toml
@@ -158,12 +158,6 @@ class expdata:
 	_meta: expmeta | None = None
 	_meta_stat: dict[str: int | float] | None = None
 	_tree_stat: dict[str: int | float] | None = None
-
-	def __post_init__(self):
-		fp = self.meta_path
-		if not os.path.exists(fp):
-			raise ValueError(f"missing metadata file: {fp}")
-		self._get_meta_stat()
 
 	def _get_meta(self, force = False) -> expmeta:
 		"""
@@ -240,11 +234,11 @@ class expdata:
 
 	def meta_differs(self, 
 		other: expdata | None,
-		hash_only: bool = True):
+		hash_only: bool = True) -> bool:
 		"""
-		Compare meta hash to another expdata or None
+		Compare metadata (file stats) to another expdata (or None)
 		:param other: The other expdata object
-		:param hash_only: Compare only file stat hashes?
+		:param hash_only: Compare only file stat hashes or full metadata?
 		:returns: True if different, False otherwise
 		"""
 		if other is None:
@@ -254,6 +248,13 @@ class expdata:
 				return self.meta_hash != other.meta_hash
 			else:
 				return self.meta != other.meta
+
+	def meta_update(self, other: expdata) -> None:
+		"""
+		Update experimental metadata based on another expdata (or None)
+		:param other: The other expdata object
+		"""
+		self._meta = other.meta
 
 	@property
 	def atime(self) -> float:
@@ -275,6 +276,12 @@ class expdata:
 		Get size of the dataset directory contents in bytes
 		"""
 		return self._get_tree_stat()["size"]
+
+	def is_local(self) -> bool:
+		"""
+		Check if the dataset (including metadata.toml) exists locally
+		"""
+		return os.path.exists(self.meta_path)
 
 	def move(self, dst: str) -> None:
 		"""
@@ -320,7 +327,7 @@ class expdata:
 		"""
 		return {
 			"path": self.path,
-			"meta": self.meta,
+			"meta": self.meta.to_dict(),
 			"meta_stat": self._get_meta_stat(),
 			"tree_stat": self._get_tree_stat()}
 
@@ -333,7 +340,7 @@ class expdata:
 		"""
 		return cls(
 			path=d["path"],
-			_meta=d["meta"],
+			_meta=expmeta.from_dict(d["meta"]),
 			_meta_stat=d.get("meta_stat"),
 			_tree_stat=d.get("tree_stat"))
 
@@ -349,99 +356,168 @@ class expdata:
 			p = os.path.dirname(p)
 		return cls(path=p)
 
+class expindex(Mapping):
+	"""
+	Index of experimental datasets
+	:ivar _data: Mapping of datasets by name
+	"""
+	_data: dict[str, expdata]
+
+	def __init__(self, d: dict[str, expdata] | None = None):
+		"""
+		Create an expindex from a dict
+		"""
+		if d is None:
+			self._data = {}
+		else:
+			self._data = d
+
+	def __getitem__(self, key: str) -> expdata:
+		"""
+		Gets an expdata item from the index
+		"""
+		if self._data is None:
+			raise KeyError(f"no dataset named: {key}")
+		else:
+			return self._data[key]
+
+	def __len__(self) -> int:
+		"""
+		Gets the number of datasets in the index
+		"""
+		return len(self._data)
+
+	def __iter__(self):
+		"""
+		Gets an iterator over the database keys
+		"""
+		return iter(self._data)
+
+	@classmethod
+	def from_list(cls, lst: list[expdata]):
+		"""
+		Create an expindex from a list
+		:param l: A list of expdata objects
+		:returns: An expindex object:
+		"""
+		return cls({e.meta.name: e for e in lst})
+
+	@classmethod
+	def from_file(cls, f: io.TextIOBase | io.BufferedIOBase):
+		"""
+		Create an expindex from a json file
+		:param f: An open json file
+		:returns: A expindex object
+		"""
+		d = json.load(f)
+		return cls({k: expdata.from_dict(v) for k, v in d.items()})
+
+	@classmethod
+	def from_path(cls, p: str):
+		"""
+		Create an expindex from a json file
+		:param p: The path to a manifest.json file
+		:returns: An expindex object
+		"""
+		p = fix_path(p, must_exist=True)
+		with open(p) as f:
+			return cls.from_file(f)
+
 class expdb(Mapping):
 	"""
 	Database of experimental datasets
-	:ivar path: The path to the database root
+	:ivar root: The path to the database root
+	:ivar use_manifest: Read/write a manifest.json?
 	:ivar _datalist: List of datasets detected under root
-	:ivar _database: Mapping of validated datasets by name
+	:ivar _db: Mapping of datasets by name
 	"""
 	root: str
+	use_manifest: bool
 	_datalist: list[expdata]
-	_database: dict[str, expdata] | None = None
+	_db: expindex | None = None
 
-	def __init__(self, root: str):
+	def __init__(self, root: str, use_manifest = True):
 		"""
 		Create an expdb from a database directory
 		:param root: The path to the root database directory
+		:param use_manifest: Read/write a manifest.json?
 		"""
 		self.root = fix_path(root, must_exist=True)
 		if not os.path.isdir(self.root):
 			raise NotADirectoryError(f"root must be a directory: {self.root}")
 		paths = tree_find(self.root, r"^metadata\.toml$", prune_on_match=True)
 		self._datalist = [expdata.from_path(p) for p in paths]
-		self._ensure()
+		self.use_manifest = use_manifest
+		self.ensure()
 
 	def __getitem__(self, key: str) -> expdata | None:
 		"""
 		Gets an expdata item from the database
 		"""
-		if self._database is None:
+		if self._db is None:
 			raise KeyError("database is empty")
 		else:
-			return self._database[key]
+			return self._db[key]
 
 	def __len__(self) -> int:
 		"""
 		Gets the number of datasets in the database
 		"""
-		if self._database is None:
+		if self._db is None:
 			return 0
 		else:
-			return len(self._database)
+			return len(self._db)
 
 	def __iter__(self):
 		"""
 		Gets an iterator over the database keys
 		"""
-		if self._database is None:
+		if self._db is None:
 			return iter({})
 		else:
-			return iter(self._database)
+			return iter(self._db)
 
-	def _ensure(self) -> None:
+	def ensure(self) -> None:
 		"""
 		Ensures the database is in a valid state
 		"""
-		if self.manifest_exists():
-			self._refresh()
+		if self.use_manifest and self.manifest_exists():
+			self.refresh()
 		else:
-			self._rebuild()
+			self.rebuild()
 
-	def _rebuild(self) -> None:
+	def rebuild(self) -> None:
 		"""
 		Rebuilds the database from the datalist alone
 		"""
-		self._database = {d.meta.name: d for d in self._datalist}
-		self._dump()
+		self._db = expindex.from_list(self._datalist)
+		if self.use_manifest:
+			self.dump()
 
-	def _refresh(self) -> None:
+	def refresh(self) -> None:
 		"""
 		Refreshes the database from the datalist + manifest
 		"""
-		with open(self.manifest_path, "r") as f:
-			d = json.load(f)
-		manifest = {e.path: expdata.from_dict(e) for e in d.values()}
-		self._database = {}
+		manifest = expindex.from_path(self.manifest_path)
+		self._db = {}
 		num_changed = 0
 		for e in self._datalist:
 			cached = manifest.get(e.path)
 			if e.meta_differs(cached):
 				num_changed += 1
-				self._database[e.meta.name] = e
 			else:
-				e._meta = cached.meta
-				self._database[cached.meta.name] = e
-		if num_changed > 0:
-			self._dump()
+				e.meta_update(cached)
+			self._db[e.meta.name] = e
+		if num_changed > 0 and self.use_manifest:
+			self.dump()
 
-	def _dump(self) -> None:
+	def dump(self, indent: int = 2) -> None:
 		"""
 		Dumps the database to manifest.json
 		"""
-		d = {k: v.to_dict() for k, v in self._database.items()}
+		d = {k: v.to_dict() for k, v in self._db.items()}
 		with open(self.manifest_path, "w") as f:
-			json.dump(d, f)
+			json.dump(d, f, indent=2)
 
 	@property
 	def manifest_path(self) -> str:
