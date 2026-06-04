@@ -1,0 +1,54 @@
+{
+	"self":
+	{
+		"paths": {
+			"projects": "~/.MagiSys/Projects",
+			"datasets": "~/.MagiSys/Datasets"
+		},
+		"defaults": {
+			"fetch": "origin",
+			"push": "origin",
+			"pull": "origin"
+		}
+	},
+	"origin": 
+	{
+		"user": "viteklab",
+		"hosts": {
+			"default": "Magi-01"
+		},
+		"proxy": {
+			"host": "login.khoury.northeastern.edu"
+		},
+		"paths": {
+			"projects": "/Volumes/MagiSysCache/Projects",
+			"datasets": "/Volumes/MagiSysCache/Datasets"
+		}
+	},
+	"magi": 
+	{
+		"user": "viteklab",
+		"hosts": {
+			"01": "Magi-01",
+			"02": "Magi-02"
+		},
+		"proxy": {
+			"host": "login.khoury.northeastern.edu"
+		},
+		"paths": {
+			"projects": "/Volumes/MagiSys/Projects",
+			"datasets": "/Volumes/MagiSys/Datasets"
+		}
+	},
+	"explorer":
+	{
+		"hosts": {
+			"head": "login.explorer.northeastern.edu",
+			"xfer": "xfer.discovery.neu.edu"
+		},
+		"paths": {
+			"projects": "/work/MSIResearch/Projects",
+			"datasets": "/work/MSIResearch/Datasets"
+		}
+	}
+}

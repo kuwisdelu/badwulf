@@ -562,7 +562,7 @@ class expdb(Mapping):
 
 	def rebuild(self) -> None:
 		"""
-		Rebuilds the database from the datalist alone
+		Rebuilds the database from the datasets alone
 		"""
 		self._index = expindex.from_list(self.datasets)
 		if self.use_manifest:
@@ -570,7 +570,7 @@ class expdb(Mapping):
 
 	def refresh(self) -> None:
 		"""
-		Refreshes the database from the datalist + manifest
+		Refreshes the database from the datasets + manifest
 		"""
 		with open(self.manifest_path) as f:
 			manifest = json.load(f)
@@ -598,7 +598,7 @@ class expdb(Mapping):
 		"""
 		d = {k: v.to_dict() for k, v in self._index.items()}
 		with open(self.manifest_path, "w") as f:
-			json.dump(d, f, indent=2, sort_keys=sort_keys)
+			json.dump(d, f, indent=indent, sort_keys=sort_keys)
 
 	@property
 	def manifest_path(self) -> str:

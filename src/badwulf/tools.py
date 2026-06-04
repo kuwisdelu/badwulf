@@ -128,12 +128,14 @@ def fix_path(
 	must_exist: bool = True, 
 	escape_spaces: bool = False) -> str:
 	"""
-	Normalize and expand paths
+	Expand and normalize file paths
 	:param path: The path to normalize
 	:param must_exist: Must the path exist?
 	:raises FileNotFoundError: If the file doesn't exist
 	:returns: The normalized path
 	"""
+	if "$" in path:
+		path = os.path.expandvars(path)
 	if "~" in path:
 		path = os.path.expanduser(path)
 	path = os.path.realpath(path)

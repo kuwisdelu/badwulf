@@ -11,10 +11,10 @@ from badwulf.db import expdb
 def _testindex():
 	try:
 		return os.path.join(os.path.dirname(__file__), 
-			"tests", "testindex", "manifest.json")
+			"tests", "testfiles", "manifest.json")
 	except NameError:
 		return os.path.join("..", 
-			"tests", "testindex", "manifest.json")
+			"tests", "testfiles", "manifest.json")
 
 def _testdb():
 	try:
