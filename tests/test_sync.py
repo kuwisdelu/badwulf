@@ -8,10 +8,10 @@ from badwulf.sync import syncer
 def _testconfig():
 	try:
 		return os.path.join(os.path.dirname(__file__), 
-			"tests", "testfiles", "config.json")
+			"tests", "testfiles", "badwulf-sites.json")
 	except NameError:
 		return os.path.join("..", 
-			"tests", "testfiles", "config.json")
+			"tests", "testfiles", "badwulf-sites.json")
 
 def test_syncer():
 	c1 = syncer.from_path(_testconfig())

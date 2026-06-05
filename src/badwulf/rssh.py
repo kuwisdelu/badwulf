@@ -1,67 +1,46 @@
 
 # Restricted SSH manager
 
+import os
 import subprocess
 from time import sleep
+from dataclasses import dataclass
+from dataclasses import asdict
 
 from .tools import fix_path
 from .tools import confirm
 from .tools import quote
+from .tools import findport
 
+@dataclass
 class rssh:
 	"""
 	Restricted SSH manager for rsync
+	:ivar user: Username for the destination
+	:ivar host: Hostname for the destination
+	:ivar port: Destination's SSH port 
+	:ivar proxy_user: (Optional) Proxy jump username
+	:ivar proxy_host: (Optional) Proxy jump hostname
+	:ivar proxy_port: (Optional) Local port for the proxy jump
+	:ivar con: An open subprocess for the proxy jump
 	"""
-	
-	def __init__(self, username, destination,
-		server = None, server_username = None,
-		port = 8080, destination_port = 22,
-		autoconnect = False):
-		"""
-		Initialize an rssh instance
-		:param username: Your username on destination machine
-		:param destination: The destination machine hostname
-		:param server: The gateway server hostname (optional)
-		:param server_username: Your username on the gateway server (optional)
-		:param port: The local port for gateway server SSH forwarding
-		:param destination_port: The destination port
-		:param autoconnect: Connect on initialization?
-		"""
-		self.username = username
-		self.destination = destination
-		self.server = server
-		self.server_username = server_username
-		self.port = port
-		self.destination_port = destination_port
-		self.process = None
-		if autoconnect:
-			self.open()
-	
-	def __str__(self):
-		"""
-		Return str(self)
-		"""
-		dest = f"{self.username}@{self.destination}"
-		if self.isopen():
-			server = f"(forwarding to {self.server} over {self.port})"
-			return "ssh: " + dest + " " + server
-		else:
-			return "ssh: " + dest
-	
-	def __repr__(self):
-		"""
-		Return repr(self)
-		"""
-		user = f"username='{self.username}'"
-		dest = f"destination='{self.destination}'"
-		if self.isopen():
-			server = f"server='{self.server}'"
-			server_username = f"server_username='{self.server_username}'"
-			port = f"port={self.port}"
-			return f"rssh({user}, {dest}, {server}, {server_username}, {port})"
-		else:
-			return f"rssh({user}, {dest})"
-	
+	user: str 
+	host: str 
+	port: int = 22 
+	proxy_user: str | None = None 
+	proxy_host: str | None = None 
+	proxy_port: int | None = None 
+	con: subprocess.Popen | None = None 
+
+	def __post_init__(self):
+		if self.proxy_user is not None and self.proxy_host is None:
+			raise TypeError("proxy_user provided but proxy_host is None")
+		if self.proxy_host is not None and self.proxy_user is None:
+			raise TypeError("proxy_host provided but proxy_user is None")
+		if self.proxy_host is not None:
+			if self.proxy_port is None:
+				self.proxy_port = findport()
+
 	def __enter__(self):
 		"""
 		Enter context manager
@@ -82,195 +61,186 @@ class rssh:
 		self.close()
 	
 	@property
-	def hostname(self):
+	def rsh(self) -> list[str]:
 		"""
-		Get the hostname used for the SSH connection
+		Get the SSH program prefix list
 		"""
-		if self.server is None:
-			return self.destination
+		rsh = ["ssh"]
+		if self.has_proxy_jump():
+			if self.is_open():
+				rsh += ["-o", "NoHostAuthenticationForLocalhost=yes"]
+				rsh += ["-o", f"Port={self.proxy_port}"]
+			else:
+				rsh += ["-o", f"ProxyJump={self.proxy_destination}"]
+		return rsh
+
+	@property
+	def destination(self) -> str:
+		"""
+		Get the resolved destination
+		"""
+		user = self.user
+		if user != "":
+			user += "@"
+		if self.is_open():
+			return f"{user}localhost"
 		else:
-			return "localhost"
-	
-	def open(self):
+			return f"{user}{self.host}"
+
+	@property
+	def proxy_destination(self) -> str | None:
 		"""
-		Open the connection to the gateway server
+		Get the resolved proxy destination
 		"""
-		if self.server is None or self.isopen():
-			return
-		print(f"opening connection to {self.server}")
-		if not isinstance(self.server_username, str):
-			msg = "Please enter your username: "
-			self.server_username = input(msg)
-		if len(self.server_username) == 0:
-			gateway = self.server
+		if self.has_proxy_jump():
+			user = self.proxy_user
+			if user != "":
+				user += "@"
+			return f"{user}{self.proxy_host}"
 		else:
-			gateway = f"{self.server_username}@{self.server}"
-		target = f"{self.port}:{self.destination}:{self.destination_port}"
-		cmd = ["ssh", "-NL", target, gateway]
-		try:
-			print(f"connecting as {gateway}")
-			self.process = subprocess.Popen(cmd)
+			return None
+
+	def has_proxy_jump(self) -> bool:
+		"""
+		Check if the connection requires a proxy jump
+		"""
+		return self.proxy_host is not None
+
+	def is_open(self) -> bool:
+		"""
+		Check if the proxy jump connection is open
+		"""
+		return self.con is not None
+
+	def open(self) -> None:
+		"""
+		Open connection to proxy jump host (if applicable)
+		"""
+		if self.has_proxy_jump() and not self.is_open():
+			forward = f"{self.proxy_port}:{self.host}:{self.port}"
+			cmd = ["ssh", "-NL", forward, self.proxy_destination]
+			self.con = subprocess.Popen(cmd)
 			sleep(1) # allow time to connect
-			print(f"forwarding to {self.destination} on port {self.port}")
-		except Exception:
-			self.process = None
-			print("failed to open connection")
-	
-	def isopen(self):
+
+	def close(self) -> None:
 		"""
-		Check if the gateway server connection is open
+		Close connection to proxy jump host (if applicable)
 		"""
-		return self.process is not None
+		if self.has_proxy_jump() and self.is_open():
+			self.con.terminate()
+			self.con = None
 	
-	def isbatch(self):
+	def is_batch(self) -> bool:
 		"""
 		Check if connection can be established without prompts
 		"""
-		dest = f"{self.username}@{self.hostname}"
-		if self.server is None:
-			cmd = ["ssh", dest]
-			cmd += ["-o", "BatchMode=yes"]
-		else:
-			self.open()
-			cmd = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
-			cmd += ["-o", "BatchMode=yes"]
-			cmd += ["-p", str(self.port), dest]
-		cmd += ["true"]
+		cmd = self.rsh + ["-o", "BatchMode=yes"] 
+		cmd += [self.destination, "true"]
 		proc = subprocess.run(cmd)
 		return proc.returncode == 0
 	
-	def ls(self, file = None, all_names = False, details = False):
+	def ls(self, 
+		path: str | list[str] | None = None, 
+		all_names: bool = False, 
+		details: bool = False) -> subprocess.CompletedProcess:
 		"""
 		List files on the destination machine
-		:param file: A file or directory or list of them
+		:param path: A file or directory or list of them
 		:param all_names: Should hidden files be included?
 		:param details: Show file metadata details?
 		"""
-		host = f"{self.username}@{self.hostname}"
-		if self.server is None:
-			cmd = ["ssh", host]
-		else:
-			self.open()
-			cmd = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
-			cmd += ["-p", str(self.port), host]
-		cmd += ["ls"]
+		cmd = self.rsh 
+		cmd += [self.destination, "ls"]
 		if all_names:
 			cmd += ["-a"]
 		if details:
 			cmd += ["-l"]
-		if file is not None:
-			if isinstance(file, str):
-				cmd += [file]
+		if path is not None:
+			if isinstance(path, str):
+				cmd += [path]
 			else:
-				cmd += file
-		print(f"connecting as {self.username}@{self.destination}")
+				cmd += path
 		return subprocess.run(cmd)
-	
-	def copy_id(self, id_file, ask = False):
+
+	def push(self, 
+		src: str, 
+		dst: str, 
+		mirror: bool = False,
+		dry_run: bool = False, 
+		ask: bool = False):
 		"""
-		Copy local SSH keys to the destination machine
-		:param id_file: The identity file (ending in .pub)
-		:param ask: Confirm before copying?
-		"""
-		truehost = f"{self.username}@{self.hostname}"
-		showhost = f"{self.username}@{self.destination}"
-		id_file = fix_path(id_file, must_exist=True, escape_spaces=False)
-		print(f"key will be uploaded from: '{id_file}'")
-		print(f"key will be uploaded to: '{showhost}'")
-		if ask and not confirm("Continue?"):
-			return
-		print(f"copying key as {showhost}")
-		cmd = ["ssh-copy-id", "-i", id_file]
-		if self.server is None:
-			cmd += [truehost]
-		else:
-			self.open()
-			cmd += ["-o", "NoHostAuthenticationForLocalhost=yes"]
-			cmd += ["-p", str(self.port)]
-			cmd += [truehost]
-		return subprocess.run(cmd)
-	
-	def download(self, src, dest, dry_run = False, ask = False):
-		"""
-		Download file(s) to local storage using rsync
-		:param src: The source path on the destination machine
-		:param dest: The destination path on the local machine
+		Push file/directory from src to dst using rsync
+		:param src: The source path on localhost
+		:param dst: The destination path on target host
+		:param mirror: Delete files in dst that aren't in src?
 		:param dry_run: Show what would be done without doing it?
-		:param ask: Confirm before downloading?
+		:param ask: Confirm before pushing?
 		"""
-		truesrc = f"{self.username}@{self.hostname}:{quote(src)}"
-		showsrc = f"{self.username}@{self.destination}:{quote(src)}"
-		has_trailing_slash = dest[-1] == "/"
-		dest = fix_path(dest, must_exist=False, escape_spaces=False)
-		if dest[-1] != "/" and has_trailing_slash:
-			dest += "/"
-		print(f"data will be downloaded from: '{showsrc}'")
-		print(f"data will be downloaded to: '{dest}'")
-		if ask and not confirm("Continue?"):
-			return
-		print(f"downloading data as {self.username}@{self.destination}")
-		if self.server is None:
-			cmd = ["rsync", "-aP", truesrc, dest]
+		if src[-1] == "/":
+			src = fix_path(src, must_exist=True)
+			if src[-1] != "/":
+				src += "/"
 		else:
-			self.open()
-			rsh = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
-			rsh = " ".join(rsh + ["-p", str(self.port)])
-			cmd = ["rsync", "-aP", "--rsh", rsh, truesrc, dest]
+			src = fix_path(src, must_exist=True)
+		dst = f"{self.destination}:{quote(dst)}"
+		cmd = ["rsync", "-aP"]
+		if mirror:
+			cmd += ["--delete"]
 		if dry_run:
 			cmd += ["--dry-run"]
+		if self.has_proxy_jump():
+			cmd += ["-e", " ".join(self.rsh)]
+		cmd += [src, dst]
+		if ask:
+			print(f"Data will be pushed from: '{src}'")
+			print(f"Data will be pushed to: '{dst}'")
+			print("The following command will be run:")
+			print(" ".join(cmd))
+			if not confirm("Continue?"):
+				return
 		return subprocess.run(cmd)
-	
-	def upload(self, src, dest, dry_run = False, ask = False):
+
+	def pull(self, 
+		src: str, 
+		dst: str, 
+		mirror: bool = False,
+		dry_run: bool = False, 
+		ask: bool = False):
 		"""
-		Upload file(s) from local storage using rsync
-		:param src: The source path on the local machine
-		:param dest: The destination path on the destination machine
+		Pull file/directory from src to dst using rsync
+		:param src: The source path on target host
+		:param dst: The destination path on localhost
+		:param mirror: Delete files in dst that aren't in src?
 		:param dry_run: Show what would be done without doing it?
-		:param ask: Confirm before uploading?
+		:param ask: Confirm before pushing?
 		"""
-		truedest = f"{self.username}@{self.hostname}:{quote(dest)}"
-		showdest = f"{self.username}@{self.destination}:{quote(dest)}"
-		has_trailing_slash = src[-1] == "/"
-		src = fix_path(src, must_exist=True, escape_spaces=False)
-		if src[-1] != "/" and has_trailing_slash:
-			src += "/"
-		print(f"data will be uploaded from: '{src}'")
-		print(f"data will be uploaded to: '{showdest}'")
-		if ask and not confirm("Continue?"):
-			return
-		print(f"uploading data as {self.username}@{self.destination}")
-		if self.server is None:
-			cmd = ["rsync", "-aP", src, truedest]
+		src = f"{self.destination}:{quote(src)}"
+		if dst[-1] == "/":
+			dst = fix_path(dst, must_exist=False)
+			if dst[-1] != "/":
+				dst += "/"
 		else:
-			self.open()
-			rsh = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
-			rsh = " ".join(rsh + ["-p", str(self.port)])
-			cmd = ["rsync", "-aP", "--rsh", rsh, src, truedest]
+			dst = fix_path(dst, must_exist=False)
+		cmd = ["rsync", "-aP"]
+		if mirror:
+			cmd += ["--delete"]
 		if dry_run:
 			cmd += ["--dry-run"]
+		if self.has_proxy_jump():
+			cmd += ["-e", " ".join(self.rsh)]
+		cmd += [src, dst]
+		if ask:
+			print(f"Data will be pulled from: '{src}'")
+			print(f"Data will be pulled to: '{dst}'")
+			print("The following command will be run:")
+			print(" ".join(cmd))
+			if not confirm("Continue?"):
+				return
 		return subprocess.run(cmd)
 	
 	def ssh(self):
 		"""
 		Attach an unrestricted ssh terminal session
 		"""
-		print(f"connecting as {self.username}@{self.destination}")
-		dest = f"{self.username}@{self.hostname}"
-		if self.server is None:
-			cmd = ["ssh", dest]
-		else:
-			self.open()
-			cmd = ["ssh", "-o", "NoHostAuthenticationForLocalhost=yes"]
-			cmd += ["-p", str(self.port), dest]
+		cmd = self.rsh + [self.destination]
 		return subprocess.run(cmd)
-	
-	def close(self):
-		"""
-		Close the connection to the gateway server
-		"""
-		if self.process is None:
-			return
-		print(f"closing connection to {self.server}")
-		self.process.terminate()
-		self.process = None
-

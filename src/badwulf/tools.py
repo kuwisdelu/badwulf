@@ -125,12 +125,13 @@ def quote(s: str, q: str = '"') -> str:
 
 def fix_path(
 	path: str, 
-	must_exist: bool = True, 
+	must_exist: bool = True,
 	escape_spaces: bool = False) -> str:
 	"""
 	Expand and normalize file paths
 	:param path: The path to normalize
 	:param must_exist: Must the path exist?
+	:param escape_spaces: Escape spaces with backslashes?
 	:raises FileNotFoundError: If the file doesn't exist
 	:returns: The normalized path
 	"""
