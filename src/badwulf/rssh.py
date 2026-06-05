@@ -21,8 +21,8 @@ class rssh:
 	:ivar port: Destination's SSH port 
 	:ivar proxy_user: (Optional) Proxy jump username
 	:ivar proxy_host: (Optional) Proxy jump hostname
-	:ivar proxy_port: (Optional) Local port for the proxy jump
-	:ivar con: An open subprocess for the proxy jump
+	:ivar proxy_port: (Optional) Local port for forwarding
+	:ivar con: An open subprocess for port forwarding
 	"""
 	user: str 
 	host: str 
@@ -41,7 +41,7 @@ class rssh:
 			if self.proxy_port is None:
 				self.proxy_port = findport()
 
-	def __enter__(self):
+	def __enter__(self) -> rssh:
 		"""
 		Enter context manager
 		"""
@@ -54,7 +54,7 @@ class rssh:
 		"""
 		self.close()
 	
-	def __del__(self):
+	def __del__(self) -> None:
 		"""
 		Delete self
 		"""
@@ -114,7 +114,7 @@ class rssh:
 
 	def open(self) -> None:
 		"""
-		Open connection to proxy jump host (if applicable)
+		Open port forwarding through proxy jump host (if applicable)
 		"""
 		if self.has_proxy_jump() and not self.is_open():
 			forward = f"{self.proxy_port}:{self.host}:{self.port}"
@@ -124,7 +124,7 @@ class rssh:
 
 	def close(self) -> None:
 		"""
-		Close connection to proxy jump host (if applicable)
+		Close port forwarding through proxy jump host (if applicable)
 		"""
 		if self.has_proxy_jump() and self.is_open():
 			self.con.terminate()
