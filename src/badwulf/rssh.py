@@ -111,6 +111,15 @@ class rssh:
 		return (self.proxy_user is not None 
 			and self.proxy_host is not None)
 
+	def is_batch(self) -> bool:
+		"""
+		Check if connection can be established without prompts
+		"""
+		cmd = self.rsh + ["-o", "BatchMode=yes"]
+		cmd += [self.destination, "true"]
+		proc = subprocess.run(cmd)
+		return proc.returncode == 0
+
 	def is_open(self) -> bool:
 		"""
 		Check if the proxy jump connection is open
@@ -135,38 +144,6 @@ class rssh:
 			self.process.terminate()
 		if self.process is not None:
 			self.process = None
-	
-	def is_batch(self) -> bool:
-		"""
-		Check if connection can be established without prompts
-		"""
-		cmd = self.rsh + ["-o", "BatchMode=yes"] 
-		cmd += [self.destination, "true"]
-		proc = subprocess.run(cmd)
-		return proc.returncode == 0
-	
-	def ls(self, 
-		path: str | list[str] | None = None, 
-		all_names: bool = False, 
-		details: bool = False) -> subprocess.CompletedProcess:
-		"""
-		List files on the destination machine
-		:param path: A file or directory or list of them
-		:param all_names: Should hidden files be included?
-		:param details: Show file metadata details?
-		"""
-		cmd = self.rsh 
-		cmd += [self.destination, "ls"]
-		if all_names:
-			cmd += ["-a"]
-		if details:
-			cmd += ["-l"]
-		if path is not None:
-			if isinstance(path, str):
-				cmd += [path]
-			else:
-				cmd += path
-		return subprocess.run(cmd)
 
 	def push(self, 
 		src: str, 
