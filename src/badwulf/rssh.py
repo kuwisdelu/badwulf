@@ -33,13 +33,17 @@ class rssh:
 	process: subprocess.Popen | None = None 
 
 	def __post_init__(self):
-		if self.proxy_user is not None and self.proxy_host is None:
-			raise TypeError("proxy_user provided but proxy_host is None")
-		if self.proxy_host is not None and self.proxy_user is None:
-			raise TypeError("proxy_host provided but proxy_user is None")
-		if self.proxy_host is not None:
+		self.user = os.path.expandvars(self.user)
+		self.host = os.path.expandvars(self.host)
+		if self.port < 0:
+			raise ValueError("port must be >= 0")
+		if self.has_proxy_jump():
+			self.proxy_user = os.path.expandvars(self.proxy_user)
+			self.proxy_host = os.path.expandvars(self.proxy_host)
 			if self.proxy_port is None:
 				self.proxy_port = findport()
+			if self.proxy_port < 0:
+				raise ValueError("proxy_port must be >= 0")
 
 	def __enter__(self) -> rssh:
 		"""
@@ -102,9 +106,10 @@ class rssh:
 
 	def has_proxy_jump(self) -> bool:
 		"""
-		Check if the connection requires a proxy jump
+		Check if if a valid proxy jump is specified
 		"""
-		return self.proxy_host is not None
+		return (self.proxy_user is not None 
+			and self.proxy_host is not None)
 
 	def is_open(self) -> bool:
 		"""
@@ -167,6 +172,7 @@ class rssh:
 		src: str, 
 		dst: str, 
 		mirror: bool = False,
+		progress: bool = False,
 		dry_run: bool = False, 
 		ask: bool = False):
 		"""
@@ -174,7 +180,8 @@ class rssh:
 		:param src: The source path on localhost
 		:param dst: The destination path on target host
 		:param mirror: Delete files in dst that aren't in src?
-		:param dry_run: Show what would be done without doing it?
+		:param progress: Report and preserve partial progress?
+		:param dry_run: Report what would be done without doing it?
 		:param ask: Confirm before pushing?
 		"""
 		if src[-1] == "/":
@@ -184,11 +191,13 @@ class rssh:
 		else:
 			src = fix_path(src, must_exist=True)
 		dst = f"{self.destination}:{quote(dst)}"
-		cmd = ["rsync", "-aP"]
+		cmd = ["rsync", "-a"]
+		if progress:
+			cmd += ["-P"]
 		if mirror:
 			cmd += ["--delete"]
 		if dry_run:
-			cmd += ["--dry-run"]
+			cmd += ["--dry-run", "--verbose"]
 		if self.has_proxy_jump():
 			cmd += ["-e", " ".join(self.rsh)]
 		cmd += [src, dst]
@@ -205,6 +214,7 @@ class rssh:
 		src: str, 
 		dst: str, 
 		mirror: bool = False,
+		progress: bool = False,
 		dry_run: bool = False, 
 		ask: bool = False):
 		"""
@@ -212,7 +222,8 @@ class rssh:
 		:param src: The source path on target host
 		:param dst: The destination path on localhost
 		:param mirror: Delete files in dst that aren't in src?
-		:param dry_run: Show what would be done without doing it?
+		:param progress: Report and preserve partial progress?
+		:param dry_run: Report what would be done without doing it?
 		:param ask: Confirm before pushing?
 		"""
 		src = f"{self.destination}:{quote(src)}"
@@ -222,11 +233,13 @@ class rssh:
 				dst += "/"
 		else:
 			dst = fix_path(dst, must_exist=False)
-		cmd = ["rsync", "-aP"]
+		cmd = ["rsync", "-a"]
+		if progress:
+			cmd += ["-P"]
 		if mirror:
 			cmd += ["--delete"]
 		if dry_run:
-			cmd += ["--dry-run"]
+			cmd += ["--dry-run", "--verbose"]
 		if self.has_proxy_jump():
 			cmd += ["-e", " ".join(self.rsh)]
 		cmd += [src, dst]
@@ -239,9 +252,9 @@ class rssh:
 				return
 		return subprocess.run(cmd)
 	
-	def ssh(self):
+	def shell(self):
 		"""
-		Attach an unrestricted ssh terminal session
+		Connect to an unrestricted shell session
 		"""
 		cmd = self.rsh + [self.destination]
 		return subprocess.run(cmd)

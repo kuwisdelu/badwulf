@@ -33,7 +33,7 @@ def test_rssh_init_with_proxy():
 	assert con.proxy_port is not None
 
 def test_rssh_push_pull_file():
-	con = rssh(os.getenv("USER"), "localhost")
+	con = rssh("$USER", "localhost")
 	td = tempfile.TemporaryDirectory()
 	if con.is_batch():
 		tmp1 = os.path.join(td.name, "__badwulf_test")
@@ -54,7 +54,7 @@ def test_rssh_push_pull_file():
 	td.cleanup()
 
 def test_rssh_push_pull_dir():
-	con = rssh(os.getenv("USER"), "localhost")
+	con = rssh("$USER", "localhost")
 	td = tempfile.TemporaryDirectory()
 	if con.is_batch():
 		pd1 = os.path.join(td.name, "testdir1")
@@ -68,9 +68,9 @@ def test_rssh_push_pull_dir():
 		file_create(tmp1b)
 		assert os.path.exists(tmp1a)
 		assert os.path.exists(tmp1b)
-		if pd1[-1] != "/"
+		if pd1[-1] != "/":
 			pd1 += "/"
-		if pd2[-1] != "/"
+		if pd2[-1] != "/":
 			pd2 += "/"
 		con.push(pd1, pd2)
 		assert os.path.exists(tmp2a)
