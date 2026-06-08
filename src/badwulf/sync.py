@@ -4,9 +4,11 @@
 import os
 import io
 import json
+import subprocess
 from dataclasses import dataclass
 from dataclasses import asdict
 
+from .rssh import rssh
 from .tools import fix_path
 from .tools import prune
 
@@ -15,14 +17,24 @@ class profile:
 	"""
 	Profile information for a work site
 	:ivar user: Username for work site authentication
-	:ivar hosts: Dict of aliases-to-hostnames ('default': 'localhost', etc.)
-	:ivar paths: Dict of aliases-to-paths ('default': '~/Projects', etc.)
-	:ivar proxy: Dict of 'host' and 'user' for a jump proxy
+	:ivar hosts: Dict of aliases-to-hosts ('default': 'localhost', etc.)
+	:ivar paths: Dict of aliases-to-paths ('default': '$HOME/projects', etc.)
+	:ivar proxy: Dict of 'host' and 'user' for a proxy jump
 	"""
 	user: str | None = None
 	hosts: dict[str, str | None] | None = None
 	paths: dict[str, str | None] | None = None
 	proxy: dict[str, str | None] | None = None
+
+	def __post_init__(self):
+		if self.user is None:
+			self.user = ""
+		if self.hosts is None:
+			self.hosts = {}
+		if self.paths is None:
+			self.paths = {}
+		if self.proxy is None:
+			self.proxy = {}
 
 class syncer:
 	"""
@@ -34,53 +46,71 @@ class syncer:
 		Initializes a syncer instance
 		:param sites: Mapping of aliases-to-sites
 		"""
-		if "self" not in sites:
-			raise ValueError("missing required site 'self'")
 		self.sites = sites
+		if "self" not in self.sites:
+			raise ValueError("missing required site 'self'")
+
+	def node(self, site: str, host_ref: str = "default") -> rssh:
+		"""
+		Get an rssh object for a node at another site
+		:param site: The other site name
+		:param host_ref: (Optional) The other host alias
+		:returns: An rssh object
+		"""
+		if site == "self"
+			raise ValueError("must specify another site (not 'self'')")
+		site = self.sites[site]
+		return rssh(
+			user=site.user,
+			host=site.hosts[host_ref],
+			proxy_user=site.proxy.get("user"),
+			proxy_host=site.proxy.get("host"))
 
 	def push(self, 
-		src: str,
-		dst: str,
-		site_ref: str | None = None,
-		host_ref: str | None = None,
-		path_ref: str | None = None,
-		mirror: bool = False,
-		dry_run: bool = False,
-		ask: bool = False) -> None:
+		site: str,
+		path: str,
+		host_ref: str = "default",
+		path_ref: str = "default",
+		**kwargs: dict[str, bool]) -> subprocess.CompletedProcess:
 		"""
 		Push a file or directory to another site (via rsync)
-		:param src: The source path (on self)
-		:param dst: The destination path (on site_ref:host_ref)
-		:param site_ref: The other site name (optional)
-		:param host_ref: The other site host (optional)
-		:param path_ref: The anchor path alias (optional)
-		:param mirror: Delete files in dst that aren't in src?
-		:param dry_run: Show what would be done without doing it?
-		:param ask: Confirm before pushing?
+		:param site: The other site
+		:param path: A relative file or directory path to sync
+		:param host_ref: (Optional) The other host alias
+		:param path_ref: (Optional) The anchor path alias
+		:param kwargs: Additional arguments for rssh.push
 		"""
-		pass
+		has_trailing_slash = True if path[-1] == "/" else False
+		src = os.path.join(self.sites["self"].paths[path_ref], path)
+		dst = os.path.join(self.sites[site].paths[path_ref], path)
+		if has_trailing_slash:
+			src += "/"
+			dst += "/"
+		node = self.node(site, host_ref)
+		return node.push(src=src, dst=dst, **kwargs)
 
-	def pull(self, 
-		src: str,
-		dst: str,
-		site_ref: str | None = None,
-		host_ref: str | None = None,
-		path_ref: str | None = None,
-		mirror: bool = False,
-		dry_run: bool = False,
-		ask: bool = False) -> None:
+	def pull(self,
+		site: str, 
+		path: str,
+		host_ref: str = "default",
+		path_ref: str = "default",
+		**kwargs: dict[str, bool]) -> subprocess.CompletedProcess:
 		"""
 		Pull a file or directory from another site (via rsync)
-		:param src: The source path (on site_ref:host_ref)
-		:param dst: The destination path (on self)
-		:param site_ref: The other site name (optional)
-		:param host_ref: The other site host (optional)
-		:param path_ref: The anchor path alias (optional)
-		:param mirror: Delete files in dst that aren't in src?
-		:param dry_run: Print to stdout what would be done without doing it?
-		:param ask: Confirm before pulling?
+		:param site: The other site
+		:param path: A relative file or directory path to sync
+		:param host_ref: (Optional) The other host alias
+		:param path_ref: (Optional) The anchor path alias
+		:param kwargs: Additional arguments for rssh.push
 		"""
-		pass
+		has_trailing_slash = True if path[-1] == "/" else False
+		src = os.path.join(self.sites[site].paths[path_ref], path)
+		dst = os.path.join(self.sites["self"].paths[path_ref], path)
+		if has_trailing_slash:
+			src += "/"
+			dst += "/"
+		node = self.node(site, host_ref)
+		return node.pull(src=src, dst=dst, **kwargs)
 
 	def to_dict(self) -> dict[str: Any]:
 		"""

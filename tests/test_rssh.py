@@ -81,4 +81,6 @@ def test_rssh_push_pull_dir():
 		con.pull(pd2, pd1)
 		assert os.path.exists(tmp1a)
 		assert os.path.exists(tmp1b)
+		dir_remove(pd1, force=True)
+		dir_remove(pd2, force=True)
 	td.cleanup()

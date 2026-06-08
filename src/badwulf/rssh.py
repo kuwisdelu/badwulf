@@ -151,7 +151,7 @@ class rssh:
 		mirror: bool = False,
 		progress: bool = False,
 		dry_run: bool = False, 
-		ask: bool = False):
+		ask: bool = False) -> subprocess.CompletedProcess:
 		"""
 		Push file/directory from src to dst using rsync
 		:param src: The source path on localhost
@@ -193,7 +193,7 @@ class rssh:
 		mirror: bool = False,
 		progress: bool = False,
 		dry_run: bool = False, 
-		ask: bool = False):
+		ask: bool = False) -> subprocess.CompletedProcess:
 		"""
 		Pull file/directory from src to dst using rsync
 		:param src: The source path on target host

@@ -2,47 +2,31 @@
 	"self":
 	{
 		"paths": {
-			"default": "~/.MagiSys/Projects"
+			"default": "testdir1"
+		}
+	},
+	"local": 
+	{
+		"user": "$USER",
+		"hosts": {
+			"default": "localhost"
+		},
+		"paths": {
+			"default": "testdir2"
 		}
 	},
 	"origin": 
 	{
-		"user": "viteklab",
+		"user": "bad-wolf",
 		"hosts": {
-			"default": "Magi-01"
+			"default": "time.vortex"
 		},
 		"paths": {
-			"default": "/Volumes/MagiSysCache/Projects"
+			"default": "/the-moment"
 		},
 		"proxy": {
-			"user": "$KHOURY_USER",
-			"host": "login.khoury.northeastern.edu"
-		}
-	},
-	"magi": 
-	{
-		"user": "viteklab",
-		"hosts": {
-			"01": "Magi-01",
-			"02": "Magi-02"
-		},
-		"paths": {
-			"default": "/Volumes/MagiSys/Projects"
-		},
-		"proxy": {
-			"user": "$KHOURY_USER",
-			"host": "login.khoury.northeastern.edu"
-		}
-	},
-	"explorer":
-	{
-		"user": "$EXPLORER_USER",
-		"hosts": {
-			"head": "login.explorer.northeastern.edu",
-			"xfer": "xfer.discovery.neu.edu"
-		},
-		"paths": {
-			"default": "/work/MSIResearch/Projects"
+			"user": "root",
+			"host": "login.dimension.time"
 		}
 	}
 }
