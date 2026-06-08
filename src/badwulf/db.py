@@ -589,7 +589,7 @@ class expdb(Mapping):
 			self.dump()
 
 	def dump(self, 
-		indent: int = 2, 
+		indent: int = "\t", 
 		sort_keys: bool = True) -> None:
 		"""
 		Dumps the database to manifest.json

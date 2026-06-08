@@ -16,15 +16,13 @@ class profile:
 	Profile information for a work site
 	:ivar user: Username for work site authentication
 	:ivar hosts: Dict of aliases-to-hostnames ('default': 'localhost', etc.)
+	:ivar paths: Dict of aliases-to-paths ('default': '~/Projects', etc.)
 	:ivar proxy: Dict of 'host' and 'user' for a jump proxy
-	:ivar paths: Dict of relevant paths ('projects', 'datasets', etc.)
-	:ivar defaults: Dict of default 'fetch'/'push'/'pull' sites
 	"""
 	user: str | None = None
 	hosts: dict[str, str | None] | None = None
-	proxy: dict[str, str | None] | None = None
 	paths: dict[str, str | None] | None = None
-	defaults: dict[str, str | None] | None = None
+	proxy: dict[str, str | None] | None = None
 
 class syncer:
 	"""
@@ -37,7 +35,7 @@ class syncer:
 		:param sites: Mapping of aliases-to-sites
 		"""
 		if "self" not in sites:
-			raise ValueError("required site 'self' is missing")
+			raise ValueError("missing required site 'self'")
 		self.sites = sites
 
 	def push(self, 
@@ -46,15 +44,17 @@ class syncer:
 		site_ref: str | None = None,
 		host_ref: str | None = None,
 		path_ref: str | None = None,
+		mirror: bool = False,
 		dry_run: bool = False,
 		ask: bool = False) -> None:
 		"""
 		Push a file or directory to another site (via rsync)
-		:param src: The source path (self:src)
-		:param dst: The destination path (site:host:dst)
+		:param src: The source path (on self)
+		:param dst: The destination path (on site_ref:host_ref)
 		:param site_ref: The other site name (optional)
 		:param host_ref: The other site host (optional)
-		:param path_ref: The path anchor for each site (optional)
+		:param path_ref: The anchor path alias (optional)
+		:param mirror: Delete files in dst that aren't in src?
 		:param dry_run: Show what would be done without doing it?
 		:param ask: Confirm before pushing?
 		"""
@@ -66,15 +66,17 @@ class syncer:
 		site_ref: str | None = None,
 		host_ref: str | None = None,
 		path_ref: str | None = None,
+		mirror: bool = False,
 		dry_run: bool = False,
 		ask: bool = False) -> None:
 		"""
 		Pull a file or directory from another site (via rsync)
-		:param src: The source path (site:host:src)
-		:param dst: The destination path (self:dst)
+		:param src: The source path (on site_ref:host_ref)
+		:param dst: The destination path (on self)
 		:param site_ref: The other site name (optional)
 		:param host_ref: The other site host (optional)
-		:param path_ref: The path anchor for each site (optional)
+		:param path_ref: The anchor path alias (optional)
+		:param mirror: Delete files in dst that aren't in src?
 		:param dry_run: Print to stdout what would be done without doing it?
 		:param ask: Confirm before pulling?
 		"""

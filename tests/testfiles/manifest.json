@@ -1,133 +1,133 @@
 {
-  "example0": {
-    "path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/public/Example/example0",
-    "meta": {
-      "example0": {
-        "title": "This is an example title",
-        "group": "Example",
-        "scope": "public",
-        "description": "This is a description of the experiment or study, including the purpose why the data was collected, and the overall goals of the research project.",
-        "sample-processing": "Describe the sample preparation and the data collection protocol.",
-        "data-processing": "Describe any computational processing applied to the data or files.",
-        "contact": [
-          {
-            "name": "Bad Wolf",
-            "email": "entity@the-moment.time"
-          }
-        ],
-        "log": [
-          {
-            "1970-01-01": "I create myself."
-          }
-        ],
-        "url": {
-          "doi": "not.a.valid.doi/or.is.it",
-          "pub": "bad.wolf.corporation"
-        },
-        "date": {
-          "created": "1 Jan 1970",
-          "received": "1 Jan 1970"
-        },
-        "formats": [],
-        "keywords": [
-          "example",
-          "documentation"
-        ],
-        "notes": [
-          "Fields 'scope', 'group', 'title', 'description' are required.",
-          "Everything else is optional (but strongly recommended)."
-        ]
-      }
-    },
-    "meta_stat": {
-      "atime": 1779471192.5835187,
-      "mtime": 1779469583.7101574,
-      "size": 892
-    },
-    "tree_stat": {
-      "atime": 0,
-      "mtime": 1779227134.5756469,
-      "size": 892
-    }
-  },
-  "data0": {
-    "path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/private/Bad Wolf Corporation/data0",
-    "meta": {
-      "data0": {
-        "title": "I am the Bad Wolf.",
-        "group": "Bad Wolf Corporation",
-        "scope": "private"
-      }
-    },
-    "meta_stat": {
-      "atime": 1779123746.1919935,
-      "mtime": 1779086591.6450186,
-      "size": 86
-    },
-    "tree_stat": {
-      "atime": 0,
-      "mtime": 1779074847.6330843,
-      "size": 86
-    }
-  },
-  "data1": {
-    "path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/private/Bad Wolf Corporation/data1",
-    "meta": {
-      "data1": {
-        "title": "I create myself.",
-        "group": "Bad Wolf Corporation",
-        "scope": "private"
-      }
-    },
-    "meta_stat": {
-      "atime": 1779123746.1920218,
-      "mtime": 1779076404.891377,
-      "size": 84
-    },
-    "tree_stat": {
-      "atime": 0,
-      "mtime": 1779074900.0166216,
-      "size": 84
-    }
-  },
-  "data2": {
-    "path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/private/Bad Wolf Corporation/data2",
-    "meta": {
-      "data2": {
-        "title": "I take the words, I scatter them in time and space.",
-        "group": "Bad Wolf Corporation",
-        "scope": "private"
-      }
-    },
-    "meta_stat": {
-      "atime": 1779227898.1444254,
-      "mtime": 1779227858.641433,
-      "size": 119
-    },
-    "tree_stat": {
-      "atime": 0,
-      "mtime": 1779074972.9405127,
-      "size": 119
-    }
-  },
-  "data3": {
-    "path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/private/Bad Wolf Corporation/data3",
-    "meta": {
-      "data3": {
-        "title": "A message to lead myself here.",
-        "group": "Bad Wolf Corporation",
-        "scope": "private"
-      }
-    },
-    "meta_stat": {
-      "atime": 1779227898.1444764,
-      "mtime": 1779227856.8464746,
-      "size": 98
-    },
-    "tree_stat": {
-      "atime": 0,
-      "mtime": 1779227833.613617,
-      "size": 98
-    }
-  }
+	"example0": {
+		"path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/public/Example/example0",
+		"meta": {
+			"example0": {
+				"title": "This is an example title",
+				"group": "Example",
+				"scope": "public",
+				"description": "This is a description of the experiment or study, including the purpose why the data was collected, and the overall goals of the research project.",
+				"sample-processing": "Describe the sample preparation and the data collection protocol.",
+				"data-processing": "Describe any computational processing applied to the data or files.",
+				"contact": [
+					{
+						"name": "Bad Wolf",
+						"email": "entity@the-moment.time"
+					}
+				],
+				"log": [
+					{
+						"1970-01-01": "I create myself."
+					}
+				],
+				"url": {
+					"doi": "not.a.valid.doi/or.is.it",
+					"pub": "bad.wolf.corporation"
+				},
+				"date": {
+					"created": "1 Jan 1970",
+					"received": "1 Jan 1970"
+				},
+				"formats": [],
+				"keywords": [
+					"example",
+					"documentation"
+				],
+				"notes": [
+					"Fields 'scope', 'group', 'title', 'description' are required.",
+					"Everything else is optional (but strongly recommended)."
+				]
+			}
+		},
+		"meta_stat": {
+			"atime": 1779471192.5835187,
+			"mtime": 1779469583.7101574,
+			"size": 892
+		},
+		"tree_stat": {
+			"atime": 0,
+			"mtime": 1779227134.5756469,
+			"size": 892
+		}
+	},
+	"data0": {
+		"path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/private/Bad Wolf Corporation/data0",
+		"meta": {
+			"data0": {
+				"title": "I am the Bad Wolf.",
+				"group": "Bad Wolf Corporation",
+				"scope": "private"
+			}
+		},
+		"meta_stat": {
+			"atime": 1779123746.1919935,
+			"mtime": 1779086591.6450186,
+			"size": 86
+		},
+		"tree_stat": {
+			"atime": 0,
+			"mtime": 1779074847.6330843,
+			"size": 86
+		}
+	},
+	"data1": {
+		"path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/private/Bad Wolf Corporation/data1",
+		"meta": {
+			"data1": {
+				"title": "I create myself.",
+				"group": "Bad Wolf Corporation",
+				"scope": "private"
+			}
+		},
+		"meta_stat": {
+			"atime": 1779123746.1920218,
+			"mtime": 1779076404.891377,
+			"size": 84
+		},
+		"tree_stat": {
+			"atime": 0,
+			"mtime": 1779074900.0166216,
+			"size": 84
+		}
+	},
+	"data2": {
+		"path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/private/Bad Wolf Corporation/data2",
+		"meta": {
+			"data2": {
+				"title": "I take the words, I scatter them in time and space.",
+				"group": "Bad Wolf Corporation",
+				"scope": "private"
+			}
+		},
+		"meta_stat": {
+			"atime": 1779227898.1444254,
+			"mtime": 1779227858.641433,
+			"size": 119
+		},
+		"tree_stat": {
+			"atime": 0,
+			"mtime": 1779074972.9405127,
+			"size": 119
+		}
+	},
+	"data3": {
+		"path": "/private/var/folders/66/fsl5j6cs24j343n1k6jy_fd80000gp/T/tmpa6p1pb82/testdb/private/Bad Wolf Corporation/data3",
+		"meta": {
+			"data3": {
+				"title": "A message to lead myself here.",
+				"group": "Bad Wolf Corporation",
+				"scope": "private"
+			}
+		},
+		"meta_stat": {
+			"atime": 1779227898.1444764,
+			"mtime": 1779227856.8464746,
+			"size": 98
+		},
+		"tree_stat": {
+			"atime": 0,
+			"mtime": 1779227833.613617,
+			"size": 98
+		}
+	}
 }

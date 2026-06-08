@@ -22,7 +22,7 @@ class rssh:
 	:ivar proxy_user: (Optional) Proxy jump username
 	:ivar proxy_host: (Optional) Proxy jump hostname
 	:ivar proxy_port: (Optional) Local port for forwarding
-	:ivar con: An open subprocess for port forwarding
+	:ivar process: An open subprocess for port forwarding
 	"""
 	user: str 
 	host: str 
@@ -30,7 +30,7 @@ class rssh:
 	proxy_user: str | None = None 
 	proxy_host: str | None = None 
 	proxy_port: int | None = None 
-	con: subprocess.Popen | None = None 
+	process: subprocess.Popen | None = None 
 
 	def __post_init__(self):
 		if self.proxy_user is not None and self.proxy_host is None:
@@ -110,7 +110,7 @@ class rssh:
 		"""
 		Check if the proxy jump connection is open
 		"""
-		return self.con is not None
+		return self.process is not None
 
 	def open(self) -> None:
 		"""
@@ -119,7 +119,7 @@ class rssh:
 		if self.has_proxy_jump() and not self.is_open():
 			forward = f"{self.proxy_port}:{self.host}:{self.port}"
 			cmd = ["ssh", "-NL", forward, self.proxy_destination]
-			self.con = subprocess.Popen(cmd)
+			self.process = subprocess.Popen(cmd)
 			sleep(1) # allow time to connect
 
 	def close(self) -> None:
@@ -127,8 +127,9 @@ class rssh:
 		Close port forwarding through proxy jump host (if applicable)
 		"""
 		if self.has_proxy_jump() and self.is_open():
-			self.con.terminate()
-			self.con = None
+			self.process.terminate()
+		if self.process is not None:
+			self.process = None
 	
 	def is_batch(self) -> bool:
 		"""
