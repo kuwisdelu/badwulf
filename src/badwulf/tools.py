@@ -360,10 +360,8 @@ def grep(
 			return {
 				k: grep(pattern, v, ignore_case, context_width) 
 				for k, v in x.items()}
-		case None:
-			return None
 		case _:
-			raise TypeError("unsupported type")
+			return None
 
 def prune(x: list | dict, recursive: bool = True) -> list | dict:
 	"""
@@ -393,7 +391,7 @@ def prune(x: list | dict, recursive: bool = True) -> list | dict:
 				if v is not None:
 					pruned[k] = v
 		case _:
-			raise TypeError("unsupported type")
+			raise TypeError("expected a list or dict")
 	return pruned
 
 def rekey_kebab_to_snake(d: dict) -> dict:

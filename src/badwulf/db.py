@@ -5,6 +5,7 @@ import os
 import shutil
 import json
 import tomllib
+import datetime
 
 from collections.abc import Mapping
 from collections.abc import Callable
@@ -12,63 +13,53 @@ from dataclasses import dataclass
 from dataclasses import asdict
 from dataclasses import fields
 from operator import attrgetter
-from datetime import datetime
 
 from .tools import fix_path
 from .tools import tree_find
 from .tools import tree_stat
 from .tools import grep
 from .tools import prune
-from .tools import rekey_kebab_to_snake
-from .tools import rekey_snake_to_kebab
 
 @dataclass
-class expmeta:
+class projmeta:
 	"""
-	Experimental metadata for a scientific dataset
-	:ivar name: The dataset identifier
-	:ivar title: A short title for the dataset
-	:ivar group: The research group or data repository
-	:ivar scope: The scoping for how the data can be used
-	:ivar description: A long description of the experiment
-	:ivar sample_processing: Sample preparation and protocols
-	:ivar data_processing: Data processing and analysis
+	Project metadata for scientific research artifacts
+	:ivar name: The project identifier
+	:ivar scope: The scoping for how the project can be used
+	:ivar group: The grouping for the org or repository
+	:ivar title: A short title for the project
+	:ivar date: Key-values of important dates (created, updated, etc.)
+	:ivar refs: List of related project identifiers
+	:ivar keywords: List of keywords and subject areas for the project
+	:ivar formats: List of file formats and resource types in the project
 	:ivar contact: List of key-value entries for people/orgs responsible
-	:ivar log: List of key-value entries of changes
-	:ivar url: Key-values of URLs (doi, publications, repositories, etc.)
-	:ivar date: Key-values of events (created, received, etc.)
-	:ivar formats: List of relevant file formats in the dataset
-	:ivar keywords: List of keywords for the dataset/experiment
-	:ivar note: List of free form notes
+	:ivar description: Key-values of descriptions (abtract, methods, etc.)
+	:ivar reference: Key-values of references (doi, url, etc.)
 	"""
 	name: str
-	title: str
-	group: str
 	scope: str
-	description: str | None = None
-	sample_processing: str | None = None
-	data_processing: str | None = None
-	contact: list[dict[str, str]] | None = None
-	log: list[dict[str, str]] | None = None
-	url: dict[str, str] | None = None
-	date: dict[str, str] | None = None
-	formats: list[str] | None = None
+	group: str
+	title: str | None = None
+	date: dict[str, datetime.date] | None = None
 	keywords: list[str] | None = None
-	notes: list[str] | None = None
+	formats: list[str] | None = None
+	contact: list[dict[str, str]] | None = None
+	description: dict[str, str] | None = None
+	reference: dict[str, str] | None = None
 
 	def has_scope(self, pattern: str) -> bool:
 		"""
-		Detect if the dataset's scope matches a pattern
+		Detect if the project's scope matches a pattern
 		:param pattern: The scope pattern
-		:returns: True the expmeta has the scope, False otherwise
+		:returns: True if projmeta has the scope, False otherwise
 		"""
 		return grep(pattern, self.scope, ignore_case=True) is not None
 
 	def has_group(self, pattern: str) -> bool:
 		"""
-		Detect if the dataset's group matches a pattern
+		Detect if the project's group matches a pattern
 		:param pattern: The group pattern
-		:returns: True the expmeta has the group, False otherwise
+		:returns: True if projmeta has the group, False otherwise
 		"""
 		return grep(pattern, self.group, ignore_case=True) is not None
 
@@ -76,34 +67,31 @@ class expmeta:
 		pattern: str, 
 		within: set[str] | None = None,
 		ignore_case: bool = False,
-		context_width: int = 60) -> expsearch | None:
+		context_width: int = 60) -> projsearch | None:
 		"""
 		Search metadata for a regular expression
 		:param pattern: The search pattern
 		:param within: List of metadata fields to search; None means all
 		:param ignore_case: Should case be ignored?
 		:param context_width: Width of a context window for hits
-		:returns: An expsearch object or None if no hits
+		:returns: An projsearch object or None if no hits
 		"""
 		hits = {}
-		d = asdict(self)
-		for f in fields(self):
-			if within is not None and f.name not in within:
+		for k, v in self.to_dict().items():
+			if within is not None and k not in within:
 				continue
-			v = d[f.name]
 			matches = grep(pattern, v, ignore_case, context_width)
 			if isinstance(matches, (list, dict)):
 				matches = prune(matches)
 				if len(matches) == 0:
 					matches = None
 			if matches is not None:
-				hits[f.name] = matches
+				hits[k] = matches
 		if len(hits) > 0:
-			return expsearch(
+			return projsearch(
 				name=self.name,
-				title=self.title,
-				group=self.group,
 				scope=self.scope,
+				group=self.group,
 				pattern=pattern,
 				hits=hits)
 		else:
@@ -115,55 +103,60 @@ class expmeta:
 		:returns: A dict representation
 		"""
 		d = asdict(self)
-		d = {k: v for k, v in d.items() if k != "name" and v is not None}
-		return {self.name: rekey_snake_to_kebab(d)}
+		if d.get("date") is not None:
+			d["date"] = {k: str(v) for k, v in d["date"].items()}
+		return prune(d)
 
 	@classmethod
 	def from_dict(cls, d: dict[str: Any]):
 		"""
-		Create an expmeta from a dict
+		Create an projmeta from a dict
 		:param d: A dict (parsed from json, toml, etc.)
-		:returns: An expmeta object
+		:returns: An projdata object
 		"""
-		name = next(iter(d))
-		d = rekey_kebab_to_snake(d[name])
-		return cls(name=name, **d)
+		d = prune(d)
+		def iso(x):
+			if isinstance(x, str):
+				return datetime.date.fromisoformat(x)
+			else:
+				return x
+		if d.get("date") is not None:
+			d["date"] = {k: iso(v) for k, v in d["date"].items()}
+		return cls(**d)
 
 @dataclass
-class expsearch:
+class projsearch:
 	"""
-	Experimental metadata search hits
-	:ivar name: The dataset identifier
-	:ivar title: A short title for the dataset
-	:ivar group: The research group or data repository
-	:ivar scope: The scoping for how the data can be used
+	Project metadata search hits
+	:ivar name: The project identifier
+	:ivar scope: The scoping for how the project can be used
+	:ivar group: The grouping for the org or repository
 	:ivar pattern: The search pattern
 	:ivar hits: Mapping of search hits
 	"""
 	name: str
-	title: str
-	group: str
 	scope: str
+	group: str
 	pattern: str
 	hits: dict[str: list[Any]] | None = None
 
 @dataclass
-class expdata:
+class projdata:
 	"""
-	Experimental metadata and file stats for a dataset
-	:ivar path: The (real) path to the dataset directory
-	:ivar _meta: Experimental metadata
-	:ivar _meta_stat: File stats for metadata.toml
-	:ivar _tree_stat: File stats for directory contents
+	Project metadata and file stats for its contents
+	:ivar path: The (real) path to the project directory
+	:ivar _meta: Project metadata
+	:ivar _meta_stat: File stats for project metadata.toml
+	:ivar _tree_stat: File stats for project directory
 	"""
 	path: str
-	_meta: expmeta | None = None
+	_meta: projmeta | None = None
 	_meta_stat: dict[str: int | float] | None = None
 	_tree_stat: dict[str: int | float] | None = None
 
 	def _get_meta_stat(self, force = False) -> dict[str: int | float]:
 		"""
-		Get stats for metadata.toml
+		Get stats for project metadata.toml
 		"""
 		if self._meta_stat is None or force:
 			st = os.stat(self.meta_path)
@@ -175,7 +168,7 @@ class expdata:
 
 	def _get_tree_stat(self, force = False) -> dict[str: int | float]:
 		"""
-		Get stats for directory contents
+		Get stats for project directory
 		"""
 		if self._tree_stat is None or force:
 			self._tree_stat = tree_stat(self.path, 
@@ -183,18 +176,18 @@ class expdata:
 		return self._tree_stat
 
 	@property
-	def meta(self) -> expmeta:
+	def meta(self) -> projmeta:
 		"""
 		Get experimental metadata
 		"""
 		if self._meta is None:
 			with open(self.meta_path, "rb") as file:
 				d = tomllib.load(file)
-			self._meta = expmeta.from_dict(d)
+			self._meta = projmeta(**d)
 		return self._meta
 
 	@meta.setter
-	def meta(self, value: expmeta) -> None:
+	def meta(self, value: projmeta) -> None:
 		"""
 		Set experimental metadata
 		"""
@@ -265,13 +258,13 @@ class expdata:
 
 	def is_local(self) -> bool:
 		"""
-		Check if the dataset (including metadata.toml) exists locally
+		Check if the project (including metadata.toml) exists locally
 		"""
 		return os.path.exists(self.meta_path)
 
-	def is_misplaced_under(self, root: str) -> bool:
+	def is_misplaced_relative(self, root: str) -> bool:
 		"""
-		Check if dataset is located at its canonical path under root
+		Check if project is located at its canonical path under root
 		"""
 		expected = os.path.join(root, self.canonical_path)
 		if os.path.exists(expected):
@@ -279,15 +272,15 @@ class expdata:
 		else:
 			return True
 
-	def place_under(self, root: str) -> None:
+	def place_relative(self, root: str) -> None:
 		"""
-		Move the dataset to its canonical path under root
+		Move the project to its canonical path under root
 		"""
 		self.move(os.path.join(root, self.canonical_path))
 
 	def move(self, dst: str) -> None:
 		"""
-		Move the dataset to a new location
+		Move the project to a new location
 		"""
 		if os.path.exists(dst):
 			raise FileExistsError(f"move destination already exists: {dst}")
@@ -297,25 +290,25 @@ class expdata:
 		self._tree_stat = None
 		self._get_meta_stat(True)
 
-	def copy(self, dst: str) -> expdata:
+	def copy(self, dst: str) -> projdata:
 		"""
-		Copy the dataset to a new location and return the copy
+		Copy the project to a new location and return the copy
 		"""
 		if os.path.exists(dst):
 			raise FileExistsError(f"copy destination already exists: {dst}")
 		else:
 			shutil.copytree(self.path, dst)
-		return expdata.from_path(dst)
+		return projdata.from_path(dst)
 
 	def sync(self, dst: str, con: rssh) -> None:
 		"""
-		Sync the dataset to another location over a connection
+		Sync the project to another location over a connection
 		"""
 		pass
 
 	def unlink(self) -> None:
 		"""
-		Delete the dataset directory and all its contents
+		Delete the project directory and all its contents
 		"""
 		shutil.rmtree(self.path)
 		self._meta = None
@@ -336,53 +329,53 @@ class expdata:
 	@classmethod
 	def from_dict(cls, d: dict[str: Any]):
 		"""
-		Create an expmeta from a dict
+		Create an projdata from a dict
 		:param d: A dict (parsed from json, toml, etc.)
-		:returns: An expdata object
+		:returns: An projdata object
 		"""
 		return cls(
 			path=d["path"],
-			_meta=expmeta.from_dict(d["meta"]),
+			_meta=projmeta.from_dict(d["meta"]),
 			_meta_stat=d.get("meta_stat"),
 			_tree_stat=d.get("tree_stat"))
 
 	@classmethod
 	def from_path(cls, p: str):
 		"""
-		Create an expdata from a file path or directory
+		Create an projdata from a file path or directory
 		:param p: The path to a directory or a metadata.toml file
-		:returns: An expdata object
+		:returns: An projdata object
 		"""
 		p = fix_path(p, must_exist=True)
 		if not os.path.isdir(p):
 			p = os.path.dirname(p)
 		return cls(path=p)
 
-class expindex(Mapping):
+class projindex(Mapping):
 	"""
-	Index of experimental datasets
-	:ivar _index: Mapping of datasets by name
+	Index of scientific research projects
+	:ivar _index: Mapping of projects by name
 	"""
-	_index: dict[str, expdata]
+	_index: dict[str, projdata]
 
-	def __init__(self, d: dict[str, expdata] | None = None):
+	def __init__(self, d: dict[str, projdata] | None = None):
 		"""
-		Create an expindex from a dict
+		Create an projindex from a dict
 		"""
 		if d is None:
 			self._index = {}
 		else:
 			self._index = d
 
-	def __getitem__(self, key: str) -> expdata:
+	def __getitem__(self, key: str) -> projdata:
 		"""
-		Get an expdata item from the index
+		Get an projdata item from the index
 		"""
 		return self._index[key]
 
 	def __len__(self) -> int:
 		"""
-		Get the number of datasets in the index
+		Get the number of projects in the index
 		"""
 		return len(self._index)
 
@@ -392,53 +385,53 @@ class expindex(Mapping):
 		"""
 		return iter(self._index)
 
-	def filter(self, function: Callable[[expdata], bool]) -> expindex:
+	def filter(self, function: Callable[[projdata], bool]) -> projindex:
 		"""
-		Filter the datasets and return a new expindex
-		:param function: A function returning True for expdata to keep
-		:returns: A new expindex object (referencing original datasets)
+		Filter the projects and return a new projindex
+		:param function: A function returning True for projdata to keep
+		:returns: A new projindex object (referencing original projects)
 		"""
-		return expindex({k: v for k, v in self.items() if function(v)})
+		return projindex({k: v for k, v in self.items() if function(v)})
 
 	def subset(self,
 		names: set[str] | None = None,
 		scope: set[str] | None = None,
-		group: set[str] | None = None) -> expindex:
+		group: set[str] | None = None) -> projindex:
 		"""
-		Subset the datasets and return a new expindex
-		:param names: A set of dataset names to keep
+		Subset the projects and return a new projindex
+		:param names: A set of project names to keep
 		:param scope: A set of scopes to keep
 		:param group: A set of groups to keep
-		:returns: A new expindex object (referencing original datasets)
+		:returns: A new projindex object (referencing original projects)
 		"""
-		def subsetter(e):
+		def subsetter(proj):
 			if names is not None:
-				if e.meta.name not in names:
+				if proj.meta.name not in names:
 					return False
 			if scope is not None:
-				if not any(e.meta.has_scope(s) for s in scope):
+				if not any(proj.meta.has_scope(s) for s in scope):
 					return False
 			if group is not None:
-				if not any(e.meta.has_group(g) for g in group):
+				if not any(proj.meta.has_group(g) for g in group):
 					return False
 			return True
 		return self.filter(subsetter)
 
 	def sorted(self,
-		key: Callable[[expdata], Any],
-		reverse: bool = False) -> list[expdata]:
+		key: Callable[[projdata], Any],
+		reverse: bool = False) -> list[projdata]:
 		"""
-		Return datasets in ascending sort order based on a key function
-		:param key: A function taking an expdata returning a comparable key
+		Return projects in ascending sort order based on a key function
+		:param key: A function taking an projdata returning a comparable key
 		:param reverse: Sort in descending order?
 		"""
 		return sorted(self.values(), key=key, reverse=reverse)
 
 	def sorted_by(self,
 		*stats: str,
-		reverse: bool = False) -> list[expdata]:
+		reverse: bool = False) -> list[projdata]:
 		"""
-		Return datasets in ascending sort order by directory file stats
+		Return projects in ascending sort order by directory file stats
 		:param stats: One or more of 'size', 'mtime', or 'atime'
 		:param reverse: Sort in descending order?
 		"""
@@ -451,14 +444,14 @@ class expindex(Mapping):
 		pattern: str, 
 		within: set[str] | None = None,
 		ignore_case: bool = False,
-		context_width: int = 60) -> dict[str, expsearch]:
+		context_width: int = 60) -> dict[str, projsearch]:
 		"""
 		Search indexed metadata for a regular expression
 		:param pattern: The search pattern
 		:param within: List of metadata fields to search; None means all
 		:param ignore_case: Should case be ignored?
 		:param context_width: Width of a context window for hits
-		:returns: A dict of expsearch objects with nonzero hits
+		:returns: A dict of projsearch objects with nonzero hits
 		"""
 		d = {}
 		for k, v in self.items():
@@ -468,51 +461,51 @@ class expindex(Mapping):
 		return d
 
 	@classmethod
-	def from_list(cls, lst: list[expdata]):
+	def from_list(cls, lst: list[projdata]):
 		"""
-		Create an expindex from a list
-		:param lst: A list of expdata objects
-		:returns: An expindex object:
+		Create an projindex from a list
+		:param lst: A list of projdata objects
+		:returns: An projindex object:
 		"""
-		return cls({e.meta.name: e for e in lst})
+		return cls({proj.meta.name: proj for proj in lst})
 
 	@classmethod
 	def from_file(cls, f: io.TextIOBase | io.BufferedIOBase):
 		"""
-		Create an expindex from a json file
+		Create an projindex from a json file
 		:param f: An open json file
-		:returns: A expindex object
+		:returns: A projindex object
 		"""
-		d = json.load(f)
-		return cls({k: expdata.from_dict(v) for k, v in d.items()})
+		lst = [projdata.from_dict(d) for d in json.load(f)]
+		return cls({proj.meta.name: proj for proj in lst})
 
 	@classmethod
 	def from_path(cls, p: str):
 		"""
-		Create an expindex from a json file
+		Create an projindex from a json file
 		:param p: The path to a manifest.json file
-		:returns: An expindex object
+		:returns: An projindex object
 		"""
 		p = fix_path(p, must_exist=True)
 		with open(p) as f:
 			return cls.from_file(f)
 
-class expdb(Mapping):
+class projdb(Mapping):
 	"""
-	Database of experimental datasets
-	:ivar root: The path to the database root
-	:ivar datasets: List of datasets detected under root
+	Database of scientific research projects
+	:ivar root: The path to the project root
+	:ivar projects: List of projects detected under root
 	:ivar use_manifest: Read/write a manifest.json?
-	:ivar _index: Mapping of datasets by name
+	:ivar _index: Mapping of projects by name
 	"""
 	root: str
-	datasets: list[expdata]
+	projects: list[projdata]
 	use_manifest: bool = True
-	_index: expindex | None = None
+	_index: projindex | None = None
 
 	def __init__(self, root: str, use_manifest = True):
 		"""
-		Create an expdb from a database directory
+		Create an projdb from a database directory
 		:param root: The path to the root database directory
 		:param use_manifest: Read/write a manifest.json?
 		"""
@@ -520,19 +513,19 @@ class expdb(Mapping):
 		if not os.path.isdir(self.root):
 			raise NotADirectoryError(f"root must be a directory: {self.root}")
 		paths = tree_find(self.root, r"^metadata\.toml$", prune_on_match=True)
-		self.datasets = [expdata.from_path(p) for p in paths]
+		self.projects = [projdata.from_path(p) for p in paths]
 		self.use_manifest = use_manifest
 		self.ensure()
 
-	def __getitem__(self, key: str) -> expdata | None:
+	def __getitem__(self, key: str) -> projdata | None:
 		"""
-		Get an expdata item from the database
+		Get an projdata item from the database
 		"""
 		return self.index[key]
 
 	def __len__(self) -> int:
 		"""
-		Get the number of datasets in the database
+		Get the number of projects in the database
 		"""
 		return len(self.index)
 
@@ -543,7 +536,7 @@ class expdb(Mapping):
 		return iter(self.index)
 
 	@property
-	def index(self) -> expindex:
+	def index(self) -> projindex:
 		"""
 		Get the database index
 		"""
@@ -562,43 +555,40 @@ class expdb(Mapping):
 
 	def rebuild(self) -> None:
 		"""
-		Rebuilds the database from the datasets alone
+		Rebuilds the database from the projects alone
 		"""
-		self._index = expindex.from_list(self.datasets)
+		self._index = projindex.from_list(self.projects)
 		if self.use_manifest:
 			self.dump()
 
 	def refresh(self) -> None:
 		"""
-		Refreshes the database from the datasets + manifest
+		Refreshes the database from the projects + manifest
 		"""
 		with open(self.manifest_path) as f:
-			manifest = json.load(f)
-		cache = {v.path: expdata.from_dict(v) for v in manifest.values()}
+			d = json.load(f)
+		manifest = {v.path: projdata.from_dict(v) for v in d.values()}
 		db = {}
 		num_changed = 0
-		for e in self.datasets:
-			c = cache.get(e.path)
-			if c is None or e.meta_hash != c.meta_hash:
+		for proj in self.projects:
+			cached = manifest.get(proj.path)
+			if cached is None or proj.meta_hash != cached.meta_hash:
 				num_changed += 1
 			else:
-				e.meta = c.meta
-			db[e.meta.name] = e
-		self._index = expindex(db)
+				proj.meta = cached.meta
+			db[proj.meta.name] = proj
+		self._index = projindex(db)
 		if num_changed > 0 and self.use_manifest:
 			self.dump()
 
-	def dump(self, 
-		indent: int = "\t", 
-		sort_keys: bool = True) -> None:
+	def dump(self, indent: int = "\t") -> None:
 		"""
 		Dumps the database to manifest.json
 		:param indent: Number of spaces to indent json
-		:param sort_keys: Should the manifest be sorted?
 		"""
-		d = {k: v.to_dict() for k, v in self._index.items()}
+		lst = [proj.to_dict() for proj in self.projects]
 		with open(self.manifest_path, "w") as f:
-			json.dump(d, f, indent=indent, sort_keys=sort_keys)
+			json.dump(lst, f, indent=indent)
 
 	@property
 	def manifest_path(self) -> str:
@@ -612,4 +602,3 @@ class expdb(Mapping):
 		Checks if the database manifest exists
 		"""
 		return os.path.exists(self.manifest_path)
-
