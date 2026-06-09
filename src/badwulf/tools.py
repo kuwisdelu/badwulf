@@ -123,18 +123,29 @@ def quote(s: str, q: str = '"') -> str:
 	else:
 		return s
 
-def fix_path(
-	path: str, 
-	must_exist: bool = True,
+def touch(path: str, times: tuple(float) | None = None) -> None:
+	"""
+	Modify a file's atime and mtime and create it if it doesn't exist
+	:param path: The file to create or modify
+	:param path: The times as a tuple (atime, mtime)
+	"""
+	path = mkpath(path, must_exist=False)
+	with open(path, "a"):
+		os.utime(path, times)
+
+def mkpath(
+	*paths: str, 
+	must_exist: bool = False,
 	escape_spaces: bool = False) -> str:
 	"""
-	Expand and normalize file paths
-	:param path: The path to normalize
+	Join and normalize file paths
+	:param paths: Path components to join and normalize
 	:param must_exist: Must the path exist?
 	:param escape_spaces: Escape spaces with backslashes?
-	:raises FileNotFoundError: If the file doesn't exist
+	:raises FileNotFoundError: If must_exist and the file doesn't exist
 	:returns: The normalized path
 	"""
+	path = os.path.join(*paths)
 	if "$" in path:
 		path = os.path.expandvars(path)
 	if "~" in path:
@@ -146,39 +157,13 @@ def fix_path(
 		path = path.replace(" ", r"\ ")
 	return path
 
-def ls(path: str = ".", all_names: bool = False) -> list[str]:
-	"""
-	List files in a directory
-	:param path: The directory
-	:param all_names: Should hidden files be included?
-	:raises NotADirectoryError: If path isn't a directory
-	:returns: A list of file names
-	"""
-	path = fix_path(path)
-	if not os.path.isdir(path):
-		raise NotADirectoryError(f"path must be a directory: {path}")
-	if all_names:
-		return [f for f in os.listdir(path)]
-	else:
-		return [f for f in os.listdir(path) if not f.startswith(".")]
-
-def touch(path: str, times: tuple(float) | None = None) -> None:
-	"""
-	Modify a file's atime and mtime and create it if it doesn't exist
-	:param path: The file to create or modify
-	:param path: The times as a tuple (atime, mtime)
-	"""
-	path = fix_path(path, must_exist=False)
-	with open(path, "a"):
-		os.utime(path, times)
-
 def mktree(path: str, force: bool = False) -> None:
 	"""
 	Create a directory tree
 	:param path: The directory tree to create
 	:param force: Create intermediate directories if they don't exist?
 	"""
-	path = fix_path(path, must_exist=False)
+	path = mkpath(path, must_exist=False)
 	if not os.path.exists(path):
 		if force:
 			os.makedirs(path)
@@ -191,7 +176,7 @@ def rmtree(path: str, force: bool = False) -> None:
 	:param path: The directory tree to delete
 	:param force: Delete all directory contents if not empty?
 	"""
-	path = fix_path(path, must_exist=False)
+	path = mkpath(path, must_exist=False)
 	if os.path.exists(path):
 		if force:
 			shutil.rmtree(path)

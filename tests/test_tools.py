@@ -1,10 +1,22 @@
 
-import pytest
 import os
 import platform
 import tempfile
 
-from badwulf.tools import *
+from badwulf.tools import is_known_host
+from badwulf.tools import to_bytes
+from badwulf.tools import format_bytes
+from badwulf.tools import quote
+from badwulf.tools import touch
+from badwulf.tools import mkpath
+from badwulf.tools import mktree
+from badwulf.tools import rmtree
+from badwulf.tools import tree_find
+from badwulf.tools import tree_stat
+from badwulf.tools import findport
+from badwulf.tools import checkport
+from badwulf.tools import grep
+from badwulf.tools import prune
 
 def test_is_known_host():
 	host = platform.node().replace(".local", "")
@@ -30,30 +42,24 @@ def test_quote():
 	assert quote("Bad Wolf", "'") == "'Bad Wolf'"
 	assert quote("Bad Wolf", "|") == "|Bad Wolf|"
 
-def test_file_create_remove_ls():
+def test_mkpath_mktree_etc():
 	td = tempfile.TemporaryDirectory()
-	tmp = os.path.join(td, "__badwulf_testfile__")
+	pd = mkpath(td.name, "__badwulf_testdir__")
+	assert not os.path.exists(pd)
+	mktree(pd)
+	assert os.path.exists(pd)
+	assert os.path.isdir(pd)
+	tmp = mkpath(pd, "__badwulf_testfile__")
 	touch(tmp)
 	assert os.path.exists(tmp)
-	assert os.path.basename(tmp) in ls(td)
-	os.remove(tmp)
-	assert not os.path.exists(tmp)
-	assert not os.path.basename(tmp) in ls(td)
-	td.cleanup()
-
-def test_mktree_rmtree_stat():
-	td = tempfile.TemporaryDirectory()
-	tmpd = os.path.join(td, "__badwulf_testdir__")
-	tmp = os.path.join(tmpd, "__badwulf_testfile__")
-	mktree(tmpd)
-	assert os.path.exists(tmpd)
-	assert os.path.isdir(tmpd)
+	assert tmp in tree_find(pd, "testfile")
 	with open(tmp, "a") as f:
 		f.write("I am the Bad Wolf.")
-	st = tree_stat(tmpd)
+	st = tree_stat(pd)
 	assert st["size"] == 18
-	rmtree(tmpd, force=True)
-	assert not os.path.exists(tmpd)
+	rmtree(pd, force=True)
+	assert not os.path.exists(tmp)
+	assert not os.path.exists(pd)	
 	td.cleanup()
 
 def test_findport_checkport():

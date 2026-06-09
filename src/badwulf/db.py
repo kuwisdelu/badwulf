@@ -14,7 +14,7 @@ from dataclasses import asdict
 from dataclasses import fields
 from operator import attrgetter
 
-from .tools import fix_path
+from .tools import mkpath
 from .tools import tree_find
 from .tools import tree_stat
 from .tools import grep
@@ -340,7 +340,7 @@ class projdata:
 		:param p: The path to a directory or a metadata.toml file
 		:returns: An projdata object
 		"""
-		p = fix_path(p, must_exist=True)
+		p = mkpath(p, must_exist=True)
 		if not os.path.isdir(p):
 			p = os.path.dirname(p)
 		return cls(path=p)
@@ -480,7 +480,7 @@ class projindex(Mapping):
 		:param p: The path to a manifest.json file
 		:returns: An projindex object
 		"""
-		p = fix_path(p, must_exist=True)
+		p = mkpath(p, must_exist=True)
 		with open(p) as f:
 			return cls.from_file(f)
 
@@ -503,7 +503,7 @@ class projdb(Mapping):
 		:param root: The path to the root database directory
 		:param use_manifest: Read/write a manifest.json?
 		"""
-		self.root = fix_path(root, must_exist=True)
+		self.root = mkpath(root, must_exist=True)
 		if not os.path.isdir(self.root):
 			raise NotADirectoryError(f"root must be a directory: {self.root}")
 		paths = tree_find(self.root, r"^metadata\.toml$", prune_on_match=True)

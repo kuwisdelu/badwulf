@@ -7,7 +7,7 @@ from time import sleep
 from dataclasses import dataclass
 from dataclasses import asdict
 
-from .tools import fix_path
+from .tools import mkpath
 from .tools import confirm
 from .tools import quote
 from .tools import findport
@@ -162,11 +162,11 @@ class rssh:
 		:param ask: Confirm before pushing?
 		"""
 		if src[-1] == "/":
-			src = fix_path(src, must_exist=True)
+			src = mkpath(src, must_exist=True)
 			if src[-1] != "/":
 				src += "/"
 		else:
-			src = fix_path(src, must_exist=True)
+			src = mkpath(src, must_exist=True)
 		dst = f"{self.destination}:{quote(dst)}"
 		cmd = ["rsync", "-a"]
 		if progress:
@@ -205,11 +205,11 @@ class rssh:
 		"""
 		src = f"{self.destination}:{quote(src)}"
 		if dst[-1] == "/":
-			dst = fix_path(dst, must_exist=False)
+			dst = mkpath(dst, must_exist=False)
 			if dst[-1] != "/":
 				dst += "/"
 		else:
-			dst = fix_path(dst, must_exist=False)
+			dst = mkpath(dst, must_exist=False)
 		cmd = ["rsync", "-a"]
 		if progress:
 			cmd += ["-P"]

@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from dataclasses import asdict
 
 from .rssh import rssh
-from .tools import fix_path
+from .tools import mkpath
 from .tools import prune
 
 @dataclass
@@ -57,7 +57,7 @@ class syncer:
 		:param host_ref: (Optional) The other host alias
 		:returns: An rssh object
 		"""
-		if site == "self"
+		if site == "self":
 			raise ValueError("must specify another site (not 'self'')")
 		site = self.sites[site]
 		return rssh(
@@ -144,6 +144,6 @@ class syncer:
 		:param p: The path to the json file
 		:returns: A syncer object
 		"""
-		p = fix_path(p, must_exist=True)
+		p = mkpath(p, must_exist=True)
 		with open(p) as f:
 			return cls.from_file(f)

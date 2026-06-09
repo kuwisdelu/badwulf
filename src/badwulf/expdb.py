@@ -14,8 +14,7 @@ from dataclasses import asdict
 from datetime import datetime
 
 from .rssh import rssh
-from .tools import ls
-from .tools import fix_path
+from .tools import mkpath
 from .tools import tree_stat
 from .tools import tree_find
 from .tools import to_bytes
@@ -414,7 +413,7 @@ class expdb:
 		:param autoconnect: Connect on initialization?
 		"""
 		self.username = username
-		self.dbpath = fix_path(dbpath, must_exist=True)
+		self.dbpath = mkpath(dbpath, must_exist=True)
 		self.dbname = dbname
 		self.scopes = scopes
 		self.remote_dbhost = remote_dbhost
@@ -555,7 +554,7 @@ class expdb:
 		Refresh the database manifest
 		"""
 		path = os.path.join(self.dbdir, "manifest.toml")
-		path = fix_path(path, must_exist=True)
+		path = mkpath(path, must_exist=True)
 		if self.verbose:
 			print(f"parsing '{path}'")
 		with open(path, "rb") as file:
@@ -588,7 +587,7 @@ class expdb:
 		:returns: An expcache instance
 		"""
 		path = os.path.join(self.dbdir, scope, group, dataset)
-		path = fix_path(path, must_exist=True)
+		path = mkpath(path, must_exist=True)
 		size = tree_stat(path, all_names=True)["size"]
 		atime = os.path.getatime(path)
 		mtime = os.path.getmtime(path)
@@ -616,10 +615,10 @@ class expdb:
 		:returns: A list of expcache instances
 		"""
 		path = os.path.join(self.dbdir, scope, group)
-		path = fix_path(path, must_exist=True)
+		path = mkpath(path, must_exist=True)
 		return [self._get_cached_dataset(scope, group, dataset)
 			for dataset
-			in ls(path)]
+			in os.listdir(path)]
 	
 	def _get_cached_scope(self, scope):
 		"""
@@ -630,8 +629,8 @@ class expdb:
 		path = os.path.join(self.dbdir, scope)
 		groups = []
 		if os.path.isdir(path):
-			path = fix_path(path, must_exist=True)
-			for group in ls(path):
+			path = mkpath(path, must_exist=True)
+			for group in os.listdir(path):
 				groups.extend(self._get_cached_group(scope, group))
 		return groups
 	
@@ -786,7 +785,7 @@ class expdb:
 			for x in cache[:target]:
 				print(f"deleting '{x.path}'")
 				try:
-					shutil.rmtree(fix_path(x.path, must_exist=True))
+					shutil.rmtree(mkpath(x.path, must_exist=True))
 				except Exception:
 					print(f"failed to delete '{x.path}'")
 			print(f"the local cache is now {format_size(newsize)}")
@@ -813,7 +812,7 @@ class expdb:
 		scope = dataset.scope
 		group = dataset.group
 		path = os.path.join(self.dbdir, scope, group)
-		path = fix_path(path, must_exist=False)
+		path = mkpath(path, must_exist=False)
 		if not os.path.isdir(path):
 			os.makedirs(path)
 		src = os.path.join(self.remote_dbdir, scope, group, name)
