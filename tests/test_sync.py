@@ -5,10 +5,9 @@ import tempfile
 
 from badwulf.sync import syncer
 
-from badwulf.tools import file_create
-from badwulf.tools import file_remove
-from badwulf.tools import dir_create
-from badwulf.tools import dir_remove
+from badwulf.tools import touch
+from badwulf.tools import mktree
+from badwulf.tools import rmtree
 
 def _testconfig():
 	try:
@@ -37,20 +36,20 @@ def test_syncer_push_pull():
 		pd2 = os.path.join(td.name, "testdir2")
 		tmp1 = os.path.join(pd1, "__badwulf_test")
 		tmp2 = os.path.join(pd2, "__badwulf_test")
-		dir_create(pd1)
-		dir_create(pd2)
-		file_create(tmp1)
+		mktree(pd1)
+		mktree(pd2)
+		touch(tmp1)
 		sync.sites["self"].paths["default"] = pd1
 		sync.sites["local"].paths["default"] = pd2
 		sync.push("local", "__badwulf_test")
 		assert os.path.exists(tmp1)
 		assert os.path.exists(tmp2)
-		file_remove(tmp1)
+		os.remove(tmp1)
 		assert not os.path.exists(tmp1)
 		assert os.path.exists(tmp2)
 		sync.pull("local", "__badwulf_test")
 		assert os.path.exists(tmp1)
 		assert os.path.exists(tmp2)
-		dir_remove(pd1, force=True)
-		dir_remove(pd2, force=True)
+		rmtree(pd1, force=True)
+		rmtree(pd2, force=True)
 	td.cleanup()

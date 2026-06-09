@@ -4,10 +4,9 @@ import tempfile
 
 from badwulf import rssh
 
-from badwulf.tools import file_create
-from badwulf.tools import file_remove
-from badwulf.tools import dir_create
-from badwulf.tools import dir_remove
+from badwulf.tools import touch
+from badwulf.tools import mktree
+from badwulf.tools import rmtree
 
 def test_rssh_init_without_proxy():
 	con = rssh(
@@ -40,7 +39,7 @@ def test_rssh_push_pull_file():
 		tmp1 = os.path.join(td.name, "__badwulf_test")
 		tmp2 = os.path.join(td.name, "__badwulf_test_push")
 		tmp3 = os.path.join(td.name, "__badwulf_test_pull")
-		file_create(tmp1)
+		touch(tmp1)
 		assert os.path.exists(tmp1)
 		assert not os.path.exists(tmp2)
 		assert not os.path.exists(tmp3)
@@ -64,9 +63,9 @@ def test_rssh_push_pull_dir():
 		tmp1b = os.path.join(pd1, "__badwulf_test-b")
 		tmp2a = os.path.join(pd2, "__badwulf_test-a")
 		tmp2b = os.path.join(pd2, "__badwulf_test-b")
-		dir_create(pd1)
-		file_create(tmp1a)
-		file_create(tmp1b)
+		mktree(pd1)
+		touch(tmp1a)
+		touch(tmp1b)
 		assert os.path.exists(tmp1a)
 		assert os.path.exists(tmp1b)
 		if pd1[-1] != "/":
@@ -76,11 +75,11 @@ def test_rssh_push_pull_dir():
 		con.push(pd1, pd2)
 		assert os.path.exists(tmp2a)
 		assert os.path.exists(tmp2b)
-		dir_remove(pd1, force=True)
+		rmtree(pd1, force=True)
 		assert not os.path.exists(pd1)
 		con.pull(pd2, pd1)
 		assert os.path.exists(tmp1a)
 		assert os.path.exists(tmp1b)
-		dir_remove(pd1, force=True)
-		dir_remove(pd2, force=True)
+		rmtree(pd1, force=True)
+		rmtree(pd2, force=True)
 	td.cleanup()

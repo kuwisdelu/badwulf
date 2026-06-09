@@ -162,28 +162,20 @@ def ls(path: str = ".", all_names: bool = False) -> list[str]:
 	else:
 		return [f for f in os.listdir(path) if not f.startswith(".")]
 
-def file_create(path: str) -> None:
+def touch(path: str, times: tuple(float) | None = None) -> None:
 	"""
-	Create a file
-	:param path: The file to create
+	Modify a file's atime and mtime and create it if it doesn't exist
+	:param path: The file to create or modify
+	:param path: The times as a tuple (atime, mtime)
 	"""
 	path = fix_path(path, must_exist=False)
 	with open(path, "a"):
-		os.utime(path, None)
+		os.utime(path, times)
 
-def file_remove(path: str) -> None:
+def mktree(path: str, force: bool = False) -> None:
 	"""
-	Delete a file
-	:param path: The file to delete
-	"""
-	path = fix_path(path, must_exist=False)
-	if os.path.exists(path):
-		os.remove(path)
-
-def dir_create(path: str, force: bool = False) -> None:
-	"""
-	Create a directory
-	:param path: The directory to create
+	Create a directory tree
+	:param path: The directory tree to create
 	:param force: Create intermediate directories if they don't exist?
 	"""
 	path = fix_path(path, must_exist=False)
@@ -193,10 +185,10 @@ def dir_create(path: str, force: bool = False) -> None:
 		else:
 			os.mkdir(path)
 
-def dir_remove(path: str, force: bool = False) -> None:
+def rmtree(path: str, force: bool = False) -> None:
 	"""
-	Delete a directory
-	:param path: The directory to delete
+	Delete a directory tree
+	:param path: The directory tree to delete
 	:param force: Delete all directory contents if not empty?
 	"""
 	path = fix_path(path, must_exist=False)
@@ -263,14 +255,6 @@ def tree_stat(
 			if size_exclude is None or file.name not in size_exclude:
 				size += st["size"]
 	return {"atime": atime, "mtime": mtime, "size": size}
-
-def tree_size(path: str) -> int:
-	"""
-	Get size of a directory's contents
-	:param path: The directory
-	:returns: The size of the directory in bytes
-	"""
-	return tree_stat(path)["size"]
 
 def checkport(port: int) -> int:
 	"""
@@ -393,29 +377,3 @@ def prune(x: list | dict, recursive: bool = True) -> list | dict:
 		case _:
 			raise TypeError("expected a list or dict")
 	return pruned
-
-def rekey_kebab_to_snake(d: dict) -> dict:
-	"""
-	Rekeys a dict from kebab-case to snake_case
-	:param d: The dict to rekey
-	:returns: A rekeyed dict
-	"""
-	return {k.replace("-", "_"): v for k, v in d.items()}
-
-def rekey_snake_to_kebab(d: dict) -> dict:
-	"""
-	Rekeys a dict from snake-case to kebab-case
-	:param d: The dict to rekey
-	:returns: A rekeyed dict
-	"""
-	return {k.replace("_", "-"): v for k, v in d.items()}
-
-def maybe_template(s: str) -> bool:
-	"""
-	Checks if a string is likely an unformatted f-string template
-	:param s: String to check
-	:returns: True if likely an f-string template, False otherwise
-	"""
-	pattern = re.compile(r"\{[^{}]*\}")
-	s = s.replace("{{", "").replace("}}", "")
-	return pattern.search(s) is not None

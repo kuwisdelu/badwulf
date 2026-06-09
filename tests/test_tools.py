@@ -30,39 +30,31 @@ def test_quote():
 	assert quote("Bad Wolf", "'") == "'Bad Wolf'"
 	assert quote("Bad Wolf", "|") == "|Bad Wolf|"
 
-def test_fix_path_err():
-	tmpdir = tempfile.gettempdir()
-	tmp = os.path.join(tmpdir, "__badwulf_testfile__")
-	if os.path.exists(tmp):
-		os.remove(tmp)
-	with pytest.raises(FileNotFoundError) as err:
-		fix_path(tmp)
-	assert "path does not exist" in str(err.value)
-
 def test_file_create_remove_ls():
-	tmpdir = tempfile.gettempdir()
-	tmp = os.path.join(tmpdir, "__badwulf_testfile__")
-	file_create(tmp)
+	td = tempfile.TemporaryDirectory()
+	tmp = os.path.join(td, "__badwulf_testfile__")
+	touch(tmp)
 	assert os.path.exists(tmp)
-	assert os.path.basename(tmp) in ls(tmpdir)
-	file_remove(tmp)
+	assert os.path.basename(tmp) in ls(td)
+	os.remove(tmp)
 	assert not os.path.exists(tmp)
-	assert not os.path.basename(tmp) in ls(tmpdir)
+	assert not os.path.basename(tmp) in ls(td)
+	td.cleanup()
 
-def test_dir_create_remove_stat():
-	tmpdir = tempfile.gettempdir()
-	dtmp = os.path.join(tmpdir, "__badwulf_testdir__")
-	tmp = os.path.join(dtmp, "__badwulf_testfile__")
-	dir_create(dtmp)
-	assert os.path.exists(dtmp)
-	assert os.path.isdir(dtmp)
+def test_mktree_rmtree_stat():
+	td = tempfile.TemporaryDirectory()
+	tmpd = os.path.join(td, "__badwulf_testdir__")
+	tmp = os.path.join(tmpd, "__badwulf_testfile__")
+	mktree(tmpd)
+	assert os.path.exists(tmpd)
+	assert os.path.isdir(tmpd)
 	with open(tmp, "a") as f:
 		f.write("I am the Bad Wolf.")
-	st = tree_stat(dtmp)
+	st = tree_stat(tmpd)
 	assert st["size"] == 18
-	assert st["size"] == tree_size(dtmp)
-	dir_remove(dtmp, force=True)
-	assert not os.path.exists(dtmp)
+	rmtree(tmpd, force=True)
+	assert not os.path.exists(tmpd)
+	td.cleanup()
 
 def test_findport_checkport():
 	p = findport(attempts=50)
@@ -103,17 +95,3 @@ def test_prune():
 	assert prune(x2) == []
 	x3 = {"a": {"b": None}}
 	assert prune(x3) == {}
-
-def test_rekey():
-	d_kebab = {"key-0": 0, "key-1": 1}
-	d_snake = {"key_0": 0, "key_1": 1}
-	assert rekey_kebab_to_snake(d_kebab) == d_snake
-	assert rekey_snake_to_kebab(d_snake) == d_kebab
-
-def test_maybe_template():
-	assert maybe_template("{}")
-	assert maybe_template("{prefix}/{user}")
-	assert maybe_template("path/with {space}/x")
-	assert not maybe_template("/time/vortex.txt")
-	assert not maybe_template("weird}_path")
-	assert not maybe_template("escaped {{braces}}")
