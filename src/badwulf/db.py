@@ -97,9 +97,9 @@ class projmeta:
 		else:
 			return None
 
-	def to_dict(self) -> dict[str: Any]:
+	def to_dict(self) -> dict[str, Any]:
 		"""
-		Format appropriately for serialization (to json, toml, etc.)
+		Format safely for serialization (to json, toml, etc.)
 		:returns: A dict representation
 		"""
 		d = asdict(self)
@@ -108,7 +108,7 @@ class projmeta:
 		return prune(d)
 
 	@classmethod
-	def from_dict(cls, d: dict[str: Any]):
+	def from_dict(cls, d: dict[str, Any]):
 		"""
 		Create an projmeta from a dict
 		:param d: A dict (parsed from json, toml, etc.)
@@ -138,7 +138,7 @@ class projsearch:
 	scope: str
 	group: str
 	pattern: str
-	hits: dict[str: list[Any]] | None = None
+	hits: dict[str, list[Any]] | None = None
 
 @dataclass
 class projdata:
@@ -151,10 +151,10 @@ class projdata:
 	"""
 	path: str
 	_meta: projmeta | None = None
-	_meta_stat: dict[str: int | float] | None = None
-	_tree_stat: dict[str: int | float] | None = None
+	_meta_stat: dict[str, int | float] | None = None
+	_tree_stat: dict[str, int | float] | None = None
 
-	def _get_meta_stat(self, force = False) -> dict[str: int | float]:
+	def _fetch_meta_stat(self, force = False) -> dict[str, int | float]:
 		"""
 		Get stats for project metadata.toml
 		"""
@@ -166,7 +166,7 @@ class projdata:
 				"size": st.st_size}
 		return self._meta_stat
 
-	def _get_tree_stat(self, force = False) -> dict[str: int | float]:
+	def _fetch_tree_stat(self, force = False) -> dict[str, int | float]:
 		"""
 		Get stats for project directory
 		"""
@@ -178,7 +178,7 @@ class projdata:
 	@property
 	def meta(self) -> projmeta:
 		"""
-		Get experimental metadata
+		Get project metadata
 		"""
 		if self._meta is None:
 			with open(self.meta_path, "rb") as file:
@@ -189,7 +189,7 @@ class projdata:
 	@meta.setter
 	def meta(self, value: projmeta) -> None:
 		"""
-		Set experimental metadata
+		Set project metadata
 		"""
 		self._meta = value
 
@@ -212,42 +212,42 @@ class projdata:
 		"""
 		Get last accessed timestamp for metadata.toml
 		"""
-		return self._get_meta_stat()["atime"]
+		return self._fetch_meta_stat()["atime"]
 
 	@property
 	def meta_mtime(self) -> float:
 		"""
 		Get last modified timestamp for metadata.toml
 		"""
-		return self._get_meta_stat()["mtime"]
+		return self._fetch_meta_stat()["mtime"]
 
 	@property
 	def meta_size(self) -> int:
 		"""
 		Get size of metadata.toml
 		"""
-		return self._get_meta_stat()["size"]
+		return self._fetch_meta_stat()["size"]
 
 	@property
 	def atime(self) -> float:
 		"""
 		Get last accessed timestamp for the dataset directory contents
 		"""
-		return self._get_tree_stat()["atime"]
+		return self._fetch_tree_stat()["atime"]
 
 	@property
 	def mtime(self) -> float:
 		"""
 		Get last modified timestamp for the dataset directory contents
 		"""
-		return self._get_tree_stat()["mtime"]
+		return self._fetch_tree_stat()["mtime"]
 
 	@property
 	def size(self) -> int:
 		"""
 		Get size of the dataset directory contents in bytes
 		"""
-		return self._get_tree_stat()["size"]
+		return self._fetch_tree_stat()["size"]
 
 	@property
 	def canonical_path(self) -> str:
@@ -288,7 +288,7 @@ class projdata:
 			shutil.move(self.path, dst)
 		self.path = dst
 		self._tree_stat = None
-		self._get_meta_stat(True)
+		self._fetch_meta_stat(True)
 
 	def copy(self, dst: str) -> projdata:
 		"""
@@ -299,12 +299,6 @@ class projdata:
 		else:
 			shutil.copytree(self.path, dst)
 		return projdata.from_path(dst)
-
-	def sync(self, dst: str, con: rssh) -> None:
-		"""
-		Sync the project to another location over a connection
-		"""
-		pass
 
 	def unlink(self) -> None:
 		"""
@@ -317,14 +311,14 @@ class projdata:
 
 	def to_dict(self) -> dict[str: Any]:
 		"""
-		Format appropriately for serialization (to json, toml, etc.)
+		Format safely for serialization (to json, toml, etc.)
 		:returns: A dict representation
 		"""
 		return {
 			"path": self.path,
 			"meta": self.meta.to_dict(),
-			"meta_stat": self._get_meta_stat(),
-			"tree_stat": self._get_tree_stat()}
+			"meta_stat": self._fetch_meta_stat(),
+			"tree_stat": self._fetch_tree_stat()}
 
 	@classmethod
 	def from_dict(cls, d: dict[str: Any]):
@@ -477,7 +471,7 @@ class projindex(Mapping):
 		:returns: A projindex object
 		"""
 		lst = [projdata.from_dict(d) for d in json.load(f)]
-		return cls({proj.meta.name: proj for proj in lst})
+		return cls.from_list(lst)
 
 	@classmethod
 	def from_path(cls, p: str):
@@ -569,16 +563,16 @@ class projdb(Mapping):
 			d = json.load(f)
 		manifest = {v.path: projdata.from_dict(v) for v in d.values()}
 		db = {}
-		num_changed = 0
+		num_cache_miss = 0
 		for proj in self.projects:
 			cached = manifest.get(proj.path)
 			if cached is None or proj.meta_hash != cached.meta_hash:
-				num_changed += 1
+				num_cache_miss += 1
 			else:
 				proj.meta = cached.meta
 			db[proj.meta.name] = proj
 		self._index = projindex(db)
-		if num_changed > 0 and self.use_manifest:
+		if num_cache_miss > 0 and self.use_manifest:
 			self.dump()
 
 	def dump(self, indent: int = "\t") -> None:

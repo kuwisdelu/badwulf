@@ -114,7 +114,7 @@ class syncer:
 
 	def to_dict(self) -> dict[str: Any]:
 		"""
-		Format appropriately for serialization (to json)
+		Format safely for serialization (to json)
 		:returns: A dict representation
 		"""
 		return prune({k: asdict(v) for k, v in self.sites.items()})
