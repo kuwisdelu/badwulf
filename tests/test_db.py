@@ -12,14 +12,14 @@ from badwulf.db import projdb
 def _testindex():
 	try:
 		return os.path.join(os.path.dirname(__file__), 
-			"tests", "testfiles", "manifest.json")
+			"testfiles", "manifest.json")
 	except NameError:
-		return os.path.join("..", 
-			"tests", "testfiles", "manifest.json")
+		return os.path.join("..", "tests", 
+			"testfiles", "manifest.json")
 
 def _testdb():
 	try:
-		return os.path.join(os.path.dirname(__file__), "tests", "testdb")
+		return os.path.join(os.path.dirname(__file__), "testdb")
 	except NameError:
 		return os.path.join("..", "tests", "testdb")
 

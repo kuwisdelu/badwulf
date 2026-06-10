@@ -12,10 +12,10 @@ from badwulf.util import rmtree
 def _testconfig():
 	try:
 		return os.path.join(os.path.dirname(__file__), 
-			"tests", "testfiles", "badwulf-sites.json")
+			"testfiles", "badwulf-sites.json")
 	except NameError:
-		return os.path.join("..", 
-			"tests", "testfiles", "badwulf-sites.json")
+		return os.path.join("..", "tests", 
+			"testfiles", "badwulf-sites.json")
 
 def test_syncer_init():
 	sync = syncer.from_path(_testconfig())
