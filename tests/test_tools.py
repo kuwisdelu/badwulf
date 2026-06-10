@@ -3,7 +3,6 @@ import os
 import platform
 import tempfile
 
-from badwulf.tools import is_known_host
 from badwulf.tools import to_bytes
 from badwulf.tools import format_bytes
 from badwulf.tools import quote
@@ -17,10 +16,6 @@ from badwulf.tools import findport
 from badwulf.tools import checkport
 from badwulf.tools import grep
 from badwulf.tools import prune
-
-def test_is_known_host():
-	host = platform.node().replace(".local", "")
-	assert is_known_host([host])
 
 def test_to_bytes():
 	assert to_bytes(1) == 1

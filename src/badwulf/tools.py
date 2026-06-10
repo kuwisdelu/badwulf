@@ -3,33 +3,9 @@
 
 import os
 import re
-import platform
 import socket
 import random
 import shutil
-from importlib.metadata import version
-
-def badwulf_version():
-	"""
-	Get badwulf package version
-	"""
-	return version("badwulf")
-
-def badwulf_attribution():
-	"""
-	Get badwulf package attribution
-	"""
-	return "powered by badwulf v" + badwulf_version()
-
-def is_known_host(nodes: list[str]) -> bool:
-	"""
-	Check if the program is running on a known host
-	:param nodes: A list of hostnames
-	:returns: True if running on a known host, False otherwise
-	"""
-	host = platform.node().replace(".local", "")
-	nodes = [nodename.casefold() for nodename in nodes]
-	return host.casefold() in nodes
 
 def to_bytes(x: int, units: str = "bytes") -> int:
 	"""
