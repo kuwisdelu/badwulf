@@ -217,6 +217,30 @@ def tree_stat(
 				size += st["size"]
 	return {"atime": atime, "mtime": mtime, "size": size}
 
+def detect(
+	pattern: str,
+	*paths: str,
+	skip_dirs: bool = True,
+	ignore_case: bool = False) -> str:
+	"""
+	Detect a file pattern in a multiple possible directories
+	:param pattern: The pattern
+	:param paths: The directories (in priority order)
+	:param skip_dirs: Should directories be skipped?
+	:param ignore_case: Should case be ignored?
+	:raises FileNotFoundError: If the file pattern can't be found
+	:returns: The path of the first detected file
+	"""
+	for path in (mkpath(p) for p in paths):
+		if os.path.isdir(path):
+			filenames = os.listdir(path)
+			for name in filenames:
+				if os.path.isdir(name) and skip_dirs:
+					continue
+				if grep1(pattern, name, ignore_case) is not None:
+					return mkpath(path, name)
+	raises FileNotFoundError(f"no match for {pattern}")
+
 def checkport(port: int) -> int:
 	"""
 	Check if a port is open (i.e., if it is in use)
@@ -239,7 +263,7 @@ def findport(attempts: int = 10) -> int:
 		port = random.randint(1024, 65535)
 		if checkport(port) != 0:
 			return port
-	raise IOError("couldn't find an available port")
+	raise IOError("no available port")
 
 def grep1(
 	pattern: str, 
