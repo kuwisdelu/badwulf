@@ -1,6 +1,5 @@
 
 import os
-import platform
 import tempfile
 
 from badwulf.util import to_bytes
@@ -12,6 +11,7 @@ from badwulf.util import mktree
 from badwulf.util import rmtree
 from badwulf.util import tree_find
 from badwulf.util import tree_stat
+from badwulf.util import detect
 from badwulf.util import findport
 from badwulf.util import checkport
 from badwulf.util import grep
@@ -55,6 +55,30 @@ def test_mkpath_mktree_etc():
 	rmtree(pd, force=True)
 	assert not os.path.exists(tmp)
 	assert not os.path.exists(pd)	
+	td.cleanup()
+
+def test_detect():
+	td = tempfile.TemporaryDirectory()
+	pd1 = mkpath(td.name, "testdir1")
+	pd2 = mkpath(td.name, "testdir2")
+	pd3 = mkpath(td.name, "testdir3")
+	mktree(pd1)
+	mktree(pd2)
+	assert os.path.exists(pd1)
+	assert os.path.exists(pd2)
+	assert not os.path.exists(pd3)
+	tmp1 = mkpath(pd1, "config.json")
+	tmp2 = mkpath(pd1, ".config.json")
+	touch(tmp1)
+	touch(tmp2)
+	assert os.path.exists(tmp1)
+	assert os.path.exists(tmp2)
+	q1 = detect(r"^\.?config\.json$", pd1, pd2, pd3)
+	assert os.path.samefile(q1, tmp1)
+	os.remove(tmp1)
+	assert not os.path.exists(tmp1)
+	q2 = detect(r"^\.?config\.json$", pd1, pd2, pd3)
+	assert os.path.samefile(q2, tmp2)
 	td.cleanup()
 
 def test_findport_checkport():
