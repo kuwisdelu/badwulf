@@ -239,7 +239,7 @@ def detect(
 					continue
 				if grep1(pattern, name, ignore_case) is not None:
 					return mkpath(path, name)
-	raises FileNotFoundError(f"no match for {pattern}")
+	raise FileNotFoundError(f"no match for {pattern}")
 
 def checkport(port: int) -> int:
 	"""
