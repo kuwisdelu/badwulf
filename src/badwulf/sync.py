@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from dataclasses import asdict
 
 from .rssh import rssh
-from .tools import mkpath
-from .tools import prune
+from .util import mkpath
+from .util import prune
 
 @dataclass
 class profile:
