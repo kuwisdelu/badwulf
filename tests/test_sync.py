@@ -5,9 +5,9 @@ import tempfile
 
 from badwulf.sync import syncer
 
-from badwulf.tools import touch
-from badwulf.tools import mktree
-from badwulf.tools import rmtree
+from badwulf.util import touch
+from badwulf.util import mktree
+from badwulf.util import rmtree
 
 def _testconfig():
 	try:

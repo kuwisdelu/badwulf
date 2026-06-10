@@ -4,9 +4,9 @@ import tempfile
 
 from badwulf import rssh
 
-from badwulf.tools import touch
-from badwulf.tools import mktree
-from badwulf.tools import rmtree
+from badwulf.util import touch
+from badwulf.util import mktree
+from badwulf.util import rmtree
 
 def test_rssh_init_without_proxy():
 	con = rssh(

@@ -14,11 +14,11 @@ from dataclasses import asdict
 from dataclasses import fields
 from operator import attrgetter
 
-from .tools import mkpath
-from .tools import tree_find
-from .tools import tree_stat
-from .tools import grep
-from .tools import prune
+from .util import mkpath
+from .util import tree_find
+from .util import tree_stat
+from .util import grep
+from .util import prune
 
 @dataclass
 class projmeta:

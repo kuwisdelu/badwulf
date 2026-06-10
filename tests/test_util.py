@@ -3,19 +3,19 @@ import os
 import platform
 import tempfile
 
-from badwulf.tools import to_bytes
-from badwulf.tools import format_bytes
-from badwulf.tools import quote
-from badwulf.tools import touch
-from badwulf.tools import mkpath
-from badwulf.tools import mktree
-from badwulf.tools import rmtree
-from badwulf.tools import tree_find
-from badwulf.tools import tree_stat
-from badwulf.tools import findport
-from badwulf.tools import checkport
-from badwulf.tools import grep
-from badwulf.tools import prune
+from badwulf.util import to_bytes
+from badwulf.util import format_bytes
+from badwulf.util import quote
+from badwulf.util import touch
+from badwulf.util import mkpath
+from badwulf.util import mktree
+from badwulf.util import rmtree
+from badwulf.util import tree_find
+from badwulf.util import tree_stat
+from badwulf.util import findport
+from badwulf.util import checkport
+from badwulf.util import grep
+from badwulf.util import prune
 
 def test_to_bytes():
 	assert to_bytes(1) == 1

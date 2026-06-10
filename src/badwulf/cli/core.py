@@ -4,7 +4,7 @@
 import os
 
 from ..sync import syncer
-from ..tools import mkpath
+from ..util import mkpath
 
 def detect_sites(p = "badwulf-sites.json"):
 	if "BADWULF_SITES" in os.environ:
