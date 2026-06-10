@@ -19,9 +19,11 @@ def _testindex():
 
 def _testdb():
 	try:
-		return os.path.join(os.path.dirname(__file__), "testdb")
+		return os.path.join(os.path.dirname(__file__), 
+			"testdb")
 	except NameError:
-		return os.path.join("..", "tests", "testdb")
+		return os.path.join("..", "tests", 
+			"testdb")
 
 def test_projdata_meta_search():
 	p = ("public", "Example", "example0")
