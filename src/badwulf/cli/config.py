@@ -2,6 +2,7 @@ import os
 import sys
 import json
 
+from ..sync import profile
 from ..sync import syncer
 from ..util import prog_error
 from ..util import tokenize
@@ -23,10 +24,22 @@ def detect_sites():
 		except FileNotFoundError:
 			prefix = mkpath("~", ".badwulf")
 			path = mkpath(prefix, "badwulf-sites.json")
-			site = {"user": "", "paths": {"default": prefix}}
-			with open(path) as f:
-				json.dump({"self": site}, f, indent="\t")
+			site = profile(paths={"default": prefix})
+			cfg = syncer({"self": site})
+			with open(path, "w") as f:
+				json.dump(cfg.to_dict(), f, indent="\t")
 	return path
+
+def add_site(path, args):
+	cfg = syncer.from_path(path)
+	if args.name in cfg.sites:
+		prog_error(f"site '{args.name}' already exists", args)
+	else:
+		cfg.sites[args.name] = profile()
+	with open(path, "w") as f:
+		json.dump(cfg.to_dict(), f, indent="\t")
+	if not all_unset(args):
+		set_site(path, args)
 
 def get_site(path, args):
 	cfg = syncer.from_path(path)
@@ -130,6 +143,15 @@ def set_site(path, args):
 				if args.proxy_user == "":
 					prog_error("empty string invalid for hosts", args)
 				site.proxy["host"] = args.proxy_user
+	with open(path, "w") as f:
+		json.dump(cfg.to_dict(), f, indent="\t")
+
+def remove_site(path, args):
+	cfg = syncer.from_path(path)
+	if args.name not in cfg.sites:
+		prog_error(f"no site named '{args.name}'", args)
+	else:
+		del cfg.sites[args.name]
 	with open(path, "w") as f:
 		json.dump(cfg.to_dict(), f, indent="\t")
 

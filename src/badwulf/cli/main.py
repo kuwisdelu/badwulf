@@ -6,8 +6,10 @@ from importlib import metadata
 
 from ..sync import syncer
 from .config import detect_sites
+from .config import add_site
 from .config import get_site
 from .config import set_site
+from .config import remove_site
 
 def main():
 	args = build_parser().parse_args()
@@ -189,10 +191,14 @@ def cmd_site(args):
 					print(f"* {name}")
 				else:
 					print(f"  {name}")
-		case "get":
-			get_site(path, args)
+		case "add":
+			add_site(path, args)
 		case "set":
 			set_site(path, args)
+		case "get":
+			get_site(path, args)
+		case "remove":
+			remove_site(path, args)
 
 def register_run(subparsers):
 	p = subparsers.add_parser("run", 
