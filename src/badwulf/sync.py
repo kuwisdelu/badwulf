@@ -50,77 +50,6 @@ class syncer:
 		if "self" not in self.sites:
 			raise ValueError("missing required site 'self'")
 
-	def site(self, site: str, host_ref: str = "default") -> rssh:
-		"""
-		Get an rssh object for a host at another site
-		:param site: The other site name
-		:param host_ref: (Optional) The other host alias
-		:raises ValueError: On attempt to connect to site 'self'
-		:returns: An rssh object
-		"""
-		if site == "self":
-			raise ValueError("expected another site (not 'self'')")
-		site = self.sites[site]
-		return rssh(
-			user=site.user,
-			host=site.hosts[host_ref],
-			proxy_user=site.proxy.get("user"),
-			proxy_host=site.proxy.get("host"))
-
-	def set_user(self, site: str, user: str) -> None:
-		"""
-		Set a user for a site
-		:param site: The site name
-		:param username: The username
-		:raises ValueError: On attempting to set site 'self'
-		"""
-		if site == "self":
-			raise ValueError("can't set user for site 'self'")
-
-
-	def set_host(self, site: str, alias: str, host: str | None) -> None:
-		"""
-		Set a host alias for a site
-		:param site: The site name
-		:param alias: The host alias
-		:param host: The hostname or url (or None to unset)
-		:raises ValueError: On attempting to set site 'self'
-		"""
-		if site == "self":
-			raise ValueError("can't set host for site 'self'")
-		pass
-
-	def set_path(self, site: str, alias: str, path: str | None) -> None:
-		"""
-		Set a path alias for a site
-		:param site: The site name
-		:param alias: The path alias
-		:param path: The absolute or relative path (or None to unset)
-		"""
-		pass
-
-	def set_proxy_user(self, site: str, proxy_user: str | None) -> None:
-		"""
-		Set a proxy jump user for a site
-		:param site: The site name
-		:param proxy_user: The proxy jump username (or None to unset)
-		:raises ValueError: On attempting to set site 'self'
-		"""
-		if site == "self":
-			raise ValueError("can't set host for site 'self'")
-		pass
-
-	def set_proxy_host(self, site: str, proxy_host: str | None) -> None:
-		"""
-		Set a proxy jump host for a site
-		:param site: The site name
-		:param proxy_host: The proxy jump hostname or url  (or None to unset)
-		:raises ValueError: On attempting to set site 'self'
-		"""
-		if site == "self":
-			raise ValueError("can't set host for site 'self'")
-		pass
-
 	def push(self, 
 		site: str,
 		path: str,
@@ -141,7 +70,7 @@ class syncer:
 		if has_trailing_slash:
 			src += "/"
 			dst += "/"
-		con = self.site(site, host_ref)
+		con = self.bridge(site, host_ref)
 		return con.push(src=src, dst=dst, **kwargs)
 
 	def pull(self,
@@ -164,8 +93,25 @@ class syncer:
 		if has_trailing_slash:
 			src += "/"
 			dst += "/"
-		con = self.site(site, host_ref)
+		con = self.bridge(site, host_ref)
 		return con.pull(src=src, dst=dst, **kwargs)
+
+	def bridge(self, site: str, host_ref: str = "default") -> rssh:
+		"""
+		Get an rssh object to a host at another site
+		:param site: The other site name
+		:param host_ref: (Optional) The other host alias
+		:raises ValueError: On attempt to connect to site 'self'
+		:returns: An rssh object
+		"""
+		if site == "self":
+			raise ValueError("expected another site (not 'self'')")
+		site = self.sites[site]
+		return rssh(
+			user=site.user,
+			host=site.hosts[host_ref],
+			proxy_user=site.proxy.get("user"),
+			proxy_host=site.proxy.get("host"))
 
 	def to_dict(self) -> dict[str: Any]:
 		"""

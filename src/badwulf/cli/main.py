@@ -1,5 +1,11 @@
+import os
+import sys
+import json
 import argparse
 from importlib import metadata
+
+from .config import get_syncer
+from .config import get_site
 
 def main():
 	args = build_parser().parse_args()
@@ -9,10 +15,10 @@ def build_parser():
 	p = argparse.ArgumentParser(prog="wulf")
 	p.set_defaults(func=lambda args: p.print_help())
 	p.add_argument("-v", "--version", 
-		help="show version",
+		help="show version and exit",
 		action="version",
 		version=f"badwulf {metadata.version("badwulf")}")
-	sub = p.add_subparsers(metavar="COMMAND")
+	sub = p.add_subparsers(metavar="command")
 	# create and explore
 	register_init(sub)
 	register_clone(sub)
@@ -30,105 +36,161 @@ def build_parser():
 	return p
 
 def register_init(subparsers):
-	cmd = subparsers.add_parser("init", 
+	p = subparsers.add_parser("init", 
 		help="Create an empty project")
-	cmd.set_defaults(func=cmd_init)
-	return cmd
+	p.set_defaults(func=cmd_init)
+	return p
 
 def cmd_init(args):
 	print("hello, world!")
 
 def register_clone(subparsers):
-	cmd = subparsers.add_parser("clone", 
+	p = subparsers.add_parser("clone", 
 		help="Create a symlink to a project",
 		aliases=["ln"])
-	return cmd
+	return p
 
 def register_list(subparsers):
-	cmd = subparsers.add_parser("list", 
+	p = subparsers.add_parser("list", 
 		help="List projects",
 		aliases=["ls"])
-	cmd.add_argument("-l", "--details", 
-		help="show extended details",
+	p.add_argument("-l", "--details", 
+		help="show details",
 		action="store_true")
-	cmd.add_argument("-s", "--scope", 
+	p.add_argument("-s", "--scope", 
 		help="filter by scope",
 		action="store")
-	cmd.add_argument("-g", "--group", 
+	p.add_argument("-g", "--group", 
 		help="filter by group",
 		action="store")
-	return cmd
+	p.add_argument("--json", 
+		help="json output",
+		action="store_true")
+	return p
 
 def register_find(subparsers):
-	cmd = subparsers.add_parser("find", 
+	p = subparsers.add_parser("find", 
 		help="Search project metadata",
 		aliases=["grep"])
-	cmd.add_argument("-s", "--scope", 
+	p.add_argument("-l", "--details", 
+		help="show details",
+		action="store_true")
+	p.add_argument("-s", "--scope", 
 		help="filter by scope",
 		action="store")
-	cmd.add_argument("-g", "--group", 
+	p.add_argument("-g", "--group", 
 		help="filter by group",
 		action="store")
-	return cmd
+	p.add_argument("--json", 
+		help="json output",
+		action="store_true")
+	return p
 
 def register_fetch(subparsers):
-	cmd = subparsers.add_parser("fetch", 
+	p = subparsers.add_parser("fetch", 
 		help="Get manifest of projects from another site")
-	return cmd
+	return p
 
 def register_pull(subparsers):
-	cmd = subparsers.add_parser("pull", 
+	p = subparsers.add_parser("pull", 
 		help="Download a project from another site")
-	cmd.add_argument("-f", "--force", 
+	p.add_argument("-f", "--force", 
 		help="force download even if the other is older?",
 		action="store_true")
-	cmd.add_argument("--dry-run", 
+	p.add_argument("--dry-run", 
 		help="show what would happen without doing it?",
 		action="store_true")
-	cmd.add_argument("--ask", 
+	p.add_argument("--ask", 
 		help="ask to confirm before pushing?",
 		action="store_true")
 
 def register_push(subparsers):
-	cmd = subparsers.add_parser("push", 
+	p = subparsers.add_parser("push", 
 		help="Upload a project to another site")
-	cmd.add_argument("-f", "--force", 
+	p.add_argument("-f", "--force", 
 		help="force upload even if the other is newer?",
 		action="store_true")
-	cmd.add_argument("--dry-run", 
+	p.add_argument("--dry-run", 
 		help="show what would happen without doing it?",
 		action="store_true")
-	cmd.add_argument("--ask", 
+	p.add_argument("--ask", 
 		help="ask to confirm before pushing?",
 		action="store_true")
-	return cmd
+	return p
 
 def register_remove(subparsers):
-	cmd = subparsers.add_parser("remove",
+	p = subparsers.add_parser("remove",
 		help="Delete a project",
 		aliases=["rm"])
-	cmd.add_argument("-f", "--force", 
+	p.add_argument("-f", "--force", 
 		help="force upload even if the other is newer?",
 		action="store_true")
-	cmd.add_argument("--dry-run", 
+	p.add_argument("--dry-run", 
 		help="show what would happen without doing it?",
 		action="store_true")
-	cmd.add_argument("--ask", 
+	p.add_argument("--ask", 
 		help="ask to confirm before pushing?",
 		action="store_true")
-	return cmd
+	return p
 
 def register_status(subparsers):
-	cmd = subparsers.add_parser("status", 
+	p = subparsers.add_parser("status", 
 		help="Get status of tracked projects")
-	return cmd
+	return p
 
 def register_site(subparsers):
-	cmd = subparsers.add_parser("site",
-		help="Get or set work site configuration")
-	return cmd
+	p = subparsers.add_parser("site", 
+		help="Get or set site configuration")
+	p.set_defaults(func=cmd_site)
+	p.add_argument("subcommand",
+		help="Get or set site variables",
+		choices=["get", "set"],
+		nargs="?")
+	p.add_argument("name",
+		help="A work site name",
+		default="self",
+		nargs="?")
+	p.add_argument("--user", 
+		help="site user",
+		nargs="?",
+		default=False)
+	p.add_argument("--host", 
+		help="site hosts as <alias>:<host>",
+		action="append",
+		nargs="?",
+		default=[])
+	p.add_argument("--path", 
+		help="site paths as <alias>:<path>",
+		action="append",
+		nargs="?",
+		default=[])
+	p.add_argument("--proxy-user", 
+		help="site proxy jump user",
+		nargs="?",
+		default=False)
+	p.add_argument("--proxy-host", 
+		help="site proxy jump host",
+		nargs="?",
+		default=False)
+	p.add_argument("--json", 
+		help="json output",
+		action="store_true")
+	return p
+
+def cmd_site(args):
+	# print(args)
+	cfg = get_syncer()
+	match args.subcommand:
+		case None:
+			for name in cfg.sites.keys():
+				if name == "self":
+					print(f"* {name}")
+				else:
+					print(f"  {name}")
+		case "get":
+			get_site(cfg, args)
 
 def register_run(subparsers):
-	cmd = subparsers.add_parser("run", 
+	p = subparsers.add_parser("run", 
 		help="Run a shell command at another site")
-	return cmd
+	return p

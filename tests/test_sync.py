@@ -1,6 +1,7 @@
 
 import os
 import json
+import getpass
 import tempfile
 
 from badwulf.sync import syncer
@@ -24,7 +25,7 @@ def test_syncer_init():
 	assert node.host == "time.vortex"
 	assert node.proxy_user == "root"
 	assert node.proxy_host == "login.dimension.time"
-	assert sync.node("local").user == os.getenv("USER")
+	assert sync.node("local").user == getpass.getuser()
 	copy = syncer.from_dict(sync.to_dict())
 	assert sync.to_dict() == copy.to_dict()
 

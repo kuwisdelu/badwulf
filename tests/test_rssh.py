@@ -1,5 +1,6 @@
 
 import os
+import getpass
 import tempfile
 
 from badwulf import rssh
@@ -33,7 +34,7 @@ def test_rssh_init_with_proxy():
 	assert con.proxy_port is not None
 
 def test_rssh_push_pull_file():
-	con = rssh("$USER", "localhost")
+	con = rssh(getpass.getuser(), "localhost")
 	td = tempfile.TemporaryDirectory()
 	if con.is_batch():
 		tmp1 = os.path.join(td.name, "__badwulf_test")
@@ -54,7 +55,7 @@ def test_rssh_push_pull_file():
 	td.cleanup()
 
 def test_rssh_push_pull_dir():
-	con = rssh("$USER", "localhost")
+	con = rssh(getpass.getuser(), "localhost")
 	td = tempfile.TemporaryDirectory()
 	if con.is_batch():
 		pd1 = os.path.join(td.name, "testdir1")
