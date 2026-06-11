@@ -140,14 +140,14 @@ def register_status(subparsers):
 
 def register_site(subparsers):
 	p = subparsers.add_parser("site", 
-		help="Get or set site configuration")
+		help="Configure work sites")
 	p.set_defaults(func=cmd_site)
 	p.add_argument("subcommand",
-		help="Get or set site variables",
-		choices=["get", "set"],
+		help="Add, get, set, or remove site configuration",
+		choices=["add", "get", "set", "remove"],
 		nargs="?")
 	p.add_argument("name",
-		help="A work site name",
+		help="The site name",
 		default="self",
 		nargs="?")
 	p.add_argument("--user", 

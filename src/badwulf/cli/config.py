@@ -14,7 +14,7 @@ def as_dict(*items):
 		else:
 			return (s, sep, None)
 	items = [separate(s, ":") for s in items if s is not None]
-	return {s[0]: s[2] for s in items}
+	return {k: v for k, sep, v in items}
 
 def get_syncer():
 	if "BADWULF_SITES" in os.environ:
