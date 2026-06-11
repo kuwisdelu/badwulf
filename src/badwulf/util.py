@@ -3,9 +3,35 @@
 
 import os
 import re
+import sys
 import socket
 import random
 import shutil
+import argparse
+
+def prog_text(
+	text: str, 
+	args: argparse.Namespace, 
+	label: str | None = None) -> str:
+	"""
+	Get text formatted as a message from a program
+	:param text: The program message
+	:param args: Namespace from argparse (must include "parser")
+	:param label: A label (e.g., "error", "warning", etc.)
+	"""
+	if label is None:
+		return f"{args.parser.prog}: {text}"
+	else:
+		return f"{args.parser.prog}: {label}: {text}"
+
+def prog_error(text: str, args: argparse.Namespace) -> None:
+	"""
+	Exit a program with a formatted error message
+	:param text: The error message
+	:param args: Namespace from argparse (must include "parser")
+	:raises SystemExit: With a nonzero exit code
+	"""
+	sys.exit(prog_text(text, args, label="error"))
 
 def to_bytes(x: int, units: str = "bytes") -> int:
 	"""
@@ -87,6 +113,16 @@ def confirm(msg: str, suffix: str = " (yes/no): ") -> bool:
 			return False
 		else:
 			print("Invalid input. Please enter yes/no.")
+
+def tokenize(text: str, sep: str = ":") -> tuple[str]:
+	"""
+	Tokenize into two strings based on the first separator
+	"""
+	if sep not in text:
+		return (text, None)
+	else:
+		s1, sep, s2 = text.partition(sep)
+		return (s1, s2)
 
 def quote(s: str, q: str = '"') -> str:
 	"""

@@ -4,6 +4,7 @@ import tempfile
 
 from badwulf.util import to_bytes
 from badwulf.util import format_bytes
+from badwulf.util import tokenize
 from badwulf.util import quote
 from badwulf.util import touch
 from badwulf.util import mkpath
@@ -31,6 +32,11 @@ def test_format_bytes():
 	assert format_bytes(1_100_000, "auto") == "1.1 MB"
 	assert format_bytes(1_000_000, "KB") == "1000.0 KB"
 	assert format_bytes(1_100_000, "KB") == "1100.0 KB"
+
+def test_quote():
+	assert tokenize("Bad:Wolf") == ("Bad", "Wolf")
+	assert tokenize("Bad:") == ("Bad", "")
+	assert tokenize("Bad") == ("Bad", None)
 
 def test_quote():
 	assert quote("Bad Wolf") == '"Bad Wolf"'

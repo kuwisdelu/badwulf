@@ -4,8 +4,10 @@ import json
 import argparse
 from importlib import metadata
 
-from .config import get_syncer
+from ..sync import syncer
+from .config import detect_sites
 from .config import get_site
+from .config import set_site
 
 def main():
 	args = build_parser().parse_args()
@@ -141,7 +143,7 @@ def register_status(subparsers):
 def register_site(subparsers):
 	p = subparsers.add_parser("site", 
 		help="Configure work sites")
-	p.set_defaults(func=cmd_site)
+	p.set_defaults(func=cmd_site, parser=p)
 	p.add_argument("subcommand",
 		help="Add, get, set, or remove site configuration",
 		choices=["add", "get", "set", "remove"],
@@ -178,17 +180,19 @@ def register_site(subparsers):
 	return p
 
 def cmd_site(args):
-	# print(args)
-	cfg = get_syncer()
+	path = detect_sites()
 	match args.subcommand:
 		case None:
-			for name in cfg.sites.keys():
+			print(f"{path}:")
+			for name in syncer.from_path(path).sites.keys():
 				if name == "self":
 					print(f"* {name}")
 				else:
 					print(f"  {name}")
 		case "get":
-			get_site(cfg, args)
+			get_site(path, args)
+		case "set":
+			set_site(path, args)
 
 def register_run(subparsers):
 	p = subparsers.add_parser("run", 
