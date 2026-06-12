@@ -7,8 +7,9 @@ import json
 import tomllib
 import datetime
 
-from collections.abc import Mapping
 from collections.abc import Callable
+from collections.abc import Mapping
+from collections.abc import MutableMapping
 from dataclasses import dataclass
 from dataclasses import asdict
 from dataclasses import fields
@@ -110,9 +111,9 @@ class projmeta:
 	@classmethod
 	def from_dict(cls, d: dict[str, Any]):
 		"""
-		Create an projmeta from a dict
+		Create a projmeta from a dict
 		:param d: A dict (parsed from json, toml, etc.)
-		:returns: An projdata object
+		:returns: A projdata object
 		"""
 		d = prune(d)
 		def iso(x):
@@ -254,7 +255,10 @@ class projdata:
 		"""
 		Get the (relative) canonical path (defined as scope/group/name)
 		"""
-		return os.path.join(self.meta.scope, self.meta.group, self.meta.name)
+		return os.path.join(
+			self.meta.scope.casefold(), 
+			self.meta.group.casefold(), 
+			self.meta.name)
 
 	def is_local(self) -> bool:
 		"""
@@ -323,9 +327,9 @@ class projdata:
 	@classmethod
 	def from_dict(cls, d: dict[str: Any]):
 		"""
-		Create an projdata from a dict
+		Create a projdata from a dict
 		:param d: A dict (parsed from json, toml, etc.)
-		:returns: An projdata object
+		:returns: A projdata object
 		"""
 		return cls(
 			path=d["path"],
@@ -336,19 +340,19 @@ class projdata:
 	@classmethod
 	def from_path(cls, p: str):
 		"""
-		Create an projdata from a file path or directory
+		Create a projdata from a file path or directory
 		:param p: The path to a directory or a metadata.toml file
-		:returns: An projdata object
+		:returns: A projdata object
 		"""
 		p = mkpath(p, must_exist=True)
 		if not os.path.isdir(p):
 			p = os.path.dirname(p)
 		return cls(path=p)
 
-class projindex(Mapping):
+class projindex(MutableMapping):
 	"""
-	Index of scientific research projects
-	:ivar _index: Mapping of projects by name
+	Index of scientific research projects and metadata
+	:ivar _index: Mapping of projects by name (case-insensitive)
 	"""
 	_index: dict[str, projdata]
 
@@ -363,9 +367,21 @@ class projindex(Mapping):
 
 	def __getitem__(self, key: str) -> projdata:
 		"""
-		Get an projdata item from the index
+		Get a projdata item in the index
 		"""
-		return self._index[key]
+		return self._index[key.casefold()]
+
+	def __setitem__(self, key: str, value: projdata) -> None:
+		"""
+		Set a projdata item in the index
+		"""
+		self._index[key.casefold()] = value
+
+	def __delitem__(self, key: str) -> None:
+		"""
+		Delete a projdata item in the index
+		"""
+		del self._index[key.casefold()]
 
 	def __len__(self) -> int:
 		"""
@@ -416,7 +432,7 @@ class projindex(Mapping):
 		reverse: bool = False) -> list[projdata]:
 		"""
 		Return projects in ascending sort order based on a key function
-		:param key: A function taking an projdata returning a comparable key
+		:param key: A function taking a projdata returning a comparable key
 		:param reverse: Sort in descending order?
 		"""
 		return sorted(self.values(), key=key, reverse=reverse)
@@ -461,7 +477,7 @@ class projindex(Mapping):
 		:param lst: A list of projdata objects
 		:returns: An projindex object:
 		"""
-		return cls({proj.meta.name: proj for proj in lst})
+		return cls({proj.meta.name.casefold(): proj for proj in lst})
 
 	@classmethod
 	def from_file(cls, f: io.TextIOBase | io.BufferedIOBase):
@@ -490,7 +506,7 @@ class projdb(Mapping):
 	:ivar prefix: The path to the project prefix
 	:ivar projects: List of projects detected under prefix
 	:ivar use_manifest: Read/write a manifest.json?
-	:ivar _index: Mapping of projects by name
+	:ivar _index: Mapping of projects by name (case-insensitive)
 	"""
 	prefix: str
 	projects: list[projdata]
@@ -513,7 +529,7 @@ class projdb(Mapping):
 
 	def __getitem__(self, key: str) -> projdata | None:
 		"""
-		Get an projdata item from the database
+		Get a projdata item from the database
 		"""
 		return self.index[key]
 
@@ -562,7 +578,7 @@ class projdb(Mapping):
 		with open(self.manifest_path) as f:
 			d = json.load(f)
 		manifest = {v.path: projdata.from_dict(v) for v in d.values()}
-		db = {}
+		index = projindex()
 		num_cache_miss = 0
 		for proj in self.projects:
 			cached = manifest.get(proj.path)
@@ -570,8 +586,8 @@ class projdb(Mapping):
 				num_cache_miss += 1
 			else:
 				proj.meta = cached.meta
-			db[proj.meta.name] = proj
-		self._index = projindex(db)
+			index[proj.meta.name] = proj
+		self._index = index
 		if num_cache_miss > 0 and self.use_manifest:
 			self.dump()
 

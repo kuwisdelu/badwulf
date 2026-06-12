@@ -20,19 +20,19 @@ def _testconfig():
 
 def test_syncer_init():
 	sync = syncer.from_path(_testconfig())
-	node = sync.node("origin")
+	node = sync.bridge("origin")
 	assert node.user == "bad-wolf"
 	assert node.host == "time.vortex"
 	assert node.proxy_user == "root"
 	assert node.proxy_host == "login.dimension.time"
-	assert sync.node("local").user == getpass.getuser()
+	assert sync.bridge("local").user == getpass.getuser()
 	copy = syncer.from_dict(sync.to_dict())
 	assert sync.to_dict() == copy.to_dict()
 
 def test_syncer_push_pull():
 	td = tempfile.TemporaryDirectory()
 	sync = syncer.from_path(_testconfig())
-	if sync.node("local").is_batch():
+	if sync.bridge("local").is_batch():
 		pd1 = os.path.join(td.name, "testdir1")
 		pd2 = os.path.join(td.name, "testdir2")
 		tmp1 = os.path.join(pd1, "__badwulf_test")
