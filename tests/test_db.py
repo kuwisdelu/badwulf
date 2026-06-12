@@ -26,12 +26,12 @@ def _testdb():
 			"testdb")
 
 def test_projdata_meta_search():
-	p = ("public", "Example", "example0")
+	p = ("public", "example", "example0")
 	proj = projdata.from_path(os.path.join(_testdb(), *p))
 	assert proj.is_local()
 	assert proj.size == proj.meta_size
 	assert proj.meta.has_scope("public")
-	assert proj.meta.has_group("Example")
+	assert proj.meta.has_group("example")
 	assert not proj.meta.has_scope("private")
 	assert not proj.meta.has_group("Bad Wolf Corporation")
 	s1 = proj.meta.search("bad wolf", ignore_case=True)
@@ -48,7 +48,7 @@ def test_projdata_meta_search():
 	assert projdata.from_dict(d).to_dict() == proj.to_dict()
 
 def test_projdata_move_copy_unlink():
-	p = ("public", "Example", "example0")
+	p = ("public", "example", "example0")
 	proj = projdata.from_path(os.path.join(_testdb(), *p))
 	td = tempfile.TemporaryDirectory()
 	dst_cp = os.path.join(td.name, "test-cp", *p)
