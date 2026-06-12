@@ -6,6 +6,8 @@ from importlib import metadata
 
 from ..sync import syncer
 from .config import detect_sites
+from .config import load_sites
+from .config import list_sites
 from .config import add_site
 from .config import get_site
 from .config import set_site
@@ -185,12 +187,7 @@ def cmd_site(args):
 	path = detect_sites()
 	match args.subcommand:
 		case None:
-			print(f"{path}:")
-			for name in syncer.from_path(path).sites.keys():
-				if name == "self":
-					print(f"* {name}")
-				else:
-					print(f"  {name}")
+			list_sites(path, args)
 		case "add":
 			add_site(path, args)
 		case "set":

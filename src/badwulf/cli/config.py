@@ -30,6 +30,21 @@ def detect_sites():
 				json.dump(cfg.to_dict(), f, indent="\t")
 	return path
 
+def load_sites():
+	return syncer.from_path(detect_sites())
+
+def list_sites(path, args):
+	cfg = syncer.from_path(path)
+	if args.json:
+		print(json.dumps(cfg.to_dict(), indent=2))
+	else:
+		print(f"{path}:")
+		for name in cfg.sites.keys():
+			if name == "self":
+				print(f"* {name}")
+			else:
+				print(f"  {name}")
+
 def add_site(path, args):
 	cfg = syncer.from_path(path)
 	if args.name in cfg.sites:
@@ -58,16 +73,16 @@ def get_site(path, args):
 			"hosts": {},
 			"paths": {},
 			"proxy": {}}
-		if args.user is None or args.user == site.user:
-			d["user"] = site.user
+		if args.user is not False:
+			test, user = args.user, site.user
+			if test is None or test.casefold() == user.casefold():
+				d["user"] = user
 		if len(args.host) > 0:
 			if all(args.host):
 				for k, v in tokenize_to_dict(*args.host).items():
 					if k in site.hosts:
 						host = site.hosts[k]
-						if v is None:
-							d["hosts"][k] = host
-						elif v.casefold() == host.casefold():
+						if v is None or v.casefold() == host.casefold():
 							d["hosts"][k] = host
 			else:
 				d["hosts"] = site.hosts
@@ -76,24 +91,18 @@ def get_site(path, args):
 				for k, v in tokenize_to_dict(*args.path).items():
 					if k in site.paths:
 						path = site.paths[k]
-						if v is None:
-							d["paths"][k] = path
-						elif v.casefold() == path.casefold():
+						if v is None or v.casefold() == path.casefold():
 							d["paths"][k] = path
 			else:
 				d["paths"] = site.paths
-		proxy_user = site.proxy.get("user")
-		if args.proxy_user is not False and proxy_user is not None:
-			if args.proxy_user is None:
-				d["proxy"]["user"] = proxy_user
-			elif args.proxy_user.casefold() == proxy_user.casefold():
-				d["proxy"]["user"] = proxy_user
-		proxy_host = site.proxy.get("host")
-		if args.proxy_host is not False and proxy_host is not None:
-			if args.proxy_host is None:
-				d["proxy"]["user"] = proxy_host
-			elif args.proxy_host.casefold() == proxy_host.casefold():
-				d["proxy"]["user"] = proxy_host
+		if args.proxy_user is not False and "user" in site.proxy:
+			test, user = args.proxy_user, site.proxy["user"]
+			if test is None or test.casefold() == user.casefold():
+				d["proxy"]["user"] = user
+		if args.proxy_host is not False and "host" in site.proxy:
+			test, host = args.proxy_host, site.proxy["host"]
+			if test is None or test.casefold() == host.casefold():
+				d["proxy"]["host"] = host
 	d = prune(d)
 	if args.json:
 		print(json.dumps(d, indent=2))		
@@ -127,7 +136,7 @@ def set_site(path, args):
 		if len(paths) > 0:
 			for k, v in tokenize_to_dict(*paths).items():
 				if v is None:
-					if k in site.hosts:
+					if k in site.paths:
 						del site.paths[k]
 				else:
 					site.paths[k] = v
@@ -138,11 +147,11 @@ def set_site(path, args):
 				site.proxy["user"] = args.proxy_user
 		if args.proxy_host is not False:
 			if args.proxy_host is None:
-				site.proxy["host"] = ""
+				del site.proxy["host"]
 			else:
-				if args.proxy_user == "":
+				if args.proxy_host == "":
 					prog_error("empty string invalid for hosts", args)
-				site.proxy["host"] = args.proxy_user
+				site.proxy["host"] = args.proxy_host
 	with open(path, "w") as f:
 		json.dump(cfg.to_dict(), f, indent="\t")
 
