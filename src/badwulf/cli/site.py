@@ -12,8 +12,8 @@ from ..util import detect
 from ..util import prune
 
 DEFAULT_SITE = "self"
-DEFAULT_PATH = "default"
-DEFAULT_HOST = "default"
+DEFAULT_NODE = "default"
+DEFAULT_PREFIX = "default"
 
 def detect_sites():
 	if "BADWULF_SITES" in os.environ:
@@ -27,7 +27,7 @@ def detect_sites():
 			if not os.path.isdir(prefix):
 				mktree(prefix)
 			path = mkpath(prefix, "badwulf-sites.json")
-			site = profile(paths={DEFAULT_PATH: prefix})
+			site = profile(paths={DEFAULT_PREFIX: prefix})
 			cfg = syncer({DEFAULT_SITE: site})
 			with open(path, "w") as f:
 				json.dump(cfg.to_dict(), f, indent="\t")

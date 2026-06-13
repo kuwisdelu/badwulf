@@ -6,8 +6,8 @@ import subprocess
 from datetime import date
 
 from .site import load_sites
-from .site import DEFAULT_PATH
-from .site import DEFAULT_HOST
+from .site import DEFAULT_PREFIX
+from .site import DEFAULT_NODE
 
 from ..db import projindex
 from ..db import projdb
@@ -78,7 +78,7 @@ def create(args):
 	else:
 		prefix, name = rtokenize(args.project)
 		if prefix is None:
-			prefix = DEFAULT_PATH
+			prefix = DEFAULT_PREFIX
 		cfg = load_sites()
 		dbpath = cfg.sites[cfg.local].paths.get(prefix)
 		if dbpath is None:
@@ -97,7 +97,7 @@ def symlink(args):
 	cfg = load_sites()
 	prefix, name = rtokenize(args.project)
 	if prefix is None:
-		prefix = DEFAULT_PATH
+		prefix = DEFAULT_PREFIX
 	dbpath = cfg.sites[cfg.local].paths.get(prefix)
 	if dbpath is None:
 		prog_error(f"invalid prefix: {prefix}", args)

@@ -7,9 +7,9 @@ from importlib import metadata
 from . import site
 from . import proj
 
-SITE_HINT = "SITE[:NODE]"
-PROJECT_HINT = "[PREFIX:]NAME"
-SEARCH_HINT = "[PREFIX:]QUERY"
+SITE_METAVAR = "SITE[:NODE]"
+PROJ_METAVAR = "[PREFIX:]NAME"
+QUERY_METAVAR = "[PREFIX:]QUERY"
 
 def main():
 	args = build_parser().parse_args()
@@ -42,31 +42,25 @@ def build_parser():
 def _add_project(p, opt=False, cwd=False):
 	help_text = "project specification"
 	if cwd:
-		help_text = help_text + " (if not current directory)"
+		help_text += " (if not current directory)"
 	nargs = "?" if opt else 1
 	p.add_argument("project", 
 		help=help_text,
-		metavar=PROJECT_HINT,
+		metavar=PROJ_METAVAR,
 		nargs=nargs)
 
 def _add_site(p, opt=False):
 	help_text = "site specification"
-	if opt:
-		p.add_argument("site", 
-			help=help_text,
-			metavar=SITE_HINT,
-			nargs="?",
-			default=site.DEFAULT_SITE)
-	else:
-		p.add_argument("site", 
-			help=help_text,
-			metavar=SITE_HINT)
+	nargs = "?" if opt else 1
+	p.add_argument("site", 
+		help=help_text,
+		metavar=SITE_METAVAR,
+		nargs=nargs)
 
-def _add_site_opt(p):
+def _add_site_option(p):
 	p.add_argument("-t", "--site", 
 		help="site specification",
-		metavar=SITE_HINT,
-		default=site.DEFAULT_SITE)
+		metavar=SITE_METAVAR)
 
 def _add_details(p):
 	p.add_argument("-l", "--details", 
@@ -103,6 +97,19 @@ def _add_json(p):
 		help="json output",
 		action="store_true")
 
+def _add_query_group(p):
+	_add_details(p)
+	_add_site_option(p)
+	_add_scope_filter(p)
+	_add_group_filter(p)
+
+def _add_sync_group(p):
+	_add_site(p)
+	_add_project(p, opt=True, cwd=True)
+	_add_force(p)
+	_add_dry_run(p)
+	_add_ask(p)
+
 def register_init(subparsers):
 	p = subparsers.add_parser("init", 
 		help="Create an empty project")
@@ -116,44 +123,36 @@ def register_init(subparsers):
 		help=f"project group (default: {proj.INIT_GROUP})",
 		action="store",
 		default=proj.INIT_GROUP)
-	return p
 
 def register_clone(subparsers):
 	p = subparsers.add_parser("clone", 
 		help="Create a symlink to a project",
 		aliases=["ln"])
 	p.set_defaults(func=proj.symlink, parser=p)
-	_add_project(p, opt=False, cwd=False)
+	_add_project(p)
 	p.add_argument("filename", 
 		help="symlink filename",
 		metavar="FILENAME",
 		nargs="?")
-	return p
 
 def register_list(subparsers):
 	p = subparsers.add_parser("list", 
 		help="List projects",
 		aliases=["ls"])
 	p.set_defaults(func=lambda args: print(args), parser=p)
-	_add_project(p, opt=True, cwd=False)
-	_add_details(p)
-	_add_site_opt(p)
-	_add_scope_filter(p)
-	_add_group_filter(p)
+	_add_project(p, opt=True)
+	_add_query_group(p)
 	_add_json(p)
-	return p
 
 def register_find(subparsers):
 	p = subparsers.add_parser("find", 
 		help="Search project metadata",
 		aliases=["grep"])
+	p.set_defaults(func=lambda args: print(args), parser=p)
 	p.add_argument("query",
 		help="search pattern (regex)",
-		metavar=SEARCH_HINT)
-	_add_details(p)
-	_add_site_opt(p)
-	_add_scope_filter(p)
-	_add_group_filter(p)
+		metavar=QUERY_METAVAR)
+	_add_query_group(p)
 	p.add_argument("-w", "--within",
 		help="metadata fields to search",
 		action="append")
@@ -161,52 +160,42 @@ def register_find(subparsers):
 		help="ignore case",
 		action="store_true")
 	_add_json(p)
-	return p
 
 def register_fetch(subparsers):
 	p = subparsers.add_parser("fetch", 
 		help="Get manifest of projects from another site")
-	p.add_argument("site", 
-		help="site specification",
-		metavar=SITE_HINT,
-		nargs="?")
-	return p
+	p.set_defaults(func=lambda args: print(args), parser=p)
+	_add_site(p, opt=True)
 
 def register_pull(subparsers):
 	p = subparsers.add_parser("pull", 
 		help="Download a project from another site")
-	p.add_argument("site", 
-		help="work site specification",
-		metavar=SITE_HINT)
-	_add_project(p, opt=True, cwd=True)
-	_add_force(p)
-	_add_dry_run(p)
-	_add_ask(p)
+	p.set_defaults(func=lambda args: print(args), parser=p)
+	_add_sync_group(p)
 
 def register_push(subparsers):
 	p = subparsers.add_parser("push", 
 		help="Upload a project to another site")
-	p.add_argument("site", 
-		help="work site specification",
-		metavar=SITE_HINT)
-	_add_project(p, opt=True, cwd=True)
-	_add_force(p)
-	_add_dry_run(p)
-	_add_ask(p)
-	return p
+	p.set_defaults(func=lambda args: print(args), parser=p)
+	_add_sync_group(p)
 
 def register_remove(subparsers):
 	p = subparsers.add_parser("remove",
 		help="Delete a project",
 		aliases=["rm"])
-	_add_project(p, opt=False, cwd=False)
+	p.set_defaults(func=lambda args: print(args), parser=p)
+	_add_project(p)
 	_add_ask(p)
-	return p
 
 def register_status(subparsers):
 	p = subparsers.add_parser("status", 
 		help="Get status of tracked projects")
-	return p
+	p.set_defaults(func=lambda args: print(args), parser=p)
+	_add_site(p, opt=True)
+	_add_details(p)
+	_add_scope_filter(p)
+	_add_group_filter(p)
+	_add_json(p)
 
 def register_site(subparsers):
 	p = subparsers.add_parser("site", 
@@ -247,9 +236,13 @@ def register_site(subparsers):
 		nargs="?",
 		default=False)
 	_add_json(p)
-	return p
 
 def register_run(subparsers):
 	p = subparsers.add_parser("run", 
 		help="Run a shell command at another site")
-	return p
+	p.set_defaults(func=lambda args: print(args), parser=p)
+	_add_site(p)
+	p.add_argument("command",
+		help="command to run",
+		metavar="COMMAND",
+		nargs="?")
