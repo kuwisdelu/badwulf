@@ -12,27 +12,29 @@ from ..util import detect
 from ..util import prune
 
 DEFAULT_SITE = "self"
+DEFAULT_PATH = "default"
+DEFAULT_HOST = "default"
 
-def detect_path():
+def detect_sites():
 	if "BADWULF_SITES" in os.environ:
 		path = mkpath(os.getenv("BADWULF_SITES"))
 	else:
 		try:
-			path = detect(r"\.?badwulf-sites\.json$", 
+			path = detect(r"^\.?badwulf-sites\.json$", 
 				".", "~", mkpath("~", ".badwulf"))
 		except FileNotFoundError:
 			prefix = mkpath("~", ".badwulf")
 			if not os.path.isdir(prefix):
 				mktree(prefix)
 			path = mkpath(prefix, "badwulf-sites.json")
-			site = profile(paths={"default": prefix})
+			site = profile(paths={DEFAULT_PATH: prefix})
 			cfg = syncer({DEFAULT_SITE: site})
 			with open(path, "w") as f:
 				json.dump(cfg.to_dict(), f, indent="\t")
 	return path
 
-def load():
-	return syncer.from_path(detect_path())
+def load_sites():
+	return syncer.from_path(detect_sites())
 
 def all_missing(args):
 	if args.user is not False:
@@ -52,7 +54,7 @@ def tokenize_to_dict(*items):
 	return {k: v for k, v in items}
 
 def show(args):
-	path = detect_path()
+	path = detect_sites()
 	cfg = syncer.from_path(path)
 	if args.json:
 		print(json.dumps(cfg.to_dict(), indent=2))
@@ -73,7 +75,7 @@ def show(args):
 					print(f"{name}")
 
 def add(args):
-	path = detect_path()
+	path = detect_sites()
 	cfg = syncer.from_path(path)
 	if args.name in cfg.sites:
 		prog_error(f"site '{args.name}' already exists", args)
@@ -85,7 +87,7 @@ def add(args):
 		set_vars(args)
 
 def get_vars(args):
-	cfg = load()
+	cfg = load_sites()
 	site = cfg.sites.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
@@ -138,7 +140,7 @@ def get_vars(args):
 		render(d)
 
 def set_vars(args):
-	path = detect_path()
+	path = detect_sites()
 	cfg = syncer.from_path(path)
 	site = cfg.sites.get(args.name)
 	if site is None:
@@ -189,7 +191,7 @@ def set_vars(args):
 		json.dump(cfg.to_dict(), f, indent="\t")
 
 def unset_vars(args):
-	path = detect_path()
+	path = detect_sites()
 	cfg = syncer.from_path(path)
 	site = cfg.sites.get(args.name)
 	if site is None:
@@ -242,7 +244,7 @@ def unset_vars(args):
 		json.dump(cfg.to_dict(), f, indent="\t")
 
 def remove(args):
-	path = detect_path()
+	path = detect_sites()
 	cfg = syncer.from_path(path)
 	if args.name not in cfg.sites:
 		prog_error(f"no site named '{args.name}'", args)

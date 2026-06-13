@@ -576,8 +576,8 @@ class projdb(Mapping):
 		Refreshes the database from the projects + manifest
 		"""
 		with open(self.manifest_path) as f:
-			d = json.load(f)
-		manifest = {v.path: projdata.from_dict(v) for v in d.values()}
+			lst = json.load(f)
+		manifest = {proj["path"]: projdata.from_dict(proj) for proj in lst}
 		index = projindex()
 		num_cache_miss = 0
 		for proj in self.projects:

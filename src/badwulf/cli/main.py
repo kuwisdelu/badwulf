@@ -5,6 +5,7 @@ import argparse
 from importlib import metadata
 
 from . import site
+from . import proj
 
 def main():
 	args = build_parser().parse_args()
@@ -18,18 +19,18 @@ def build_parser():
 		action="version",
 		version=f"badwulf {metadata.version("badwulf")}")
 	sub = p.add_subparsers(metavar="command")
-	# create and explore
+	# create and explore projects
 	register_init(sub)
 	register_clone(sub)
 	register_list(sub)
 	register_find(sub)
-	# work and sync
+	# collaborate and sync projects
 	register_fetch(sub)
 	register_pull(sub)
 	register_push(sub)
 	register_remove(sub)
 	register_status(sub)
-	# configure and connect
+	# configure work sites
 	register_site(sub)
 	register_run(sub)
 	return p
@@ -37,11 +38,20 @@ def build_parser():
 def register_init(subparsers):
 	p = subparsers.add_parser("init", 
 		help="Create an empty project")
-	p.set_defaults(func=cmd_init)
+	p.set_defaults(func=proj.create, parser=p)
+	p.add_argument("project", 
+		help="project specification (if not current directory)",
+		metavar="[prefix:]name",
+		nargs="?")
+	p.add_argument("-s", "--scope", 
+		help=f"project scope (default: {proj.DEFAULT_SCOPE})",
+		action="store",
+		default=proj.DEFAULT_SCOPE)
+	p.add_argument("-g", "--group", 
+		help=f"project group (default: {proj.DEFAULT_GROUP})",
+		action="store",
+		default=proj.DEFAULT_GROUP)
 	return p
-
-def cmd_init(args):
-	print("hello, world!")
 
 def register_clone(subparsers):
 	p = subparsers.add_parser("clone", 
@@ -147,8 +157,8 @@ def register_site(subparsers):
 		nargs="?")
 	p.add_argument("name",
 		help="The site name",
-		default=site.DEFAULT_SITE,
-		nargs="?")
+		nargs="?",
+		default=site.DEFAULT_SITE)
 	p.add_argument("-v", "--verbose", 
 		help="verbose output",
 		action="store_true")
