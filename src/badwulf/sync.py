@@ -41,14 +41,18 @@ class syncer:
 	Sync projects and data between sites
 	"""
 
-	def __init__(self, sites: dict[str, profile]):
+	def __init__(self, 
+		sites: dict[str, profile], 
+		local: str = "self"):
 		"""
 		Initializes a syncer instance
 		:param sites: Mapping of aliases-to-sites
+		:param local: Name of the local site
 		"""
 		self.sites = sites
-		if "self" not in self.sites:
-			raise ValueError("missing required site 'self'")
+		if local not in sites:
+			raise ValueError(f"missing required site '{local}'")
+		self.local = local
 
 	def push(self, 
 		site: str,
@@ -65,7 +69,7 @@ class syncer:
 		:param kwargs: Additional arguments for rssh.push
 		"""
 		has_trailing_slash = True if path[-1] == "/" else False
-		src = os.path.join(self.sites["self"].paths[path_ref], path)
+		src = os.path.join(self.sites[self.local].paths[path_ref], path)
 		dst = os.path.join(self.sites[site].paths[path_ref], path)
 		if has_trailing_slash:
 			src += "/"
@@ -89,7 +93,7 @@ class syncer:
 		"""
 		has_trailing_slash = True if path[-1] == "/" else False
 		src = os.path.join(self.sites[site].paths[path_ref], path)
-		dst = os.path.join(self.sites["self"].paths[path_ref], path)
+		dst = os.path.join(self.sites[self.local].paths[path_ref], path)
 		if has_trailing_slash:
 			src += "/"
 			dst += "/"
@@ -101,11 +105,11 @@ class syncer:
 		Get an rssh object to a host at another site
 		:param site: The other site name
 		:param host_ref: (Optional) The other host alias
-		:raises ValueError: On attempt to connect to site 'self'
+		:raises ValueError: On attempt to connect to the local site
 		:returns: An rssh object
 		"""
-		if site == "self":
-			raise ValueError("expected another site (not 'self'')")
+		if site == self.local:
+			raise ValueError(f"expected another site (not '{self.local}')")
 		site = self.sites[site]
 		return rssh(
 			user=site.user,

@@ -11,6 +11,8 @@ from ..util import mktree
 from ..util import detect
 from ..util import prune
 
+DEFAULT_SITE = "self"
+
 def detect_path():
 	if "BADWULF_SITES" in os.environ:
 		path = mkpath(os.getenv("BADWULF_SITES"))
@@ -24,7 +26,7 @@ def detect_path():
 				mktree(prefix)
 			path = mkpath(prefix, "badwulf-sites.json")
 			site = profile(paths={"default": prefix})
-			cfg = syncer({"self": site})
+			cfg = syncer({DEFAULT_SITE: site})
 			with open(path, "w") as f:
 				json.dump(cfg.to_dict(), f, indent="\t")
 	return path
@@ -55,8 +57,8 @@ def show(args):
 	if args.json:
 		print(json.dumps(cfg.to_dict(), indent=2))
 	else:
-		print(f"{path}:")
 		if args.verbose:
+			print(f"{path}:")
 			d = cfg.to_dict()
 			print()
 			for name in cfg.sites.keys():
@@ -65,7 +67,7 @@ def show(args):
 				print()
 		else:
 			for name in cfg.sites.keys():
-				if name == "self":
+				if name == DEFAULT_SITE:
 					print(f"{name} *")
 				else:
 					print(f"{name}")

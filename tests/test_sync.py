@@ -25,14 +25,14 @@ def test_syncer_init():
 	assert node.host == "time.vortex"
 	assert node.proxy_user == "root"
 	assert node.proxy_host == "login.dimension.time"
-	assert sync.bridge("local").user == getpass.getuser()
+	assert sync.bridge("other").user == getpass.getuser()
 	copy = syncer.from_dict(sync.to_dict())
 	assert sync.to_dict() == copy.to_dict()
 
 def test_syncer_push_pull():
 	td = tempfile.TemporaryDirectory()
 	sync = syncer.from_path(_testconfig())
-	if sync.bridge("local").is_batch():
+	if sync.bridge("other").is_batch():
 		pd1 = os.path.join(td.name, "testdir1")
 		pd2 = os.path.join(td.name, "testdir2")
 		tmp1 = os.path.join(pd1, "__badwulf_test")
@@ -41,14 +41,14 @@ def test_syncer_push_pull():
 		mktree(pd2)
 		touch(tmp1)
 		sync.sites["self"].paths["default"] = pd1
-		sync.sites["local"].paths["default"] = pd2
-		sync.push("local", "__badwulf_test")
+		sync.sites["other"].paths["default"] = pd2
+		sync.push("other", "__badwulf_test")
 		assert os.path.exists(tmp1)
 		assert os.path.exists(tmp2)
 		os.remove(tmp1)
 		assert not os.path.exists(tmp1)
 		assert os.path.exists(tmp2)
-		sync.pull("local", "__badwulf_test")
+		sync.pull("other", "__badwulf_test")
 		assert os.path.exists(tmp1)
 		assert os.path.exists(tmp2)
 		rmtree(pd1, force=True)

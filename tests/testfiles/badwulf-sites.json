@@ -5,7 +5,7 @@
 			"default": "testdir1"
 		}
 	},
-	"local": 
+	"other": 
 	{
 		"user": "$USER",
 		"hosts": {

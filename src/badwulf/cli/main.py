@@ -147,7 +147,7 @@ def register_site(subparsers):
 		nargs="?")
 	p.add_argument("name",
 		help="The site name",
-		default="self",
+		default=site.DEFAULT_SITE,
 		nargs="?")
 	p.add_argument("-v", "--verbose", 
 		help="verbose output",
