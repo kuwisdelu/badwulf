@@ -4,14 +4,7 @@ import json
 import argparse
 from importlib import metadata
 
-from ..sync import syncer
-from .config import detect_sites
-from .config import load_sites
-from .config import list_sites
-from .config import add_site
-from .config import get_site
-from .config import set_site
-from .config import remove_site
+from . import site
 
 def main():
 	args = build_parser().parse_args()
@@ -30,13 +23,13 @@ def build_parser():
 	register_clone(sub)
 	register_list(sub)
 	register_find(sub)
-	# work and sync projects
+	# work and sync
 	register_fetch(sub)
 	register_pull(sub)
 	register_push(sub)
 	register_remove(sub)
-	# configure and connect
 	register_status(sub)
+	# configure and connect
 	register_site(sub)
 	register_run(sub)
 	return p
@@ -150,12 +143,15 @@ def register_site(subparsers):
 	p.set_defaults(func=cmd_site, parser=p)
 	p.add_argument("subcommand",
 		help="Add, get, set, or remove site configuration",
-		choices=["add", "get", "set", "remove"],
+		choices=["add", "get", "set", "unset", "remove"],
 		nargs="?")
 	p.add_argument("name",
 		help="The site name",
 		default="self",
 		nargs="?")
+	p.add_argument("-v", "--verbose", 
+		help="verbose output",
+		action="store_true")
 	p.add_argument("--user", 
 		help="site user",
 		nargs="?",
@@ -184,18 +180,19 @@ def register_site(subparsers):
 	return p
 
 def cmd_site(args):
-	path = detect_sites()
 	match args.subcommand:
 		case None:
-			list_sites(path, args)
+			site.show(args)
 		case "add":
-			add_site(path, args)
-		case "set":
-			set_site(path, args)
+			site.add(args)
 		case "get":
-			get_site(path, args)
+			site.get_vars(args)
+		case "set":
+			site.set_vars(args)
+		case "unset":
+			site.unset_vars(args)
 		case "remove":
-			remove_site(path, args)
+			site.remove(args)
 
 def register_run(subparsers):
 	p = subparsers.add_parser("run", 

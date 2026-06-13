@@ -7,14 +7,11 @@ from ..sync import syncer
 from ..util import prog_error
 from ..util import tokenize
 from ..util import mkpath
+from ..util import mktree
 from ..util import detect
 from ..util import prune
 
-def tokenize_to_dict(*items):
-	items = [tokenize(s) for s in items if s is not None]
-	return {k: v for k, v in items}
-
-def detect_sites():
+def detect_path():
 	if "BADWULF_SITES" in os.environ:
 		path = mkpath(os.getenv("BADWULF_SITES"))
 	else:
@@ -23,6 +20,8 @@ def detect_sites():
 				".", "~", mkpath("~", ".badwulf"))
 		except FileNotFoundError:
 			prefix = mkpath("~", ".badwulf")
+			if not os.path.isdir(prefix):
+				mktree(prefix)
 			path = mkpath(prefix, "badwulf-sites.json")
 			site = profile(paths={"default": prefix})
 			cfg = syncer({"self": site})
@@ -30,22 +29,49 @@ def detect_sites():
 				json.dump(cfg.to_dict(), f, indent="\t")
 	return path
 
-def load_sites():
-	return syncer.from_path(detect_sites())
+def load():
+	return syncer.from_path(detect_path())
 
-def list_sites(path, args):
+def all_missing(args):
+	if args.user is not False:
+		return False
+	if len(args.host) > 0:
+		return False
+	if len(args.path) > 0:
+		return False
+	if args.proxy_user is not False:
+		return False
+	if args.proxy_host is not False:
+		return False
+	return True
+
+def tokenize_to_dict(*items):
+	items = [tokenize(s) for s in items if s is not None]
+	return {k: v for k, v in items}
+
+def show(args):
+	path = detect_path()
 	cfg = syncer.from_path(path)
 	if args.json:
 		print(json.dumps(cfg.to_dict(), indent=2))
 	else:
 		print(f"{path}:")
-		for name in cfg.sites.keys():
-			if name == "self":
-				print(f"* {name}")
-			else:
-				print(f"  {name}")
+		if args.verbose:
+			d = cfg.to_dict()
+			print()
+			for name in cfg.sites.keys():
+				print(f"{name}:")
+				render(d[name])
+				print()
+		else:
+			for name in cfg.sites.keys():
+				if name == "self":
+					print(f"{name} *")
+				else:
+					print(f"{name}")
 
-def add_site(path, args):
+def add(args):
+	path = detect_path()
 	cfg = syncer.from_path(path)
 	if args.name in cfg.sites:
 		prog_error(f"site '{args.name}' already exists", args)
@@ -53,15 +79,15 @@ def add_site(path, args):
 		cfg.sites[args.name] = profile()
 	with open(path, "w") as f:
 		json.dump(cfg.to_dict(), f, indent="\t")
-	if not all_unset(args):
-		set_site(path, args)
+	if not all_missing(args):
+		set_vars(args)
 
-def get_site(path, args):
-	cfg = syncer.from_path(path)
+def get_vars(args):
+	cfg = load()
 	site = cfg.sites.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
-	if all_unset(args):
+	if all_missing(args):
 		d = {
 			"user": site.user,
 			"hosts": site.hosts,
@@ -107,55 +133,114 @@ def get_site(path, args):
 	if args.json:
 		print(json.dumps(d, indent=2))		
 	else:
-		render_site(d)
+		render(d)
 
-def set_site(path, args):
+def set_vars(args):
+	path = detect_path()
 	cfg = syncer.from_path(path)
 	site = cfg.sites.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
-	if all_unset(args):
+	if all_missing(args):
+		args.parser.error("expected one or more site variables")
+	else:
+		if args.user is not False:
+			if args.user is None:
+				args.parser.error("expected argument to set --user")
+			else:
+				site.user = args.user
+		if len(args.host) > 0:
+			if not all(args.host):
+				args.parser.error("expected argument to set --host")
+			else:
+				args.host = prune(args.host)
+			for k, v in tokenize_to_dict(*args.host).items():
+				if v is None:
+					args.parser.error(f"expected value to set --host {k}:")
+				elif v == "":
+					prog_error("empty string invalid for hosts", args)
+				else:
+					site.hosts[k] = v
+		if len(args.path) > 0:
+			if not all(args.path):
+				args.parser.error("expected argument to set --path")
+			else:
+				args.path = prune(args.path)
+			for k, v in tokenize_to_dict(*args.path).items():
+				if v is None:
+					args.parser.error(f"expected value to set --path {k}:")
+				else:
+					site.paths[k] = v
+		if args.proxy_user is not False:
+			if args.proxy_user is None:
+				args.parser.error("expected argument to set --proxy-user")
+			else:
+				site.proxy["user"] = args.proxy_user
+		if args.proxy_host is not False:
+			if args.proxy_host is None:
+				args.parser.error("expected argument to set --proxy-host")
+			elif args.proxy_host == "":
+				prog_error("empty string invalid for hosts", args)
+			else:
+				site.proxy["host"] = args.proxy_host
+	with open(path, "w") as f:
+		json.dump(cfg.to_dict(), f, indent="\t")
+
+def unset_vars(args):
+	path = detect_path()
+	cfg = syncer.from_path(path)
+	site = cfg.sites.get(args.name)
+	if site is None:
+		prog_error(f"no site named '{args.name}'", args)
+	if all_missing(args):
 		args.parser.error("expected one or more site variables")
 	else:
 		if args.user is not False:
 			if args.user is None:
 				site.user = ""
 			else:
-				site.user = args.user
-		hosts = prune(args.host)
-		if len(hosts) > 0:
-			for k, v in tokenize_to_dict(*hosts).items():
+				args.parser.error("unexpected argument to unset --user")
+		if len(args.host) > 0:
+			if not any(args.host):
+				args.parser.error("expected argument to unset --host")
+			else:
+				args.host = prune(args.host)
+			for k, v in tokenize_to_dict(*args.host).items():
 				if v is None:
 					if k in site.hosts:
 						del site.hosts[k]
+					else:
+						prog_error(f"no host named: {k}")
 				else:
-					if v == "":
-						prog_error("empty string invalid for hosts", args)
-					site.hosts[k] = v
-		paths = prune(args.path)
-		if len(paths) > 0:
-			for k, v in tokenize_to_dict(*paths).items():
+					args.parser.error(f"unexpected value to unset --host {k}")
+		if len(args.path) > 0:
+			if not any(args.path):
+				args.parser.error("expected argument to unset --path")
+			else:
+				args.path = prune(args.path)
+			for k, v in tokenize_to_dict(*args.path).items():
 				if v is None:
 					if k in site.paths:
 						del site.paths[k]
+					else:
+						prog_error(f"no path named: {k}")
 				else:
-					site.paths[k] = v
+					args.parser.error(f"unexpected value to unset --path {k}")
 		if args.proxy_user is not False:
 			if args.proxy_user is None:
-				site.proxy["user"] = ""
+				del site.proxy_user["user"]
 			else:
-				site.proxy["user"] = args.proxy_user
+				args.parser.error("unexpected argument to unset --proxy-user")
 		if args.proxy_host is not False:
 			if args.proxy_host is None:
-				del site.proxy["host"]
+				del site.proxy_user["host"]
 			else:
-				if args.proxy_host == "":
-					prog_error("empty string invalid for hosts", args)
-				site.proxy["host"] = args.proxy_host
+				args.parser.error("unexpected argument to unset --proxy-host")
 	with open(path, "w") as f:
 		json.dump(cfg.to_dict(), f, indent="\t")
 
-def remove_site(path, args):
+def remove(args):
+	path = detect_path()
 	cfg = syncer.from_path(path)
 	if args.name not in cfg.sites:
 		prog_error(f"no site named '{args.name}'", args)
@@ -164,7 +249,7 @@ def remove_site(path, args):
 	with open(path, "w") as f:
 		json.dump(cfg.to_dict(), f, indent="\t")
 
-def render_site(d):
+def render(d):
 	if "user" in d:
 		print(f"user={d["user"]}")
 	if "hosts" in d:
@@ -177,16 +262,3 @@ def render_site(d):
 		print(f"proxy-user={d["proxy"]["user"]}")
 	if "proxy" in d and "host" in d["proxy"]:
 		print(f"proxy-host={d["proxy"]["host"]}")
-
-def all_unset(args):
-	if args.user is not False:
-		return False
-	if len(args.host) > 0:
-		return False
-	if len(args.path) > 0:
-		return False
-	if args.proxy_user is not False:
-		return False
-	if args.proxy_host is not False:
-		return False
-	return True
