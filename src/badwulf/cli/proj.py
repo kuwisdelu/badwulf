@@ -4,4 +4,5 @@ import json
 
 from . import site
 
-
+def create(args)
+	pass

@@ -124,6 +124,16 @@ def tokenize(text: str, sep: str = ":") -> tuple[str]:
 		s1, sep, s2 = text.partition(sep)
 		return (s1, s2)
 
+def rtokenize(text: str, sep: str = ":") -> tuple[str]:
+	"""
+	Tokenize into two strings based on the last separator
+	"""
+	if sep not in text:
+		return (None, text)
+	else:
+		s1, sep, s2 = text.rpartition(sep)
+		return (s1, s2)
+
 def quote(s: str, q: str = '"') -> str:
 	"""
 	Wrap a string in quotes
