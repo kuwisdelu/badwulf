@@ -2,11 +2,13 @@ import os
 import sys
 import json
 import getpass
+import subprocess
 from datetime import date
 
 from .site import load_sites
 from .site import DEFAULT_PATH
 from .site import DEFAULT_HOST
+
 from ..db import projindex
 from ..db import projdb
 from ..util import prog_error
@@ -15,8 +17,8 @@ from ..util import mkpath
 from ..util import mktree
 from ..util import detect
 
-DEFAULT_SCOPE = "local"
-DEFAULT_GROUP = "scratch"
+INIT_SCOPE = "local"
+INIT_GROUP = "scratch"
 
 def detect_prefix():
 	cfg = load_sites()
@@ -40,6 +42,17 @@ def detect_project():
 			parent = os.path.dirname(current)
 	return None
 
+def relative_prefix(prefix):
+	prefix = mkpath(prefix)
+	current = ""
+	parent = os.path.dirname(mkpath(current))
+	while not os.path.samefile(mkpath(current), parent):
+		if os.path.samefile(mkpath(current), prefix):
+			return current
+		current = os.path.join(current, "..")
+		parent = os.path.dirname(mkpath(current))
+	return None
+
 def metadata(scope, group, name):
 	fields = []
 	fields.append(f'name = "{name}"')
@@ -59,7 +72,7 @@ def create(args):
 			prog_error("project is already initialized", args)
 		prefix, dbpath = detect_prefix()
 		if prefix is None:
-			prog_error("project not under a known prefix", args)
+			prog_error("project is not under a known prefix", args)
 		name = os.path.basename(os.getcwd())
 		path = os.getcwd()
 	else:
@@ -80,8 +93,29 @@ def create(args):
 		f.write("\n".join(metadata(args.scope, args.group, name)))
 	print(f"Initialized project in {p}")
 
-def link(args):
-	pass
+def symlink(args):
+	cfg = load_sites()
+	prefix, name = rtokenize(args.project)
+	if prefix is None:
+		prefix = DEFAULT_PATH
+	dbpath = cfg.sites[cfg.local].paths.get(prefix)
+	if dbpath is None:
+		prog_error(f"invalid prefix: {prefix}", args)
+	db = projdb(dbpath)
+	proj = db.get(name)
+	if proj is None:
+		prog_error(f"no project named {name}")
+	if dbpath == os.path.commonpath((dbpath, os.getcwd())):
+		if proj.is_misplaced_relative(dbpath):
+			path = proj.path
+		else:
+			path = os.path.join(
+				relative_prefix(dbpath), proj.canonical_path)
+	else:
+		path = proj.path
+	filename = name if args.filename is None else args.filename
+	cmd = ["ln", "-s", path, filename]
+	subprocess.run(cmd)
 
 def show(args):
 	pass

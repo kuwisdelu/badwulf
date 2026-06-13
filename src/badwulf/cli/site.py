@@ -53,6 +53,21 @@ def tokenize_to_dict(*items):
 	items = [tokenize(s) for s in items if s is not None]
 	return {k: v for k, v in items}
 
+def main(args):
+	match args.subcommand:
+		case None:
+			show(args)
+		case "add":
+			add(args)
+		case "get":
+			get_vars(args)
+		case "set":
+			set_vars(args)
+		case "unset":
+			unset_vars(args)
+		case "remove":
+			remove(args)
+
 def show(args):
 	path = detect_sites()
 	cfg = syncer.from_path(path)
