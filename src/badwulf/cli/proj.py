@@ -53,7 +53,7 @@ def relative_prefix(prefix):
 		parent = os.path.dirname(mkpath(current))
 	return None
 
-def metadata(scope, group, name):
+def template(scope, group, name):
 	fields = []
 	fields.append(f'name = "{name}"')
 	fields.append(f'scope = "{scope}"')
@@ -90,7 +90,7 @@ def create(args):
 		mktree(path, force=True)
 	p = os.path.join(path, "metadata.toml")
 	with open(p, "w") as f:
-		f.write("\n".join(metadata(args.scope, args.group, name)))
+		f.write("\n".join(template(args.scope, args.group, name)))
 	print(f"Initialized project in {p}")
 
 def symlink(args):

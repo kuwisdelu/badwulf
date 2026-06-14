@@ -20,6 +20,7 @@ def _testconfig():
 
 def test_syncer_init():
 	sync = syncer.from_path(_testconfig())
+	assert sync.local == sync["local"]
 	node = sync.bridge("origin")
 	assert node.user == "bad-wolf"
 	assert node.host == "time.vortex"
@@ -40,8 +41,8 @@ def test_syncer_push_pull():
 		mktree(pd1)
 		mktree(pd2)
 		touch(tmp1)
-		sync.sites["self"].paths["default"] = pd1
-		sync.sites["other"].paths["default"] = pd2
+		sync["local"].paths["default"] = pd1
+		sync["other"].paths["default"] = pd2
 		sync.push("other", "__badwulf_test")
 		assert os.path.exists(tmp1)
 		assert os.path.exists(tmp2)

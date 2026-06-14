@@ -5,6 +5,8 @@ import os
 import io
 import json
 import subprocess
+
+from collections.abc import MutableMapping
 from dataclasses import dataclass
 from dataclasses import asdict
 
@@ -36,23 +38,60 @@ class profile:
 		if self.proxy is None:
 			self.proxy = {}
 
-class syncer:
+class syncer(MutableMapping):
 	"""
 	Sync projects and data between sites
 	"""
 
 	def __init__(self, 
 		sites: dict[str, profile], 
-		local: str = "self"):
+		local: str = "local"):
 		"""
 		Initializes a syncer instance
 		:param sites: Mapping of aliases-to-sites
 		:param local: Name of the local site
 		"""
-		self.sites = sites
 		if local not in sites:
 			raise ValueError(f"missing required site '{local}'")
-		self.local = local
+		self._sites = sites
+		self._local = local
+
+	def __getitem__(self, key: str) -> profile:
+		"""
+		Get a site profile
+		"""
+		return self._sites[key]
+
+	def __setitem__(self, key: str, value: profile) -> None:
+		"""
+		Set a site profile
+		"""
+		self._sites[key] = value
+
+	def __delitem__(self, key: str) -> None:
+		"""
+		Delete a site profile
+		"""
+		del self._sites[key]
+
+	def __len__(self) -> int:
+		"""
+		Get the number of sites
+		"""
+		return len(self._sites)
+
+	def __iter__(self):
+		"""
+		Get an iterator over the site profiles
+		"""
+		return iter(self._sites)
+
+	@property
+	def local(self):
+		"""
+		Get the local site
+		"""
+		return self._sites[self._local]
 
 	def push(self, 
 		site: str,
@@ -69,8 +108,8 @@ class syncer:
 		:param kwargs: Additional arguments for rssh.push
 		"""
 		has_trailing_slash = True if path[-1] == "/" else False
-		src = os.path.join(self.sites[self.local].paths[path_ref], path)
-		dst = os.path.join(self.sites[site].paths[path_ref], path)
+		src = os.path.join(self.local.paths[path_ref], path)
+		dst = os.path.join(self[site].paths[path_ref], path)
 		if has_trailing_slash:
 			src += "/"
 			dst += "/"
@@ -92,8 +131,8 @@ class syncer:
 		:param kwargs: Additional arguments for rssh.push
 		"""
 		has_trailing_slash = True if path[-1] == "/" else False
-		src = os.path.join(self.sites[site].paths[path_ref], path)
-		dst = os.path.join(self.sites[self.local].paths[path_ref], path)
+		src = os.path.join(self[site].paths[path_ref], path)
+		dst = os.path.join(self.local.paths[path_ref], path)
 		if has_trailing_slash:
 			src += "/"
 			dst += "/"
@@ -108,9 +147,7 @@ class syncer:
 		:raises ValueError: On attempt to connect to the local site
 		:returns: An rssh object
 		"""
-		if site == self.local:
-			raise ValueError(f"expected another site (not '{self.local}')")
-		site = self.sites[site]
+		site = self[site]
 		return rssh(
 			user=site.user,
 			host=site.hosts[host_ref],
@@ -122,7 +159,7 @@ class syncer:
 		Format safely for serialization (to json)
 		:returns: A dict representation
 		"""
-		return prune({k: asdict(v) for k, v in self.sites.items()})
+		return prune({k: asdict(v) for k, v in self.items()})
 
 	@classmethod
 	def from_dict(cls, d: dict[str: Any]):
