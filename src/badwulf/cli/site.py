@@ -11,7 +11,7 @@ from ..util import mktree
 from ..util import detect
 from ..util import prune
 
-DEFAULT_SITE = "self"
+DEFAULT_SITE = "local"
 DEFAULT_NODE = "default"
 DEFAULT_PREFIX = "default"
 
@@ -28,9 +28,9 @@ def detect_sites():
 				mktree(prefix)
 			path = mkpath(prefix, "badwulf-sites.json")
 			site = profile(paths={DEFAULT_PREFIX: prefix})
-			cfg = syncer({DEFAULT_SITE: site})
+			sts = syncer({DEFAULT_SITE: site})
 			with open(path, "w") as f:
-				json.dump(cfg.to_dict(), f, indent="\t")
+				json.dump(sts.to_dict(), f, indent="\t")
 	return path
 
 def load_sites():
@@ -70,20 +70,20 @@ def main(args):
 
 def show(args):
 	path = detect_sites()
-	cfg = syncer.from_path(path)
+	sts = syncer.from_path(path)
 	if args.json:
-		print(json.dumps(cfg.to_dict(), indent=2))
+		print(json.dumps(sts.to_dict(), indent=2))
 	else:
 		if args.verbose:
 			print(f"{path}:")
-			d = cfg.to_dict()
+			d = sts.to_dict()
 			print()
-			for name in cfg.sites.keys():
+			for name in sts.keys():
 				print(f"{name}:")
 				render(d[name])
 				print()
 		else:
-			for name in cfg.sites.keys():
+			for name in sts.keys():
 				if name == DEFAULT_SITE:
 					print(f"{name} *")
 				else:
@@ -91,19 +91,19 @@ def show(args):
 
 def add(args):
 	path = detect_sites()
-	cfg = syncer.from_path(path)
-	if args.name in cfg.sites:
+	sts = syncer.from_path(path)
+	if args.name in sts:
 		prog_error(f"site '{args.name}' already exists", args)
 	else:
-		cfg.sites[args.name] = profile()
+		sts[args.name] = profile()
 	with open(path, "w") as f:
-		json.dump(cfg.to_dict(), f, indent="\t")
+		json.dump(sts.to_dict(), f, indent="\t")
 	if not all_missing(args):
 		set_vars(args)
 
 def get_vars(args):
-	cfg = load_sites()
-	site = cfg.sites.get(args.name)
+	sts = load_sites()
+	site = sts.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
 	if all_missing(args):
@@ -156,8 +156,8 @@ def get_vars(args):
 
 def set_vars(args):
 	path = detect_sites()
-	cfg = syncer.from_path(path)
-	site = cfg.sites.get(args.name)
+	sts = syncer.from_path(path)
+	site = sts.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
 	if all_missing(args):
@@ -203,12 +203,12 @@ def set_vars(args):
 			else:
 				site.proxy["host"] = args.proxy_host
 	with open(path, "w") as f:
-		json.dump(cfg.to_dict(), f, indent="\t")
+		json.dump(sts.to_dict(), f, indent="\t")
 
 def unset_vars(args):
 	path = detect_sites()
-	cfg = syncer.from_path(path)
-	site = cfg.sites.get(args.name)
+	sts = syncer.from_path(path)
+	site = sts.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
 	if all_missing(args):
@@ -256,17 +256,17 @@ def unset_vars(args):
 			else:
 				args.parser.error("unexpected argument to unset --proxy-host")
 	with open(path, "w") as f:
-		json.dump(cfg.to_dict(), f, indent="\t")
+		json.dump(sts.to_dict(), f, indent="\t")
 
 def remove(args):
 	path = detect_sites()
-	cfg = syncer.from_path(path)
-	if args.name not in cfg.sites:
+	sts = syncer.from_path(path)
+	if args.name not in sts:
 		prog_error(f"no site named '{args.name}'", args)
 	else:
-		del cfg.sites[args.name]
+		del sts[args.name]
 	with open(path, "w") as f:
-		json.dump(cfg.to_dict(), f, indent="\t")
+		json.dump(sts.to_dict(), f, indent="\t")
 
 def render(d):
 	if "user" in d:

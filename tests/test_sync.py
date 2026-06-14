@@ -4,6 +4,7 @@ import json
 import getpass
 import tempfile
 
+from badwulf.sync import profile
 from badwulf.sync import syncer
 
 from badwulf.util import touch
@@ -17,6 +18,15 @@ def _testconfig():
 	except NameError:
 		return os.path.join("..", "tests", 
 			"testfiles", "badwulf-sites.json")
+
+def test_profile():
+	p = profile(
+		hosts={"0": "node0"},
+		paths={"a": "/projects/a"})
+	assert p.resolve_node("node0") == "0"
+	assert p.resolve_node("NODE0") == "0"
+	assert p.resolve_prefix("/projects/a") == "a"
+	assert p.resolve_prefix("/projects/a/b/c") == "a"
 
 def test_syncer_init():
 	sync = syncer.from_path(_testconfig())

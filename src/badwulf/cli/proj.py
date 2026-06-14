@@ -18,12 +18,12 @@ from ..util import mktree
 from ..util import detect
 
 INIT_SCOPE = "local"
-INIT_GROUP = "scratch"
+INIT_GROUP = getpass.getuser()
 
 def detect_prefix():
-	cfg = load_sites()
+	sts = load_sites()
 	current = os.getcwd()
-	paths = cfg.sites[cfg.local].paths.items()
+	paths = sts.local.paths.items()
 	paths = {k: mkpath(v) for k, v in paths}
 	for k, v in paths:
 		if v == os.path.commonpath((v, current)):
@@ -79,8 +79,8 @@ def create(args):
 		prefix, name = rtokenize(args.project)
 		if prefix is None:
 			prefix = DEFAULT_PREFIX
-		cfg = load_sites()
-		dbpath = cfg.sites[cfg.local].paths.get(prefix)
+		sts = load_sites()
+		dbpath = sts.local.paths.get(prefix)
 		if dbpath is None:
 			prog_error(f"invalid prefix: {prefix}", args)
 		path = os.path.join(dbpath, args.scope, args.group, name)
@@ -94,11 +94,11 @@ def create(args):
 	print(f"Initialized project in {p}")
 
 def symlink(args):
-	cfg = load_sites()
+	sts = load_sites()
 	prefix, name = rtokenize(args.project)
 	if prefix is None:
 		prefix = DEFAULT_PREFIX
-	dbpath = cfg.sites[cfg.local].paths.get(prefix)
+	dbpath = sts.local.paths.get(prefix)
 	if dbpath is None:
 		prog_error(f"invalid prefix: {prefix}", args)
 	db = projdb(dbpath)
