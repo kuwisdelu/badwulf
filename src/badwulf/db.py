@@ -266,21 +266,21 @@ class projdata:
 		"""
 		return os.path.exists(self.meta_path)
 
-	def is_misplaced_relative(self, prefix: str) -> bool:
+	def is_misplaced_relative(self, root: str) -> bool:
 		"""
-		Check if project is located at its canonical path under prefix
+		Check if project is located at its canonical path under root
 		"""
-		expected = os.path.join(prefix, self.canonical_path)
+		expected = os.path.join(root, self.canonical_path)
 		if os.path.exists(expected):
 			return not os.path.samefile(expected, self.path)
 		else:
 			return True
 
-	def place_relative(self, prefix: str) -> None:
+	def place_relative(self, root: str) -> None:
 		"""
-		Move the project to its canonical path under prefix
+		Move the project to its canonical path under root
 		"""
-		self.move(os.path.join(prefix, self.canonical_path))
+		self.move(os.path.join(root, self.canonical_path))
 
 	def move(self, dst: str) -> None:
 		"""
@@ -503,26 +503,26 @@ class projindex(MutableMapping):
 class projdb(Mapping):
 	"""
 	Database of scientific research projects
-	:ivar prefix: The path to the project prefix
-	:ivar projects: List of projects detected under prefix
+	:ivar root: The path to the database root
+	:ivar projects: List of projects detected under root
 	:ivar use_manifest: Read/write a manifest.json?
 	:ivar _index: Mapping of projects by name (case-insensitive)
 	"""
-	prefix: str
+	root: str
 	projects: list[projdata]
 	use_manifest: bool = True
 	_index: projindex | None = None
 
-	def __init__(self, prefix: str, use_manifest = True):
+	def __init__(self, root: str, use_manifest = True):
 		"""
 		Create an projdb from a database directory
-		:param prefix: The path to the database prefix
+		:param root: The path to the database root
 		:param use_manifest: Read/write a manifest.json?
 		"""
-		self.prefix = mkpath(prefix, must_exist=True)
-		if not os.path.isdir(self.prefix):
-			raise NotADirectoryError(f"prefix must be a directory: {self.prefix}")
-		paths = tree_find(self.prefix, r"^metadata\.toml$", prune_on_match=True)
+		self.root = mkpath(root, must_exist=True)
+		if not os.path.isdir(self.root):
+			raise NotADirectoryError(f"root must be a directory: {self.root}")
+		paths = tree_find(self.root, r"^metadata\.toml$", prune_on_match=True)
 		self.projects = [projdata.from_path(p) for p in paths]
 		self.use_manifest = use_manifest
 		self.ensure()
@@ -605,7 +605,7 @@ class projdb(Mapping):
 		"""
 		Get path to the database manifest
 		"""
-		return os.path.join(self.prefix, "manifest.json")
+		return os.path.join(self.root, "manifest.json")
 
 	def manifest_exists(self) -> bool:
 		"""

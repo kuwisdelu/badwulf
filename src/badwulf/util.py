@@ -118,20 +118,20 @@ def tokenize(text: str, sep: str = ":") -> tuple[str]:
 	"""
 	Tokenize into two strings based on the first separator
 	"""
-	if sep not in text:
+	s1, sep, s2 = text.partition(sep)
+	if sep == "":
 		return (text, None)
 	else:
-		s1, sep, s2 = text.partition(sep)
 		return (s1, s2)
 
 def rtokenize(text: str, sep: str = ":") -> tuple[str]:
 	"""
 	Tokenize into two strings based on the last separator
 	"""
-	if sep not in text:
+	s1, sep, s2 = text.rpartition(sep)
+	if sep == "":
 		return (None, text)
 	else:
-		s1, sep, s2 = text.rpartition(sep)
 		return (s1, s2)
 
 def quote(s: str, q: str = '"') -> str:
