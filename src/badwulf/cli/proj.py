@@ -60,7 +60,7 @@ def create(args):
 		prefix, name = rtokenize(args.project)
 		if prefix is None:
 			prefix = DEFAULT_PREFIX
-		if prefix not in sts.local.paths
+		if prefix not in sts.local.paths:
 			prog_error(f"invalid prefix: {prefix}", args)
 		path = os.path.join(sts.local.paths[prefix], 
 			args.scope, args.group, name)

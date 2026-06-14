@@ -43,7 +43,7 @@ def _add_project(p, opt=False, cwd=False):
 	help_text = "project specification"
 	if cwd:
 		help_text += " (if not current directory)"
-	nargs = "?" if opt else 1
+	nargs = "?" if opt else None
 	p.add_argument("project", 
 		help=help_text,
 		metavar=PROJ_METAVAR,
@@ -51,7 +51,7 @@ def _add_project(p, opt=False, cwd=False):
 
 def _add_site(p, opt=False):
 	help_text = "site specification"
-	nargs = "?" if opt else 1
+	nargs = "?" if opt else None
 	p.add_argument("site", 
 		help=help_text,
 		metavar=SITE_METAVAR,
