@@ -7,7 +7,7 @@ from importlib import metadata
 from . import site
 from . import proj
 
-SITE_METAVAR = "SITE[:NODE]"
+SITE_METAVAR = "SITE[:HOST]"
 PROJ_METAVAR = "[PREFIX:]NAME"
 QUERY_METAVAR = "[PREFIX:]QUERY"
 
@@ -25,7 +25,7 @@ def build_parser():
 	sub = p.add_subparsers(metavar="command")
 	# create and explore projects
 	register_init(sub)
-	register_clone(sub)
+	register_link(sub)
 	register_list(sub)
 	register_find(sub)
 	# sync and compare projects
@@ -50,7 +50,7 @@ def _add_project(p, opt=False, cwd=False):
 		nargs=nargs)
 
 def _add_site(p, opt=False):
-	help_text = "site specification"
+	help_text = "target site specification"
 	nargs = "?" if opt else None
 	p.add_argument("site", 
 		help=help_text,
@@ -59,7 +59,7 @@ def _add_site(p, opt=False):
 
 def _add_site_option(p):
 	p.add_argument("-t", "--site", 
-		help="site specification",
+		help="target site specification",
 		metavar=SITE_METAVAR)
 
 def _add_details(p):
@@ -124,8 +124,8 @@ def register_init(subparsers):
 		action="store",
 		default=proj.INIT_GROUP)
 
-def register_clone(subparsers):
-	p = subparsers.add_parser("clone", 
+def register_link(subparsers):
+	p = subparsers.add_parser("link", 
 		help="Create a symlink to a project",
 		aliases=["ln"])
 	p.set_defaults(func=proj.symlink, parser=p)
@@ -140,7 +140,9 @@ def register_list(subparsers):
 		help="List projects",
 		aliases=["ls"])
 	p.set_defaults(func=lambda args: print(args), parser=p)
-	_add_project(p, opt=True)
+	p.add_argument("query",
+		help="pattern (over project names)",
+		metavar=QUERY_METAVAR)
 	_add_query_group(p)
 	_add_json(p)
 
@@ -150,7 +152,7 @@ def register_find(subparsers):
 		aliases=["grep"])
 	p.set_defaults(func=lambda args: print(args), parser=p)
 	p.add_argument("query",
-		help="search pattern (regex)",
+		help="pattern (over project metadata)",
 		metavar=QUERY_METAVAR)
 	_add_query_group(p)
 	p.add_argument("-w", "--within",
@@ -218,7 +220,7 @@ def register_site(subparsers):
 		nargs="?",
 		default=False)
 	p.add_argument("--host", 
-		help="site NODE(s) as <alias>:<host>",
+		help="site HOST(s) as <alias>:<host>",
 		action="append",
 		nargs="?",
 		default=[])

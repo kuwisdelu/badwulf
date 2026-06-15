@@ -39,49 +39,62 @@ class profile:
 		if self.proxy is None:
 			self.proxy = {}
 
-	def resolve_node(self, host: str) -> str:
+	def resolve_hostkey(self, host: str) -> str:
 		"""
-		Resolve a node alias from a hostname
+		Resolve a host alias from a hostname
 		:param host: The hostname
-		:raises ValueError: If the hostname isn't a known node
-		:returns: The node alias
+		:raises ValueError: If a known host isn't found
+		:returns: The host alias
 		"""
 		host = host.casefold()
 		for k, v in self.hosts.items():
 			v = v.casefold()
 			if v in (host, f"{host}.local"):
 				return k
-		raise ValueError(f"no known node for host {host}")
+		raise ValueError(f"no known host key for {host}")
 
-	def resolve_prefix(self, path: str) -> str:
+	def resolve_pathkey(self, path: str, parents: bool = False) -> str:
 		"""
-		Resolve a prefix alias from a filepath
+		Resolve a path alias from a filepath
 		:param path: The filepath
-		:raises ValueError: If the filepath isn't in a known prefix
-		:returns: The prefix alias
+		:param parents: Consider parent directories of filepath?
+		:raises ValueError: If a known path isn't found
+		:returns: The path alias
 		"""
 		path = mkpath(path)
 		for k, v in self.paths.items():
 			v = mkpath(v)
-			if v == os.path.commonpath((v, path)):
+			if parents:
+				test = os.path.commonpath((v, path))
+			else:
+				test = path
+			if os.path.samefile(v, test):
 				return k
-		raise ValueError(f"no known prefix for path {path}")
+		raise ValueError(f"no known path key for {path}")
 
-	def detect_node(self) -> str:
+	def detect_host(self) -> str:
 		"""
-		Resolve node alias of localhost
-		:raises ValueError: If the hostname isn't a known node
-		:returns: The node alias
+		Resolve host alias of localhost
+		:raises ValueError: If a known host isn't found
+		:returns: The host alias
 		"""
-		self.resolve_node(socket.gethostname())
+		self.resolve_hostkey(socket.gethostname())
+
+	def detect_path(self) -> str:
+		"""
+		Resolve a path alias from working directory
+		:raises ValueError: If a known path isn't found
+		:returns: The path alias
+		"""
+		self.resolve_pathkey(os.getcwd())
 
 	def detect_prefix(self) -> str:
 		"""
-		Resolve a prefix alias from current working directory
-		:raises ValueError: If the filepath isn't in a known prefix
-		:returns: The prefix alias
+		Resolve a path alias from working directory and its parents
+		:raises ValueError: If a known path isn't found
+		:returns: The path alias
 		"""
-		self.resolve_prefix(os.getcwd())
+		self.resolve_pathkey(os.getcwd(), parents=True)
 
 class syncer(MutableMapping):
 	"""
