@@ -12,7 +12,7 @@ from ..util import detect
 from ..util import prune
 
 DEFAULT_SITE = "local"
-DEFAULT_NODE = "default"
+DEFAULT_HOST = "default"
 DEFAULT_PREFIX = "default"
 
 def detect_sites():

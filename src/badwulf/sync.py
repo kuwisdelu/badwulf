@@ -68,7 +68,7 @@ class profile:
 				test = os.path.commonpath((v, path))
 			else:
 				test = path
-			if os.path.samefile(v, test):
+			if v == test:
 				return k
 		raise ValueError(f"no known path key for {path}")
 

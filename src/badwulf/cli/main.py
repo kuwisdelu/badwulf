@@ -49,6 +49,16 @@ def _add_project(p, opt=False, cwd=False):
 		metavar=PROJ_METAVAR,
 		nargs=nargs)
 
+def _add_prefix(p, opt=False, cwd=False):
+	help_text = "database prefix"
+	if cwd:
+		help_text += f" (if not '{site.DEFAULT_PREFIX}')"
+	nargs = "?" if opt else None
+	p.add_argument("prefix", 
+		help=help_text,
+		metavar="PREFIX",
+		nargs=nargs)
+
 def _add_site(p, opt=False):
 	help_text = "target site specification"
 	nargs = "?" if opt else None
@@ -58,8 +68,10 @@ def _add_site(p, opt=False):
 		nargs=nargs)
 
 def _add_site_option(p):
+	help_text = "site specification"
+	help_text += f" (if not '{site.DEFAULT_SITE}')"
 	p.add_argument("-t", "--site", 
-		help="target site specification",
+		help=help_text,
 		metavar=SITE_METAVAR)
 
 def _add_details(p):
@@ -76,6 +88,11 @@ def _add_group_filter(p):
 	p.add_argument("-g", "--group", 
 		help="filter by group",
 		action="append")
+
+def _add_sort_by(p):
+	p.add_argument("-o", "--sort-by", 
+		choices=["atime", "mtime", "size"],
+		help="sort by project statistics")
 
 def _add_force(p):
 	p.add_argument("-f", "--force", 
@@ -102,6 +119,7 @@ def _add_query_group(p):
 	_add_site_option(p)
 	_add_scope_filter(p)
 	_add_group_filter(p)
+	_add_sort_by(p)
 
 def _add_sync_group(p):
 	_add_site(p)
@@ -140,9 +158,7 @@ def register_list(subparsers):
 		help="List projects",
 		aliases=["ls"])
 	p.set_defaults(func=lambda args: print(args), parser=p)
-	p.add_argument("query",
-		help="pattern (over project names)",
-		metavar=QUERY_METAVAR)
+	_add_project(p)
 	_add_query_group(p)
 	_add_json(p)
 
@@ -167,7 +183,10 @@ def register_fetch(subparsers):
 	p = subparsers.add_parser("fetch", 
 		help="Get manifest of projects from another site")
 	p.set_defaults(func=lambda args: print(args), parser=p)
-	_add_site(p, opt=True)
+	_add_site(p)
+	_add_prefix(p, opt=True, cwd=True)
+	_add_dry_run(p)
+	_add_ask(p)
 
 def register_pull(subparsers):
 	p = subparsers.add_parser("pull", 
@@ -193,10 +212,10 @@ def register_status(subparsers):
 	p = subparsers.add_parser("status", 
 		help="Get status of tracked projects")
 	p.set_defaults(func=lambda args: print(args), parser=p)
-	_add_site(p, opt=True)
-	_add_details(p)
-	_add_scope_filter(p)
-	_add_group_filter(p)
+	_add_prefix(p, opt=True, cwd=True)
+	p.add_argument("-c", "--clean",
+		help="clean up project directories",
+		action="store_true")
 	_add_json(p)
 
 def register_site(subparsers):

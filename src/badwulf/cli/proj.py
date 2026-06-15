@@ -7,7 +7,7 @@ from datetime import date
 
 from .site import load_sites
 from .site import DEFAULT_PREFIX
-from .site import DEFAULT_NODE
+from .site import DEFAULT_HOST
 
 from ..db import projindex
 from ..db import projdb

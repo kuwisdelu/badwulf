@@ -23,10 +23,10 @@ def test_profile():
 	p = profile(
 		hosts={"0": "node0"},
 		paths={"a": "/projects/a"})
-	assert p.resolve_node("node0") == "0"
-	assert p.resolve_node("NODE0") == "0"
-	assert p.resolve_prefix("/projects/a") == "a"
-	assert p.resolve_prefix("/projects/a/b/c") == "a"
+	assert p.resolve_hostkey("node0") == "0"
+	assert p.resolve_hostkey("NODE0") == "0"
+	assert p.resolve_pathkey("/projects/a") == "a"
+	assert p.resolve_pathkey("/projects/a/b/c", parents=True) == "a"
 
 def test_syncer_init():
 	sync = syncer.from_path(_testconfig())
