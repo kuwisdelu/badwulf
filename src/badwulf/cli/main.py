@@ -89,11 +89,6 @@ def _add_group_filter(p):
 		help="filter by group",
 		action="append")
 
-def _add_sort_by(p):
-	p.add_argument("-o", "--sort-by", 
-		choices=["atime", "mtime", "size"],
-		help="sort by project statistics")
-
 def _add_force(p):
 	p.add_argument("-f", "--force", 
 		help="force transfer even if rejected?",
@@ -110,16 +105,27 @@ def _add_ask(p):
 		action="store_true")
 
 def _add_json(p):
-	p.add_argument("-j", "--json", 
+	p.add_argument("--json", 
 		help="json output",
 		action="store_true")
 
+def _add_sort_group(p):
+	g = p.add_mutually_exclusive_group()
+	g.add_argument("-r", "--reverse", 
+		choices=["size", "mtime", "atime"],
+		help="sort by project statistics (descending)",
+		action="append",
+		default=[])
+	g.add_argument("--sort", 
+		choices=["size", "mtime", "atime"],
+		help="sort by project statistics (ascending)",
+		action="append",
+		default=[])
+
 def _add_query_group(p):
-	_add_details(p)
-	_add_site_option(p)
 	_add_scope_filter(p)
 	_add_group_filter(p)
-	_add_sort_by(p)
+	_add_sort_group(p)
 
 def _add_sync_group(p):
 	_add_site(p)
@@ -146,7 +152,7 @@ def register_link(subparsers):
 	p = subparsers.add_parser("link", 
 		help="Create a symlink to a project",
 		aliases=["ln"])
-	p.set_defaults(func=proj.symlink, parser=p)
+	p.set_defaults(func=proj.link, parser=p)
 	_add_project(p)
 	p.add_argument("filename", 
 		help="symlink filename",
@@ -157,27 +163,39 @@ def register_list(subparsers):
 	p = subparsers.add_parser("list", 
 		help="List projects",
 		aliases=["ls"])
-	p.set_defaults(func=lambda args: print(args), parser=p)
-	_add_project(p)
+	g = p.add_mutually_exclusive_group()
+	p.set_defaults(func=proj.show, parser=p)
+	p.add_argument("query",
+		help="pattern (over project names)",
+		metavar=QUERY_METAVAR,
+		nargs="?")
+	_add_details(g)
+	g.add_argument("-p", "--path",
+		help="show path",
+		action="store_true")
+	_add_site_option(p)
 	_add_query_group(p)
-	_add_json(p)
+	_add_json(g)
 
 def register_find(subparsers):
 	p = subparsers.add_parser("find", 
 		help="Search project metadata",
 		aliases=["grep"])
+	g = p.add_mutually_exclusive_group()
 	p.set_defaults(func=lambda args: print(args), parser=p)
 	p.add_argument("query",
 		help="pattern (over project metadata)",
 		metavar=QUERY_METAVAR)
-	_add_query_group(p)
+	_add_details(g)
+	_add_site_option(p)
 	p.add_argument("-w", "--within",
 		help="metadata fields to search",
 		action="append")
 	p.add_argument("-i", "--ignore-case",
 		help="ignore case",
 		action="store_true")
-	_add_json(p)
+	_add_query_group(p)
+	_add_json(g)
 
 def register_fetch(subparsers):
 	p = subparsers.add_parser("fetch", 
@@ -221,6 +239,7 @@ def register_status(subparsers):
 def register_site(subparsers):
 	p = subparsers.add_parser("site", 
 		help="Configure work sites")
+	g = p.add_mutually_exclusive_group()
 	p.set_defaults(func=site.main, parser=p)
 	p.add_argument("subcommand",
 		help="Add, get, set, or remove site configuration",
@@ -231,7 +250,7 @@ def register_site(subparsers):
 		metavar="NAME",
 		nargs="?",
 		default=site.DEFAULT_SITE)
-	p.add_argument("-v", "--verbose", 
+	g.add_argument("-v", "--verbose", 
 		help="verbose output",
 		action="store_true")
 	p.add_argument("--user", 
@@ -256,7 +275,7 @@ def register_site(subparsers):
 		help="site proxy jump host",
 		nargs="?",
 		default=False)
-	_add_json(p)
+	_add_json(g)
 
 def register_run(subparsers):
 	p = subparsers.add_parser("run", 

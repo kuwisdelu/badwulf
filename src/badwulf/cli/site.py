@@ -80,7 +80,7 @@ def show(args):
 			print()
 			for name in sts.keys():
 				print(f"{name}:")
-				render(d[name])
+				print_site(d[name])
 				print()
 		else:
 			for name in sts.keys():
@@ -152,7 +152,7 @@ def get_vars(args):
 	if args.json:
 		print(json.dumps(d, indent=2))		
 	else:
-		render(d)
+		print_site(d)
 
 def set_vars(args):
 	path = detect_sites()
@@ -268,7 +268,7 @@ def remove(args):
 	with open(path, "w") as f:
 		json.dump(sts.to_dict(), f, indent="\t")
 
-def render(d):
+def print_site(d):
 	if "user" in d:
 		print(f"user={d["user"]}")
 	if "hosts" in d:

@@ -7,6 +7,7 @@ import json
 import tomllib
 import datetime
 
+from collections.abc import Collection
 from collections.abc import Callable
 from collections.abc import Mapping
 from collections.abc import MutableMapping
@@ -48,6 +49,14 @@ class projmeta:
 	description: dict[str, str] | None = None
 	reference: dict[str, str] | None = None
 
+	def has_name(self, pattern: str) -> bool:
+		"""
+		Detect if the project's name matches a pattern
+		:param pattern: The name pattern
+		:returns: True if projmeta has the name, False otherwise
+		"""
+		return grep(pattern, self.name, ignore_case=True) is not None
+
 	def has_scope(self, pattern: str) -> bool:
 		"""
 		Detect if the project's scope matches a pattern
@@ -66,7 +75,7 @@ class projmeta:
 
 	def search(self, 
 		pattern: str, 
-		within: set[str] | None = None,
+		within: Collection[str] | None = None,
 		ignore_case: bool = False,
 		context_width: int = 60) -> projsearch | None:
 		"""
@@ -251,6 +260,13 @@ class projdata:
 		return self._fetch_tree_stat()["size"]
 
 	@property
+	def name(self) -> str:
+		"""
+		Get the name of the project
+		"""
+		return self.meta.name
+
+	@property
 	def canonical_path(self) -> str:
 		"""
 		Get the (relative) canonical path (defined as scope/group/name)
@@ -404,9 +420,9 @@ class projindex(MutableMapping):
 		return projindex({k: v for k, v in self.items() if function(v)})
 
 	def subset(self,
-		names: set[str] | None = None,
-		scope: set[str] | None = None,
-		group: set[str] | None = None) -> projindex:
+		names: Collection[str] | None = None,
+		scope: Collection[str] | None = None,
+		group: Collection[str] | None = None) -> projindex:
 		"""
 		Subset the projects and return a new projindex
 		:param names: A set of project names to keep
@@ -414,9 +430,15 @@ class projindex(MutableMapping):
 		:param group: A set of groups to keep
 		:returns: A new projindex object (referencing original projects)
 		"""
+		if isinstance(names, str):
+			names = [names]
+		if isinstance(scope, str):
+			scope = [scope]
+		if isinstance(group, str):
+			group = [group]
 		def subsetter(proj):
 			if names is not None:
-				if proj.meta.name not in names:
+				if not any(proj.meta.has_name(nm) for nm in names):
 					return False
 			if scope is not None:
 				if not any(proj.meta.has_scope(s) for s in scope):
@@ -442,17 +464,17 @@ class projindex(MutableMapping):
 		reverse: bool = False) -> list[projdata]:
 		"""
 		Return projects in ascending sort order by directory file stats
-		:param stats: One or more of 'size', 'mtime', or 'atime'
+		:param stats: One or more of 'name', 'size', 'mtime', or 'atime'
 		:param reverse: Sort in descending order?
 		"""
-		expected = ("atime", "mtime", "size")
+		expected = ("name", "size", "mtime", "atime")
 		if stats is None or not all(st in expected for st in stats):
 			raise ValueError(f"expected one or more of: {expected}")
 		return self.sorted(key=attrgetter(*stats), reverse=reverse)
 
 	def search(self, 
 		pattern: str, 
-		within: set[str] | None = None,
+		within: Collection[str] | None = None,
 		ignore_case: bool = False,
 		context_width: int = 60) -> dict[str, projsearch]:
 		"""
