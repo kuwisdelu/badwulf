@@ -7,6 +7,7 @@ import subprocess
 from datetime import date
 from datetime import datetime
 from datetime import timezone
+from dataclasses import asdict
 
 from .site import load_sites
 from .site import DEFAULT_PREFIX
@@ -102,44 +103,69 @@ def link(args):
 	subprocess.run(cmd)
 
 def show(args):
+	sts, prefix, query = parse_query(args)
+	dbpath = sts.local.paths[prefix]
+	db = projdb(dbpath)
+	keys, reverse = parse_sort(args)
+	subset = db.index.subset(
+		names=query, 
+		scope=args.scope, 
+		group=args.group)
+	outlist = subset.sorted_by(*keys, reverse=reverse)
+	if args.json:
+		outlist = [proj.to_dict() for proj in outlist]
+		print(json.dumps(outlist, indent=2))
+	elif args.long:
+		print_proj_list(outlist)
+	elif args.path:
+		for proj in outlist:
+			print(proj.path)
+	else:
+		for proj in outlist:
+			print(proj.name)
+
+def search(args):
+	sts, prefix, query = parse_query(args)
+	dbpath = sts.local.paths[prefix]
+	db = projdb(dbpath)
+	keys, reverse = parse_sort(args)
+	subset = db.index.subset(
+		scope=args.scope, 
+		group=args.group)
+	outlist = subset.search(
+		pattern=query, 
+		within=args.within,
+		ignore_case=args.ignore_case,
+		sorted_by=keys,
+		reverse=reverse)
+	if args.json:
+		outlist = [asdict(hits) for hits in outlist]
+		print(json.dumps(outlist, indent=2))
+	else:
+		print_search_list(outlist)
+
+def parse_query(args):
 	sts = load_sites()
 	if args.query is None:
-		prefix, name = DEFAULT_PREFIX, None
+		prefix, query = DEFAULT_PREFIX, None
 	else:
-		prefix, name = rtokenize(args.query)
+		prefix, query = rtokenize(args.query)
 		if prefix is None:
 			prefix = DEFAULT_PREFIX
 		if prefix not in sts.local.paths:
 			prog_error(f"invalid prefix: {prefix}", args)
-	dbpath = sts.local.paths[prefix]
-	db = projdb(dbpath)
-	if len(args.sort) > 0:
-		stat = args.sort
-	elif len(args.reverse) > 0:
-		stat = args.reverse
-	else:
-		stat = []
-	stat.append("name")
-	reverse = True if len(args.reverse) > 0 else False
-	output = db.index.subset(
-		names=name, 
-		scope=args.scope, 
-		group=args.group).sorted_by(*stat, reverse=reverse)
-	if args.json:
-		output = [proj.to_dict() for proj in output]
-		print(json.dumps(output, indent=2))
-	elif args.path:
-		for proj in output:
-			print(proj.path)
-	else:
-		if args.long:
-			print_proj_list(output)
-		else:
-			for proj in output:
-				print(proj.name)
+	return sts, prefix, query
 
-def search(args):
-	pass
+def parse_sort(args):
+	if len(args.sort) > 0:
+		keys = args.sort
+	elif len(args.reverse) > 0:
+		keys = args.reverse
+	else:
+		keys = []
+	keys.append("name")
+	reverse = True if len(args.reverse) > 0 else False
+	return keys, reverse
 
 def format_proj(proj):
 	d = {
@@ -150,14 +176,49 @@ def format_proj(proj):
 	return d
 
 def print_proj_list(plist, sep = "  "):
-	dlist = [format_proj(proj) for proj in plist]
-	path_len = max(len(d["path"]) for d in dlist)
-	size_len = max(len(d["size"]) for d in dlist)
-	time_len = max(len(d["time"]) for d in dlist)
-	for d in dlist:
-		sl = []
-		sl.append(d["path"].ljust(path_len))
-		sl.append(d["size"].rjust(size_len))
-		sl.append(d["time"].rjust(time_len))
-		sl.append(d["title"])
-		print(sep.join(sl))
+	if len(plist) > 0:
+		dlist = [format_proj(proj) for proj in plist]
+		path_len = max(len(d["path"]) for d in dlist)
+		size_len = max(len(d["size"]) for d in dlist)
+		time_len = max(len(d["time"]) for d in dlist)
+		for d in dlist:
+			sl = []
+			sl.append(d["path"].ljust(path_len))
+			sl.append(d["size"].rjust(size_len))
+			sl.append(d["time"].rjust(time_len))
+			sl.append(d["title"])
+			print(sep.join(sl))
+
+def format_search(proj):
+	lst = []
+	for field, hit in proj.hits.items():
+		ctx = [proj.name, field]
+		match hit:
+			case str():
+				lst.append({"ctx": ctx, "hit": hit})
+			case list():
+				for subhit in hit:
+					match subhit:
+						case str():
+							lst.append({"ctx": ctx, "hit": hit})
+						case dict():
+							for k, v in subhit.items():
+								lst.append({"ctx": ctx + [k], "hit": v})
+			case dict():
+				for k, v in hit.items():
+					lst.append({"ctx": ctx + [k], "hit": v})
+	return lst
+
+def print_search_list(plist, sep = ":  "):
+	if len(plist) > 0:
+		hlist = []
+		for proj in plist:
+			hlist.extend(format_search(proj))
+		name_len = max(len(hit["ctx"][0]) for hit in hlist)
+		name_len += len(sep)
+		ctx_len = max(len(sep.join(hit["ctx"][1:])) for hit in hlist)
+		ctx_len += len(sep)
+		for hit in hlist:
+			name = (hit["ctx"][0] + sep).ljust(name_len)
+			ctx = (sep.join(hit["ctx"][1:]) + sep).ljust(ctx_len)
+			print(f"{name}{ctx}{hit["hit"]}")

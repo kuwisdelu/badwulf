@@ -179,7 +179,7 @@ def register_search(subparsers):
 		help="Search project metadata",
 		aliases=["grep"])
 	g = p.add_mutually_exclusive_group()
-	p.set_defaults(func=lambda args: print(args), parser=p)
+	p.set_defaults(func=proj.search, parser=p)
 	p.add_argument("query",
 		help="pattern (over project metadata)",
 		metavar=QUERY_METAVAR)
@@ -191,9 +191,6 @@ def register_search(subparsers):
 		help="ignore case",
 		action="store_true")
 	_add_query_group(p)
-	g.add_argument("--path",
-		help="path output",
-		action="store_true")
 	_add_json(g)
 
 def register_fetch(subparsers):
