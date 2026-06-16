@@ -456,6 +456,7 @@ class projindex(MutableMapping):
 		Return projects in ascending sort order based on a key function
 		:param key: A function taking a projdata returning a comparable key
 		:param reverse: Sort in descending order?
+		:returns: A list of sorted projdata objects
 		"""
 		return sorted(self.values(), key=key, reverse=reverse)
 
@@ -466,6 +467,7 @@ class projindex(MutableMapping):
 		Return projects in ascending sort order by directory file stats
 		:param stats: One or more of 'name', 'size', 'mtime', or 'atime'
 		:param reverse: Sort in descending order?
+		:returns: A list of sorted projdata objects
 		"""
 		expected = ("name", "size", "mtime", "atime")
 		if stats is None or not all(st in expected for st in stats):
@@ -476,21 +478,27 @@ class projindex(MutableMapping):
 		pattern: str, 
 		within: Collection[str] | None = None,
 		ignore_case: bool = False,
-		context_width: int = 60) -> dict[str, projsearch]:
+		context_width: int = 60,
+		sorted_by: Collection[str] | None = None,
+		reverse: bool = False) -> list[projsearch]:
 		"""
 		Search indexed metadata for a regular expression
 		:param pattern: The search pattern
 		:param within: List of metadata fields to search; None means all
 		:param ignore_case: Should case be ignored?
 		:param context_width: Width of a context window for hits
-		:returns: A dict of projsearch objects with nonzero hits
+		:returns: A list of projsearch objects with nonzero hits
 		"""
-		d = {}
-		for k, v in self.items():
-			hits = v.meta.search(pattern, within, ignore_case, context_width)
-			if hits is not None:
-				d[k] = hits
-		return d
+		hits = []
+		if sorted_by is None:
+			projects = self.sorted_by("name", reverse=reverse)
+		else:
+			projects = self.sorted_by(*sorted_by, reverse=reverse)
+		for proj in projects:
+			hit = proj.meta.search(pattern, within, ignore_case, context_width)
+			if hit is not None:
+				hits.append(hit)
+		return hits
 
 	@classmethod
 	def from_list(cls, lst: list[projdata]):

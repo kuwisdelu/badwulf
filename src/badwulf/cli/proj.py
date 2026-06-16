@@ -132,7 +132,7 @@ def show(args):
 		for proj in output:
 			print(proj.path)
 	else:
-		if args.details:
+		if args.long:
 			print_proj_list(output)
 		else:
 			for proj in output:
