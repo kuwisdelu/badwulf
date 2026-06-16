@@ -148,7 +148,7 @@ class projsearch:
 	scope: str
 	group: str
 	pattern: str
-	hits: dict[str, list[Any]] | None = None
+	hits: dict[str, str | list[Any]] | None = None
 
 @dataclass
 class projdata:
