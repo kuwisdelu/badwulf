@@ -1,5 +1,4 @@
 import os
-import sys
 import json
 
 from ..sync import profile
@@ -267,6 +266,9 @@ def remove(args):
 		del sts[args.name]
 	with open(path, "w") as f:
 		json.dump(sts.to_dict(), f, indent="\t")
+
+def run(args):
+	prog_error("NOT IMPLEMENTED YET", args)
 
 def print_site(d):
 	if "user" in d:

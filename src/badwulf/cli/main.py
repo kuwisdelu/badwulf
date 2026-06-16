@@ -1,11 +1,9 @@
-import os
-import sys
-import json
 import argparse
 from importlib import metadata
 
 from . import site
 from . import proj
+from . import sync
 
 SITE_METAVAR = "SITE[:HOST]"
 PROJ_METAVAR = "[PREFIX:]NAME"
@@ -24,7 +22,9 @@ def build_parser():
 		version=f"badwulf {metadata.version("badwulf")}")
 	sub = p.add_subparsers(metavar="command")
 	# create and explore projects
-	register_init(sub)
+	register_add(sub)
+	register_edit(sub)
+	register_remove(sub)
 	register_link(sub)
 	register_list(sub)
 	register_search(sub)
@@ -32,7 +32,6 @@ def build_parser():
 	register_fetch(sub)
 	register_pull(sub)
 	register_push(sub)
-	register_remove(sub)
 	register_status(sub)
 	# configure work sites
 	register_site(sub)
@@ -129,10 +128,11 @@ def _add_sync_group(p):
 	_add_dry_run(p)
 	_add_ask(p)
 
-def register_init(subparsers):
-	p = subparsers.add_parser("init", 
-		help="Create an empty project")
-	p.set_defaults(func=proj.create, parser=p)
+def register_add(subparsers):
+	p = subparsers.add_parser("add", 
+		help="Create an empty project",
+		aliases=["init"])
+	p.set_defaults(func=proj.add, parser=p)
 	_add_project(p, opt=True, cwd=True)
 	p.add_argument("-s", "--scope", 
 		help=f"project scope (default: {proj.INIT_SCOPE})",
@@ -142,6 +142,22 @@ def register_init(subparsers):
 		help=f"project group (default: {proj.INIT_GROUP})",
 		action="store",
 		default=proj.INIT_GROUP)
+
+def register_edit(subparsers):
+	p = subparsers.add_parser("edit", 
+		help="Edit project metadata")
+	p.set_defaults(func=proj.edit, parser=p)
+	_add_project(p, opt=True, cwd=True)
+	p.add_argument("-E", "--editor",
+		help="text editor to use")
+
+def register_remove(subparsers):
+	p = subparsers.add_parser("remove",
+		help="Delete a project",
+		aliases=["rm"])
+	p.set_defaults(func=proj.remove, parser=p)
+	_add_project(p)
+	_add_ask(p)
 
 def register_link(subparsers):
 	p = subparsers.add_parser("link", 
@@ -196,7 +212,7 @@ def register_search(subparsers):
 def register_fetch(subparsers):
 	p = subparsers.add_parser("fetch", 
 		help="Get manifest of projects from another site")
-	p.set_defaults(func=lambda args: print(args), parser=p)
+	p.set_defaults(func=sync.fetch, parser=p)
 	_add_site(p)
 	_add_prefix(p, opt=True, cwd=True)
 	_add_dry_run(p)
@@ -205,27 +221,19 @@ def register_fetch(subparsers):
 def register_pull(subparsers):
 	p = subparsers.add_parser("pull", 
 		help="Download a project from another site")
-	p.set_defaults(func=lambda args: print(args), parser=p)
+	p.set_defaults(func=sync.pull, parser=p)
 	_add_sync_group(p)
 
 def register_push(subparsers):
 	p = subparsers.add_parser("push", 
 		help="Upload a project to another site")
-	p.set_defaults(func=lambda args: print(args), parser=p)
+	p.set_defaults(func=sync.push, parser=p)
 	_add_sync_group(p)
-
-def register_remove(subparsers):
-	p = subparsers.add_parser("remove",
-		help="Delete a project",
-		aliases=["rm"])
-	p.set_defaults(func=lambda args: print(args), parser=p)
-	_add_project(p)
-	_add_ask(p)
 
 def register_status(subparsers):
 	p = subparsers.add_parser("status", 
 		help="Get status of tracked projects")
-	p.set_defaults(func=lambda args: print(args), parser=p)
+	p.set_defaults(func=sync.status, parser=p)
 	_add_prefix(p, opt=True, cwd=True)
 	p.add_argument("-c", "--clean",
 		help="clean up project directories",
@@ -234,7 +242,8 @@ def register_status(subparsers):
 
 def register_site(subparsers):
 	p = subparsers.add_parser("site", 
-		help="Configure work sites")
+		help="Configure work sites",
+		aliases=["remote"])
 	g = p.add_mutually_exclusive_group()
 	p.set_defaults(func=site.main, parser=p)
 	p.add_argument("subcommand",
@@ -276,7 +285,7 @@ def register_site(subparsers):
 def register_run(subparsers):
 	p = subparsers.add_parser("run", 
 		help="Run a shell command at another site")
-	p.set_defaults(func=lambda args: print(args), parser=p)
+	p.set_defaults(func=site.run, parser=p)
 	_add_site(p)
 	p.add_argument("command",
 		help="command to run",

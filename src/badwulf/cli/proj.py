@@ -1,7 +1,5 @@
 import os
-import sys
 import json
-import shutil
 import getpass
 import subprocess
 from datetime import date
@@ -11,7 +9,6 @@ from dataclasses import asdict
 
 from .site import load_sites
 from .site import DEFAULT_PREFIX
-from .site import DEFAULT_HOST
 
 from ..db import projindex
 from ..db import projdb
@@ -51,7 +48,7 @@ def template(scope, group, name):
 	fields.append("")
 	return fields
 
-def create(args):
+def add(args):
 	sts = load_sites()
 	if args.project is None:
 		if detect_project() is not None:
@@ -101,6 +98,40 @@ def link(args):
 	filename = name if args.filename is None else args.filename
 	cmd = ["ln", "-s", path, filename]
 	subprocess.run(cmd)
+
+def edit(args):
+	sts = load_sites()
+	if args.project is None:
+		path = detect_project()
+		if path is None:
+			prog_error("working directory is not in a project")
+	else:
+		prefix, name = rtokenize(args.project)
+		if prefix is None:
+			prefix = DEFAULT_PREFIX
+		if prefix not in sts.local.paths:
+			prog_error(f"invalid prefix: {prefix}", args)
+		dbpath = sts.local.paths[prefix]
+		db = projdb(dbpath)
+		try:
+			proj = db[name]
+		except KeyError:
+			prog_error(f"no project named {name}", args)
+		path = proj.path
+	filename = os.path.join(path, "metadata.toml")
+	editor = args.editor
+	if editor is None:
+		editor = os.getenv("VISUAL")
+	if editor is None:
+		editor = os.getenv("EDITOR")
+	if editor is None:
+		editor = "vi"
+	cmd = [editor, filename]
+	subprocess.run(cmd)
+
+def remove(args):
+	sts = load_sites()
+	prog_error("NOT IMPLEMENTED YET", args)
 
 def show(args):
 	sts, prefix, query = parse_query(args)
