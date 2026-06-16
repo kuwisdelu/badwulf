@@ -27,7 +27,7 @@ def build_parser():
 	register_init(sub)
 	register_link(sub)
 	register_list(sub)
-	register_find(sub)
+	register_search(sub)
 	# sync and compare projects
 	register_fetch(sub)
 	register_pull(sub)
@@ -73,11 +73,6 @@ def _add_site_option(p):
 	p.add_argument("-t", "--site", 
 		help=help_text,
 		metavar=SITE_METAVAR)
-
-def _add_details(p):
-	p.add_argument("-l", "--details", 
-		help="show details",
-		action="store_true")
 
 def _add_scope_filter(p):
 	p.add_argument("-s", "--scope", 
@@ -169,16 +164,18 @@ def register_list(subparsers):
 		help="pattern (over project names)",
 		metavar=QUERY_METAVAR,
 		nargs="?")
-	_add_details(g)
-	g.add_argument("-p", "--path",
-		help="show path",
+	p.add_argument("-l", "--long", 
+		help="show details",
 		action="store_true")
 	_add_site_option(p)
 	_add_query_group(p)
+	g.add_argument("--path",
+		help="path output",
+		action="store_true")
 	_add_json(g)
 
-def register_find(subparsers):
-	p = subparsers.add_parser("find", 
+def register_search(subparsers):
+	p = subparsers.add_parser("search", 
 		help="Search project metadata",
 		aliases=["grep"])
 	g = p.add_mutually_exclusive_group()
@@ -186,7 +183,6 @@ def register_find(subparsers):
 	p.add_argument("query",
 		help="pattern (over project metadata)",
 		metavar=QUERY_METAVAR)
-	_add_details(g)
 	_add_site_option(p)
 	p.add_argument("-w", "--within",
 		help="metadata fields to search",
@@ -195,6 +191,9 @@ def register_find(subparsers):
 		help="ignore case",
 		action="store_true")
 	_add_query_group(p)
+	g.add_argument("--path",
+		help="path output",
+		action="store_true")
 	_add_json(g)
 
 def register_fetch(subparsers):
