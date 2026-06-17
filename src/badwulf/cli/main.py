@@ -21,7 +21,7 @@ def build_parser():
 		action="version",
 		version=f"badwulf {metadata.version("badwulf")}")
 	sub = p.add_subparsers(metavar="command")
-	# create and explore projects
+	# create and query projects
 	register_add(sub)
 	register_edit(sub)
 	register_remove(sub)
@@ -69,7 +69,7 @@ def _add_site(p, opt=False):
 def _add_site_option(p):
 	help_text = "site specification"
 	help_text += f" (if not '{site.DEFAULT_SITE}')"
-	p.add_argument("-t", "--site", 
+	p.add_argument("-S", "--site", 
 		help=help_text,
 		metavar=SITE_METAVAR)
 
@@ -83,19 +83,29 @@ def _add_group_filter(p):
 		help="filter by group",
 		action="append")
 
-def _add_force(p):
-	p.add_argument("-f", "--force", 
-		help="force transfer even if rejected?",
-		action="store_true")
-
 def _add_dry_run(p):
 	p.add_argument("-n", "--dry-run", 
 		help="show what would happen without doing it?",
 		action="store_true")
 
+def _add_mirror(p):
+	p.add_argument("--mirror", 
+		help="delete files on destination that aren't in source?",
+		action="store_true")
+
+def _add_force(p):
+	p.add_argument("--force", 
+		help="force transfer even if rejected?",
+		action="store_true")
+
 def _add_ask(p):
-	p.add_argument("-a", "--ask", 
+	p.add_argument("--ask", 
 		help="ask confirmation before performing the operation?",
+		action="store_true")
+
+def _add_path(p):
+	p.add_argument("--path",
+		help="path output",
 		action="store_true")
 
 def _add_json(p):
@@ -106,26 +116,26 @@ def _add_json(p):
 def _add_sort_group(p):
 	g = p.add_mutually_exclusive_group()
 	g.add_argument("-r", "--reverse", 
-		choices=["size", "mtime", "atime"],
+		choices=["name", "size", "mtime"],
 		help="sort by project statistics (descending)",
 		action="append",
 		default=[])
 	g.add_argument("--sort", 
-		choices=["size", "mtime", "atime"],
+		choices=["name", "size", "mtime"],
 		help="sort by project statistics (ascending)",
 		action="append",
 		default=[])
 
-def _add_query_group(p):
+def _add_filter_group(p):
 	_add_scope_filter(p)
 	_add_group_filter(p)
-	_add_sort_group(p)
 
 def _add_sync_group(p):
 	_add_site(p)
 	_add_project(p, opt=True, cwd=True)
-	_add_force(p)
 	_add_dry_run(p)
+	_add_mirror(p)
+	_add_force(p)
 	_add_ask(p)
 
 def register_add(subparsers):
@@ -135,13 +145,13 @@ def register_add(subparsers):
 	p.set_defaults(func=proj.add, parser=p)
 	_add_project(p, opt=True, cwd=True)
 	p.add_argument("-s", "--scope", 
-		help=f"project scope (default: {proj.INIT_SCOPE})",
+		help=f"project scope (default: {proj.DEFAULT_SCOPE})",
 		action="store",
-		default=proj.INIT_SCOPE)
+		default=proj.DEFAULT_SCOPE)
 	p.add_argument("-g", "--group", 
-		help=f"project group (default: {proj.INIT_GROUP})",
+		help=f"project group (default: {proj.DEFAULT_GROUP})",
 		action="store",
-		default=proj.INIT_GROUP)
+		default=proj.DEFAULT_GROUP)
 
 def register_edit(subparsers):
 	p = subparsers.add_parser("edit", 
@@ -157,7 +167,6 @@ def register_remove(subparsers):
 		aliases=["rm"])
 	p.set_defaults(func=proj.remove, parser=p)
 	_add_project(p)
-	_add_ask(p)
 
 def register_link(subparsers):
 	p = subparsers.add_parser("link", 
@@ -184,10 +193,9 @@ def register_list(subparsers):
 		help="show details",
 		action="store_true")
 	_add_site_option(p)
-	_add_query_group(p)
-	g.add_argument("--path",
-		help="path output",
-		action="store_true")
+	_add_filter_group(p)
+	_add_sort_group(p)
+	_add_path(g)
 	_add_json(g)
 
 def register_search(subparsers):
@@ -200,13 +208,15 @@ def register_search(subparsers):
 		help="pattern (over project metadata)",
 		metavar=QUERY_METAVAR)
 	_add_site_option(p)
-	p.add_argument("-w", "--within",
+	_add_filter_group(p)
+	p.add_argument("-f", "--field",
 		help="metadata fields to search",
 		action="append")
 	p.add_argument("-i", "--ignore-case",
 		help="ignore case",
 		action="store_true")
-	_add_query_group(p)
+	_add_sort_group(p)
+	_add_path(g)
 	_add_json(g)
 
 def register_fetch(subparsers):

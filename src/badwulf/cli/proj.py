@@ -1,7 +1,6 @@
 import os
 import json
 import getpass
-import subprocess
 from datetime import date
 from datetime import datetime
 from datetime import timezone
@@ -19,8 +18,8 @@ from ..util import mkpath
 from ..util import mktree
 from ..util import detect
 
-INIT_SCOPE = "private"
-INIT_GROUP = "scratch"
+DEFAULT_SCOPE = "private"
+DEFAULT_GROUP = "scratch"
 
 def detect_project():
 	current = os.getcwd()
@@ -96,8 +95,7 @@ def link(args):
 	else:
 		path = proj.path
 	filename = name if args.filename is None else args.filename
-	cmd = ["ln", "-s", path, filename]
-	subprocess.run(cmd)
+	os.symlink(path, filename, target_is_directory=True)
 
 def edit(args):
 	sts = load_sites()
@@ -127,7 +125,7 @@ def edit(args):
 	if editor is None:
 		editor = "vi"
 	cmd = [editor, filename]
-	subprocess.run(cmd)
+	os.execvp(editor, cmd)
 
 def remove(args):
 	sts = load_sites()
@@ -165,13 +163,16 @@ def search(args):
 		group=args.group)
 	outlist = subset.search(
 		pattern=query, 
-		within=args.within,
+		within=args.field,
 		ignore_case=args.ignore_case,
 		sorted_by=keys,
 		reverse=reverse)
 	if args.json:
 		outlist = [asdict(hits) for hits in outlist]
 		print(json.dumps(outlist, indent=2))
+	elif args.path:
+		for hits in outlist:
+			print(db[hits.name].path)
 	else:
 		print_search_list(outlist)
 

@@ -67,27 +67,6 @@ def main(args):
 		case "remove":
 			remove(args)
 
-def show(args):
-	path = detect_sites()
-	sts = syncer.from_path(path)
-	if args.json:
-		print(json.dumps(sts.to_dict(), indent=2))
-	else:
-		if args.verbose:
-			print(f"{path}:")
-			d = sts.to_dict()
-			print()
-			for name in sts.keys():
-				print(f"{name}:")
-				print_site(d[name])
-				print()
-		else:
-			for name in sts.keys():
-				if name == DEFAULT_SITE:
-					print(f"{name} *")
-				else:
-					print(f"{name}")
-
 def add(args):
 	path = detect_sites()
 	sts = syncer.from_path(path)
@@ -266,6 +245,27 @@ def remove(args):
 		del sts[args.name]
 	with open(path, "w") as f:
 		json.dump(sts.to_dict(), f, indent="\t")
+
+def show(args):
+	path = detect_sites()
+	sts = syncer.from_path(path)
+	if args.json:
+		print(json.dumps(sts.to_dict(), indent=2))
+	else:
+		if args.verbose:
+			print(f"{path}:")
+			d = sts.to_dict()
+			print()
+			for name in sts.keys():
+				print(f"{name}:")
+				print_site(d[name])
+				print()
+		else:
+			for name in sts.keys():
+				if name == DEFAULT_SITE:
+					print(f"{name} *")
+				else:
+					print(f"{name}")
 
 def run(args):
 	prog_error("NOT IMPLEMENTED YET", args)

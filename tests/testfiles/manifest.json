@@ -31,14 +31,12 @@
 			}
 		},
 		"meta_stat": {
-			"atime": 1780976225.0187154,
-			"mtime": 1780976192.0306716,
-			"size": 756
+			"size": 756,
+			"mtime": 1780976192.0306716
 		},
 		"tree_stat": {
-			"atime": 0,
-			"mtime": 1779227134.5756469,
-			"size": 756
+			"size": 756,
+			"mtime": 1780976192.0306716
 		}
 	},
 	{
@@ -50,14 +48,12 @@
 			"title": "I create myself."
 		},
 		"meta_stat": {
-			"atime": 1780976039.001738,
-			"mtime": 1780976037.3702955,
-			"size": 91
+			"size": 91,
+			"mtime": 1780976037.3702955	
 		},
 		"tree_stat": {
-			"atime": 0,
-			"mtime": 1779074900.0166216,
-			"size": 91
+			"size": 91,
+			"mtime": 1780976037.3702955	
 		}
 	},
 	{
@@ -69,14 +65,12 @@
 			"title": "I am the Bad Wolf."
 		},
 		"meta_stat": {
-			"atime": 1780976029.9274411,
-			"mtime": 1780976027.7725449,
-			"size": 93
+			"size": 93,
+			"mtime": 1780976027.7725449
 		},
 		"tree_stat": {
-			"atime": 0,
-			"mtime": 1779074847.6330843,
-			"size": 93
+			"size": 93,
+			"mtime": 1780976027.7725449
 		}
 	},
 	{
@@ -88,14 +82,12 @@
 			"title": "I take the words, I scatter them in time and space."
 		},
 		"meta_stat": {
-			"atime": 1780976042.8874002,
-			"mtime": 1780976041.305225,
-			"size": 126
+			"size": 126,
+			"mtime": 1780976041.305225
 		},
 		"tree_stat": {
-			"atime": 0,
-			"mtime": 1779074972.9405127,
-			"size": 126
+			"size": 126,
+			"mtime": 1780976041.305225
 		}
 	},
 	{
@@ -107,14 +99,12 @@
 			"title": "A message to lead myself here."
 		},
 		"meta_stat": {
-			"atime": 1780976048.8928664,
-			"mtime": 1780976047.5785358,
-			"size": 105
+			"size": 105,
+			"mtime": 1780976047.5785358
 		},
 		"tree_stat": {
-			"atime": 0,
-			"mtime": 1779227833.613617,
-			"size": 105
+			"size": 105,
+			"mtime": 1780976047.5785358
 		}
 	}
 ]

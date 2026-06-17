@@ -170,10 +170,7 @@ class projdata:
 		"""
 		if self._meta_stat is None or force:
 			st = os.stat(self.meta_path)
-			self._meta_stat = {
-				"atime": st.st_atime,
-				"mtime": st.st_mtime,
-				"size": st.st_size}
+			self._meta_stat = {"size": st.st_size, "mtime": st.st_mtime}
 		return self._meta_stat
 
 	def _fetch_tree_stat(self, force = False) -> dict[str, int | float]:
@@ -181,8 +178,7 @@ class projdata:
 		Get stats for project directory
 		"""
 		if self._tree_stat is None or force:
-			self._tree_stat = tree_stat(self.path, 
-				time_exclude={"metadata.toml"})
+			self._tree_stat = tree_stat(self.path)
 		return self._tree_stat
 
 	@property
@@ -208,7 +204,7 @@ class projdata:
 		"""
 		Get a hash to compare if metadata has likely changed
 		"""
-		return hash((self.path, self.meta_mtime, self.meta_size))
+		return hash((self.path, self.meta_size, self.meta_mtime))
 
 	@property
 	def meta_path(self) -> str:
@@ -218,20 +214,6 @@ class projdata:
 		return os.path.join(self.path, "metadata.toml")
 
 	@property
-	def meta_atime(self) -> float:
-		"""
-		Get last accessed timestamp for metadata.toml
-		"""
-		return self._fetch_meta_stat()["atime"]
-
-	@property
-	def meta_mtime(self) -> float:
-		"""
-		Get last modified timestamp for metadata.toml
-		"""
-		return self._fetch_meta_stat()["mtime"]
-
-	@property
 	def meta_size(self) -> int:
 		"""
 		Get size of metadata.toml
@@ -239,18 +221,18 @@ class projdata:
 		return self._fetch_meta_stat()["size"]
 
 	@property
-	def atime(self) -> float:
+	def meta_mtime(self) -> float:
 		"""
-		Get last accessed timestamp for the dataset directory contents
+		Get last modified timestamp for metadata.toml
 		"""
-		return self._fetch_tree_stat()["atime"]
+		return self._fetch_meta_stat()["mtime"]	
 
 	@property
-	def mtime(self) -> float:
+	def name(self) -> str:
 		"""
-		Get last modified timestamp for the dataset directory contents
+		Get the name of the project
 		"""
-		return self._fetch_tree_stat()["mtime"]
+		return self.meta.name
 
 	@property
 	def size(self) -> int:
@@ -260,11 +242,11 @@ class projdata:
 		return self._fetch_tree_stat()["size"]
 
 	@property
-	def name(self) -> str:
+	def mtime(self) -> float:
 		"""
-		Get the name of the project
+		Get last modified timestamp for the dataset directory contents
 		"""
-		return self.meta.name
+		return self._fetch_tree_stat()["mtime"]
 
 	@property
 	def canonical_path(self) -> str:
@@ -465,11 +447,11 @@ class projindex(MutableMapping):
 		reverse: bool = False) -> list[projdata]:
 		"""
 		Return projects in ascending sort order by directory file stats
-		:param stats: One or more of 'name', 'size', 'mtime', or 'atime'
+		:param stats: One or more of ('name', 'size', 'mtime')
 		:param reverse: Sort in descending order?
 		:returns: A list of sorted projdata objects
 		"""
-		expected = ("name", "size", "mtime", "atime")
+		expected = ("name", "size", "mtime")
 		if stats is None or not all(st in expected for st in stats):
 			raise ValueError(f"expected one or more of: {expected}")
 		return self.sorted(key=attrgetter(*stats), reverse=reverse)

@@ -229,39 +229,35 @@ def tree_find(
 
 def tree_stat(
 	path: str, 
-	time_exclude: set[str] = None,
-	size_exclude: set[str] = None) -> dict[str, int | float]:
+	exclude: str | None = None,
+	ignore_case: bool = False) -> dict[str, int | float]:
 	"""
-	Recursively summarize max atime, max mtime, and total size of a tree
+	Aggregate size and mtime of a directory tree
 	:param path: Path of directory to summarize
-	:param time_exclude: A set of file names to exclude from time stats
-	:param size_exclude: A set of file names to exclude from size stats
-	:returns: A dict containing atime, mtime, and size
+	:param exclude: A pattern of path names to exclude
+	:returns: A dict containing aggregate 'size' and 'mtime'
 	"""
 	if not os.path.isdir(path):
 		raise NotADirectoryError(f"path must be a directory: {path}")
-	atime = 0
 	mtime = os.path.getmtime(path)
 	size = 0
 	it = os.scandir(path)
 	with os.scandir(path) as it:
 		for file in it:
+			if exclude is not None:
+				if grep1(exclude, file.name, ignore_case) is not None:
+					continue
 			if file.is_dir(follow_symlinks=False):
-				st = tree_stat(file.path, 
-					time_exclude=time_exclude,
-					size_exclude=size_exclude)
+				st = tree_stat(
+					path=file.path, 
+					exclude=exclude, 
+					ignore_case=ignore_case)
 			else:
 				st = file.stat()
-				st = {
-					"atime": st.st_atime, 
-					"mtime": st.st_mtime, 
-					"size": st.st_size}
-			if time_exclude is None or file.name not in time_exclude:
-				atime = max(atime, st["atime"])
+				st = {"size": st.st_size, "mtime": st.st_mtime}
 				mtime = max(mtime, st["mtime"])
-			if size_exclude is None or file.name not in size_exclude:
 				size += st["size"]
-	return {"atime": atime, "mtime": mtime, "size": size}
+	return {"size": size, "mtime": mtime}
 
 def detect(
 	pattern: str,
