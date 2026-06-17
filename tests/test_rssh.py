@@ -33,8 +33,7 @@ def test_rssh_init_with_proxy():
 	assert con.rsh == ["ssh", "-o", "ProxyJump=root@login.dimension.time"]
 	assert con.proxy_port is not None
 
-def test_rssh_push_pull_file():
-	con = rssh(getpass.getuser(), "localhost")
+def _test_rssh_push_pull_file(con):
 	td = tempfile.TemporaryDirectory()
 	if con.is_batch():
 		tmp1 = os.path.join(td.name, "__badwulf_test")
@@ -54,8 +53,15 @@ def test_rssh_push_pull_file():
 		assert os.path.exists(tmp3)
 	td.cleanup()
 
-def test_rssh_push_pull_dir():
+def test_rssh_push_pull_file_local():
+	con = rssh("", None)
+	_test_rssh_push_pull_file(con)
+
+def test_rssh_push_pull_file_remote():
 	con = rssh(getpass.getuser(), "localhost")
+	_test_rssh_push_pull_file(con)
+
+def _test_rssh_push_pull_dir(con):
 	td = tempfile.TemporaryDirectory()
 	if con.is_batch():
 		pd1 = os.path.join(td.name, "testdir1")
@@ -84,3 +90,11 @@ def test_rssh_push_pull_dir():
 		rmtree(pd1, force=True)
 		rmtree(pd2, force=True)
 	td.cleanup()
+
+def test_rssh_push_pull_dir_local():
+	con = rssh("", None)
+	_test_rssh_push_pull_dir(con)
+
+def test_rssh_push_pull_dir_remote():
+	con = rssh(getpass.getuser(), "localhost")
+	_test_rssh_push_pull_dir(con)

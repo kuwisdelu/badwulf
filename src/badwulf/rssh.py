@@ -26,7 +26,7 @@ class rssh:
 	:ivar process: An open subprocess for port forwarding
 	"""
 	user: str 
-	host: str 
+	host: str | None
 	port: int = 22 
 	proxy_user: str | None = None 
 	proxy_host: str | None = None 
@@ -35,7 +35,8 @@ class rssh:
 
 	def __post_init__(self):
 		self.user = os.path.expandvars(self.user)
-		self.host = os.path.expandvars(self.host)
+		if self.host is not None:
+			self.host = os.path.expandvars(self.host)
 		if self.port < 0:
 			raise ValueError("port must be >= 0")
 		if self.has_proxy_jump():
@@ -80,17 +81,19 @@ class rssh:
 		return rsh
 
 	@property
-	def destination(self) -> str:
+	def destination(self) -> str | None:
 		"""
 		Get the resolved destination
 		"""
 		user = self.user
-		if user != "":
+		if self.has_remote():
 			user += "@"
-		if self.is_open():
-			return f"{user}localhost"
+			if self.is_open():
+				return f"{user}localhost"
+			else:
+				return f"{user}{self.host}"
 		else:
-			return f"{user}{self.host}"
+			return None
 
 	@property
 	def proxy_destination(self) -> str | None:
@@ -105,21 +108,31 @@ class rssh:
 		else:
 			return None
 
+	def has_remote(self) -> bool:
+		"""
+		Check if host is remote (including localhost)
+		"""
+		return self.host is not None and len(self.host) > 0
+
 	def has_proxy_jump(self) -> bool:
 		"""
-		Check if if a valid proxy jump is specified
+		Check if a valid proxy jump is specified
 		"""
-		return (self.proxy_user is not None 
+		return (self.host is not None
+			and self.proxy_user is not None 
 			and self.proxy_host is not None)
 
 	def is_batch(self) -> bool:
 		"""
 		Check if connection can be established without prompts
 		"""
-		cmd = self.rsh + ["-o", "BatchMode=yes"]
-		cmd += [self.destination, "true"]
-		proc = subprocess.run(cmd)
-		return proc.returncode == 0
+		if self.has_remote():
+			cmd = self.rsh + ["-o", "BatchMode=yes"]
+			cmd += [self.destination, "true"]
+			proc = subprocess.run(cmd)
+			return proc.returncode == 0
+		else:
+			return True
 
 	def is_open(self) -> bool:
 		"""
@@ -168,7 +181,8 @@ class rssh:
 				src += "/"
 		else:
 			src = mkpath(src, must_exist=True)
-		dst = f"{self.destination}:{quote(dst)}"
+		if self.has_remote():
+			dst = f"{self.destination}:{dst}"
 		cmd = ["rsync", "-a"]
 		if progress:
 			cmd += ["-P"]
@@ -180,8 +194,8 @@ class rssh:
 			cmd += ["-e", " ".join(self.rsh)]
 		cmd += [src, dst]
 		if ask:
-			print(f"Data will be pushed from: '{src}'")
-			print(f"Data will be pushed to: '{dst}'")
+			print(f"Data will be synced from: '{src}'")
+			print(f"Data will be synced to: '{dst}'")
 			print("The following command will be run:")
 			print(" ".join(cmd))
 			if not confirm("Continue?"):
@@ -204,7 +218,8 @@ class rssh:
 		:param dry_run: Report what would be done without doing it?
 		:param ask: Confirm before pushing?
 		"""
-		src = f"{self.destination}:{quote(src)}"
+		if self.has_remote():
+			src = f"{self.destination}:{quote(src)}"
 		if dst[-1] == "/":
 			dst = mkpath(dst, must_exist=False)
 			if dst[-1] != "/":
@@ -222,8 +237,8 @@ class rssh:
 			cmd += ["-e", " ".join(self.rsh)]
 		cmd += [src, dst]
 		if ask:
-			print(f"Data will be pulled from: '{src}'")
-			print(f"Data will be pulled to: '{dst}'")
+			print(f"Data will be synced from: '{src}'")
+			print(f"Data will be synced to: '{dst}'")
 			print("The following command will be run:")
 			print(" ".join(cmd))
 			if not confirm("Continue?"):
@@ -234,5 +249,5 @@ class rssh:
 		"""
 		Connect to an unrestricted shell session
 		"""
-		cmd = self.rsh + [self.destination]
-		return subprocess.run(cmd)
+		dst = self.destination if self.has_remote() else "localhost"
+		return subprocess.run(self.rsh + [self.dst])
