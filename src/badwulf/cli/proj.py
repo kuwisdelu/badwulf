@@ -71,10 +71,11 @@ def add(args):
 		prog_error(f"project named '{name}' already exists", args)
 	if not os.path.exists(path):
 		mktree(path, force=True)
+		print(f"Created project tree at {path}")
 	p = os.path.join(path, "metadata.toml")
 	with open(p, "w") as f:
 		f.write("\n".join(template(args.scope, args.group, name)))
-	print(f"Initialized project in {p}")
+	print(f"Initialized {p}")
 
 def link(args):
 	sts = load_sites()
@@ -129,7 +130,21 @@ def edit(args):
 
 def remove(args):
 	sts = load_sites()
-	prog_error("NOT IMPLEMENTED YET", args)
+	sts = load_sites()
+	prefix, name = rtokenize(args.project)
+	if prefix is None:
+		prefix = DEFAULT_PREFIX
+	if prefix not in sts.local.paths:
+		prog_error(f"invalid prefix: {prefix}", args)
+	dbpath = sts.local.paths[prefix]
+	db = projdb(dbpath)
+	try:
+		proj = db[name]
+	except KeyError:
+		prog_error(f"no project named {name}")
+	path = proj.path
+	proj.unlink()
+	print(f"Deleted project tree at {path}")
 
 def show(args):
 	sts, prefix, query = parse_query(args)
