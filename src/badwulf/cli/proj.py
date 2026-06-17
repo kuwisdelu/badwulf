@@ -1,5 +1,6 @@
 import os
 import json
+import tomllib
 import getpass
 from datetime import date
 from datetime import datetime
@@ -9,7 +10,7 @@ from dataclasses import asdict
 from .site import load_sites
 from .site import DEFAULT_PREFIX
 
-from ..db import projindex
+from ..db import projmeta
 from ..db import projdb
 from ..util import prog_error
 from ..util import format_bytes
@@ -32,6 +33,46 @@ def detect_project():
 			current = parent
 			parent = os.path.dirname(current)
 	return None
+
+def resolve_query(args, sts = None):
+	if sts is None:
+		sts = load_sites()
+	if args.query is None:
+		prefix, query = DEFAULT_PREFIX, None
+	else:
+		prefix, query = rtokenize(args.query)
+		if prefix is None:
+			prefix = DEFAULT_PREFIX
+		if prefix not in sts.local.paths:
+			prog_error(f"unknown prefix: {prefix}", args)
+	db = projdb(sts.local.paths[prefix])
+	return db, prefix, query
+
+def resolve_project(args, sts = None):
+	if sts is None:
+		sts = load_sites()
+	if args.project is None:
+		path = detect_project()
+		if path is None:
+			prog_error("working directory is not a project")
+		try:
+			prefix = sts.local.resolve_prefix(path)
+			db = projdb(sts.local.paths[prefix])
+			proj = db.find_by_path(path)
+		except ValueError:
+			prog_error(f"no known project tracked at {path}", args)
+	else:
+		prefix, name = rtokenize(args.project)
+		if prefix is None:
+			prefix = DEFAULT_PREFIX
+		if prefix not in sts.local.paths:
+			prog_error(f"unknown prefix: {prefix}", args)
+		db = projdb(sts.local.paths[prefix])
+		try:
+			proj = db[name]
+		except KeyError:
+			prog_error(f"no project named {name}", args)
+	return db, prefix, proj
 
 def template(scope, group, name):
 	fields = []
@@ -63,7 +104,7 @@ def add(args):
 		if prefix is None:
 			prefix = DEFAULT_PREFIX
 		if prefix not in sts.local.paths:
-			prog_error(f"invalid prefix: {prefix}", args)
+			prog_error(f"unknown prefix: {prefix}", args)
 		path = os.path.join(sts.local.paths[prefix], 
 			args.scope, args.group, name)
 	db = projdb(sts.local.paths[prefix])
@@ -77,47 +118,9 @@ def add(args):
 		f.write("\n".join(template(args.scope, args.group, name)))
 	print(f"Initialized {p}")
 
-def link(args):
-	sts = load_sites()
-	prefix, name = rtokenize(args.project)
-	if prefix is None:
-		prefix = DEFAULT_PREFIX
-	if prefix not in sts.local.paths:
-		prog_error(f"invalid prefix: {prefix}", args)
-	dbpath = sts.local.paths[prefix]
-	db = projdb(dbpath)
-	try:
-		proj = db[name]
-	except KeyError:
-		prog_error(f"no project named {name}")
-	if dbpath == os.path.commonpath((dbpath, os.getcwd())):
-		path = os.path.join(
-			os.path.relpath(dbpath, path), proj.canonical_path)
-	else:
-		path = proj.path
-	filename = name if args.filename is None else args.filename
-	os.symlink(path, filename, target_is_directory=True)
-
 def edit(args):
-	sts = load_sites()
-	if args.project is None:
-		path = detect_project()
-		if path is None:
-			prog_error("working directory is not in a project")
-	else:
-		prefix, name = rtokenize(args.project)
-		if prefix is None:
-			prefix = DEFAULT_PREFIX
-		if prefix not in sts.local.paths:
-			prog_error(f"invalid prefix: {prefix}", args)
-		dbpath = sts.local.paths[prefix]
-		db = projdb(dbpath)
-		try:
-			proj = db[name]
-		except KeyError:
-			prog_error(f"no project named {name}", args)
-		path = proj.path
-	filename = os.path.join(path, "metadata.toml")
+	db, prefix, proj = resolve_project(args)
+	filename = os.path.join(proj.path, "metadata.toml")
 	editor = args.editor
 	if editor is None:
 		editor = os.getenv("VISUAL")
@@ -129,27 +132,18 @@ def edit(args):
 	os.execvp(editor, cmd)
 
 def remove(args):
-	sts = load_sites()
-	sts = load_sites()
-	prefix, name = rtokenize(args.project)
-	if prefix is None:
-		prefix = DEFAULT_PREFIX
-	if prefix not in sts.local.paths:
-		prog_error(f"invalid prefix: {prefix}", args)
-	dbpath = sts.local.paths[prefix]
-	db = projdb(dbpath)
-	try:
-		proj = db[name]
-	except KeyError:
-		prog_error(f"no project named {name}")
+	db, prefix, proj = resolve_project(args)
 	path = proj.path
 	proj.unlink()
 	print(f"Deleted project tree at {path}")
 
+def link(args):
+	db, prefix, proj = resolve_project(args)
+	filename = name if args.filename is None else args.filename
+	os.symlink(proj.path, filename, target_is_directory=True)
+
 def show(args):
-	sts, prefix, query = parse_query(args)
-	dbpath = sts.local.paths[prefix]
-	db = projdb(dbpath)
+	db, prefix, query = resolve_query(args)
 	keys, reverse = parse_sort(args)
 	subset = db.index.subset(
 		names=query, 
@@ -169,9 +163,7 @@ def show(args):
 			print(proj.name)
 
 def search(args):
-	sts, prefix, query = parse_query(args)
-	dbpath = sts.local.paths[prefix]
-	db = projdb(dbpath)
+	db, prefix, query = resolve_query(args)
 	keys, reverse = parse_sort(args)
 	subset = db.index.subset(
 		scope=args.scope, 
@@ -190,18 +182,6 @@ def search(args):
 			print(db[hits.name].path)
 	else:
 		print_search_list(outlist)
-
-def parse_query(args):
-	sts = load_sites()
-	if args.query is None:
-		prefix, query = DEFAULT_PREFIX, None
-	else:
-		prefix, query = rtokenize(args.query)
-		if prefix is None:
-			prefix = DEFAULT_PREFIX
-		if prefix not in sts.local.paths:
-			prog_error(f"invalid prefix: {prefix}", args)
-	return sts, prefix, query
 
 def parse_sort(args):
 	if len(args.sort) > 0:

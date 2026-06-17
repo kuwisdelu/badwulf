@@ -72,6 +72,15 @@ class profile:
 				return k
 		raise ValueError(f"no known path key for {path}")
 
+	def resolve_prefix(self, path: str) -> str:
+		"""
+		Resolve a path alias from a filepath and its parents
+		:param path: The filepath
+		:raises ValueError: If a known path isn't found
+		:returns: The path alias
+		"""
+		self.resolve_path_key(path, parents=True)
+
 	def detect_host_key(self) -> str:
 		"""
 		Resolve host alias of localhost

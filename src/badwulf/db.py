@@ -482,6 +482,22 @@ class projindex(MutableMapping):
 				hits.append(hit)
 		return hits
 
+	def find_by_path(self, path: str) -> projdata:
+		"""
+		Find a project by its directory path
+		:param path: The (real) path to the project directory
+		:raises ValueError: If no matching project is found
+		"""
+		path = mkpath(path)
+		for proj in self.values():
+			if proj.is_local():
+				if os.path.samefile(proj.path, path):
+					return proj
+			else:
+				if mkpath(proj.path) == path:
+					return proj
+		raise ValueError(f"no project found for {path}")
+
 	@classmethod
 	def from_list(cls, lst: list[projdata]):
 		"""
