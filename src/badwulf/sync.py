@@ -39,7 +39,7 @@ class profile:
 		if self.proxy is None:
 			self.proxy = {}
 
-	def resolve_hostkey(self, host: str) -> str:
+	def resolve_host_key(self, host: str) -> str:
 		"""
 		Resolve a host alias from a hostname
 		:param host: The hostname
@@ -53,7 +53,7 @@ class profile:
 				return k
 		raise ValueError(f"no known host key for {host}")
 
-	def resolve_pathkey(self, path: str, parents: bool = False) -> str:
+	def resolve_path_key(self, path: str, parents: bool = False) -> str:
 		"""
 		Resolve a path alias from a filepath
 		:param path: The filepath
@@ -72,21 +72,21 @@ class profile:
 				return k
 		raise ValueError(f"no known path key for {path}")
 
-	def detect_host(self) -> str:
+	def detect_host_key(self) -> str:
 		"""
 		Resolve host alias of localhost
 		:raises ValueError: If a known host isn't found
 		:returns: The host alias
 		"""
-		self.resolve_hostkey(socket.gethostname())
+		self.resolve_host_key(socket.gethostname())
 
-	def detect_path(self) -> str:
+	def detect_path_key(self) -> str:
 		"""
 		Resolve a path alias from working directory
 		:raises ValueError: If a known path isn't found
 		:returns: The path alias
 		"""
-		self.resolve_pathkey(os.getcwd())
+		self.resolve_path_key(os.getcwd())
 
 	def detect_prefix(self) -> str:
 		"""
@@ -94,7 +94,7 @@ class profile:
 		:raises ValueError: If a known path isn't found
 		:returns: The path alias
 		"""
-		self.resolve_pathkey(os.getcwd(), parents=True)
+		self.resolve_path_key(os.getcwd(), parents=True)
 
 class syncer(MutableMapping):
 	"""
@@ -153,62 +153,70 @@ class syncer(MutableMapping):
 
 	def push(self, 
 		site: str,
-		path: str,
-		host_ref: str = "default",
-		path_ref: str = "default",
+		src: str,
+		dst: str | None = None,
+		host_key: str = "default",
+		path_key: str = "default",
 		**kwargs: dict[str, bool]) -> subprocess.CompletedProcess:
 		"""
 		Push a file or directory to another site (via rsync)
 		:param site: The other site
-		:param path: A relative file or directory path to sync
-		:param host_ref: (Optional) The other host alias
-		:param path_ref: (Optional) The anchor path alias
+		:param src: A relative file or directory path to sync
+		:param dst: A relative destination, if different from src
+		:param host_key: (Optional) The other host alias
+		:param path_key: (Optional) The anchor path alias
 		:param kwargs: Additional arguments for rssh.push
 		"""
-		has_trailing_slash = True if path[-1] == "/" else False
-		src = os.path.join(self.local.paths[path_ref], path)
-		dst = os.path.join(self[site].paths[path_ref], path)
+		has_trailing_slash = True if src[-1] == "/" else False
+		if dst is None:
+			dst = src
+		src = os.path.join(self.local.paths[path_key], src)
+		dst = os.path.join(self[site].paths[path_key], dst)
 		if has_trailing_slash:
 			src += "/"
 			dst += "/"
-		con = self.bridge(site, host_ref)
+		con = self.bridge(site, host_key)
 		return con.push(src=src, dst=dst, **kwargs)
 
 	def pull(self,
 		site: str, 
-		path: str,
-		host_ref: str = "default",
-		path_ref: str = "default",
+		src: str,
+		dst: str | None = None,
+		host_key: str = "default",
+		path_key: str = "default",
 		**kwargs: dict[str, bool]) -> subprocess.CompletedProcess:
 		"""
 		Pull a file or directory from another site (via rsync)
 		:param site: The other site
-		:param path: A relative file or directory path to sync
-		:param host_ref: (Optional) The other host alias
-		:param path_ref: (Optional) The anchor path alias
+		:param src: A relative file or directory path to sync
+		:param dst: A relative destination, if different from src
+		:param host_key: (Optional) The other host alias
+		:param path_key: (Optional) The anchor path alias
 		:param kwargs: Additional arguments for rssh.push
 		"""
-		has_trailing_slash = True if path[-1] == "/" else False
-		src = os.path.join(self[site].paths[path_ref], path)
-		dst = os.path.join(self.local.paths[path_ref], path)
+		has_trailing_slash = True if src[-1] == "/" else False
+		if dst is None:
+			dst = src
+		src = os.path.join(self[site].paths[path_key], src)
+		dst = os.path.join(self.local.paths[path_key], dst)
 		if has_trailing_slash:
 			src += "/"
 			dst += "/"
-		con = self.bridge(site, host_ref)
+		con = self.bridge(site, host_key)
 		return con.pull(src=src, dst=dst, **kwargs)
 
-	def bridge(self, site: str, host_ref: str = "default") -> rssh:
+	def bridge(self, site: str, host_key: str = "default") -> rssh:
 		"""
 		Get an rssh object to a host at another site
 		:param site: The other site name
-		:param host_ref: (Optional) The other host alias
+		:param host_key: (Optional) The other host alias
 		:raises ValueError: On attempt to connect to the local site
 		:returns: An rssh object
 		"""
 		site = self[site]
 		return rssh(
 			user=site.user,
-			host=site.hosts[host_ref],
+			host=site.hosts[host_key] if len(site.hosts) > 0 else None,
 			proxy_user=site.proxy.get("user"),
 			proxy_host=site.proxy.get("host"))
 
