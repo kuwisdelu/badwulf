@@ -245,9 +245,6 @@ def register_status(subparsers):
 		help="Get status of tracked projects")
 	p.set_defaults(func=sync.status, parser=p)
 	_add_prefix(p, opt=True, cwd=True)
-	p.add_argument("-c", "--clean",
-		help="clean up project directories",
-		action="store_true")
 	_add_json(p)
 
 def register_site(subparsers):
