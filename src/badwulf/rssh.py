@@ -163,6 +163,8 @@ class rssh:
 		src: str, 
 		dst: str, 
 		mirror: bool = False,
+		silent: bool = False,
+		verbose: bool = False,
 		progress: bool = False,
 		dry_run: bool = False, 
 		ask: bool = False) -> subprocess.CompletedProcess:
@@ -171,6 +173,8 @@ class rssh:
 		:param src: The source path on localhost
 		:param dst: The destination path on target host
 		:param mirror: Delete files in dst that aren't in src?
+		:param silent: Capture output from stdout?
+		:param verbose: Be more verbose?
 		:param progress: Report and preserve partial progress?
 		:param dry_run: Report what would be done without doing it?
 		:param ask: Confirm before pushing?
@@ -188,8 +192,10 @@ class rssh:
 			cmd += ["-P"]
 		if mirror:
 			cmd += ["--delete"]
+		if verbose:
+			cmd += ["--verbose"]
 		if dry_run:
-			cmd += ["--dry-run", "--verbose"]
+			cmd += ["--dry-run"]
 		if self.has_proxy_jump():
 			cmd += ["-e", " ".join(self.rsh)]
 		cmd += [src, dst]
@@ -200,12 +206,14 @@ class rssh:
 			print(" ".join(cmd))
 			if not confirm("Continue?"):
 				return
-		return subprocess.run(cmd)
+		return subprocess.run(cmd, capture_output=silent)
 
 	def pull(self, 
 		src: str, 
 		dst: str, 
 		mirror: bool = False,
+		silent: bool = False,
+		verbose: bool = False,
 		progress: bool = False,
 		dry_run: bool = False, 
 		ask: bool = False) -> subprocess.CompletedProcess:
@@ -214,6 +222,8 @@ class rssh:
 		:param src: The source path on target host
 		:param dst: The destination path on localhost
 		:param mirror: Delete files in dst that aren't in src?
+		:param silent: Capture output from stdout?
+		:param verbose: Be more verbose?
 		:param progress: Report and preserve partial progress?
 		:param dry_run: Report what would be done without doing it?
 		:param ask: Confirm before pushing?
@@ -231,8 +241,10 @@ class rssh:
 			cmd += ["-P"]
 		if mirror:
 			cmd += ["--delete"]
+		if verbose:
+			cmd += ["--verbose"]
 		if dry_run:
-			cmd += ["--dry-run", "--verbose"]
+			cmd += ["--dry-run"]
 		if self.has_proxy_jump():
 			cmd += ["-e", " ".join(self.rsh)]
 		cmd += [src, dst]
@@ -243,7 +255,7 @@ class rssh:
 			print(" ".join(cmd))
 			if not confirm("Continue?"):
 				return
-		return subprocess.run(cmd)
+		return subprocess.run(cmd, capture_output=silent)
 	
 	def shell(self):
 		"""
