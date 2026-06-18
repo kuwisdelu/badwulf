@@ -8,6 +8,10 @@ from datetime import timezone
 from dataclasses import asdict
 
 from .site import load_sites
+from .site import resolve_site
+from .site import resolve_manifest
+from .site import DEFAULT_SITE
+from .site import DEFAULT_HOST
 from .site import DEFAULT_PREFIX
 
 from ..db import projdb
@@ -34,17 +38,21 @@ def detect_project():
 	return None
 
 def resolve_query(args, sts = None):
-	if sts is None:
-		sts = load_sites()
+	sts, site, host = resolve_site(args, sts)
 	if args.query is None:
 		prefix, query = DEFAULT_PREFIX, None
 	else:
 		prefix, query = rtokenize(args.query)
 		if prefix is None:
 			prefix = DEFAULT_PREFIX
-		if prefix not in sts.local.paths:
+		if prefix not in sts[site].paths:
 			prog_error(f"unknown prefix: {prefix}", args)
-	db = projdb(root=sts.local.paths[prefix])
+	if sts[site] == sts.local:
+		db = projdb(root=sts[site].paths[prefix])
+	else:
+		manifest = resolve_manifest(site, host)
+		manifest_path = os.path.join(sts.local.paths[prefix], manifest)
+		db = projdb(manifest=manifest_path)
 	return db, prefix, query
 
 def resolve_project(args, sts = None):

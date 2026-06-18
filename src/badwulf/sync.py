@@ -164,6 +164,7 @@ class syncer(MutableMapping):
 		site: str,
 		src: str,
 		dst: str | None = None,
+		isdir: bool | None = None,
 		host_key: str = "default",
 		path_key: str = "default",
 		**kwargs: dict[str, bool]) -> subprocess.CompletedProcess:
@@ -176,12 +177,15 @@ class syncer(MutableMapping):
 		:param path_key: (Optional) The anchor path alias
 		:param kwargs: Additional arguments for rssh.push
 		"""
-		has_trailing_slash = True if src[-1] == "/" else False
+		if isdir is None:
+			use_trailing_slash = True if src[-1] == "/" else False
+		else:
+			use_trailing_slash = isdir
 		if dst is None:
 			dst = src
 		src = os.path.join(self.local.paths[path_key], src)
 		dst = os.path.join(self[site].paths[path_key], dst)
-		if has_trailing_slash:
+		if use_trailing_slash:
 			src += "/"
 			dst += "/"
 		con = self.bridge(site, host_key)
@@ -191,6 +195,7 @@ class syncer(MutableMapping):
 		site: str, 
 		src: str,
 		dst: str | None = None,
+		isdir: bool | None = None,
 		host_key: str = "default",
 		path_key: str = "default",
 		**kwargs: dict[str, bool]) -> subprocess.CompletedProcess:
@@ -203,12 +208,15 @@ class syncer(MutableMapping):
 		:param path_key: (Optional) The anchor path alias
 		:param kwargs: Additional arguments for rssh.pull
 		"""
-		has_trailing_slash = True if src[-1] == "/" else False
+		if isdir is None:
+			use_trailing_slash = True if src[-1] == "/" else False
+		else:
+			use_trailing_slash = isdir
 		if dst is None:
 			dst = src
 		src = os.path.join(self[site].paths[path_key], src)
 		dst = os.path.join(self.local.paths[path_key], dst)
-		if has_trailing_slash:
+		if use_trailing_slash:
 			src += "/"
 			dst += "/"
 		con = self.bridge(site, host_key)

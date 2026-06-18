@@ -367,7 +367,7 @@ class projdb(Mapping):
 		if self.root is not None:
 			self.root = mkpath(self.root, must_exist=True)
 		if self.manifest is not None:
-			self.manifest = mkpath(self.manifest, must_exist=True)
+			self.manifest = mkpath(self.manifest)
 		if self.autosave is None:
 			if self.root is None:
 				self.autosave = False
@@ -565,6 +565,7 @@ class projdb(Mapping):
 				self.save()
 		elif self.manifest_exists():
 			self._reload_from_manifest()
+		self._index = None
 
 	def save(self, indent: int = "\t") -> None:
 		"""

@@ -35,6 +35,33 @@ def detect_sites():
 def load_sites():
 	return syncer.from_path(detect_sites())
 
+def resolve_site(args, sts):
+	if sts is None:
+		sts = load_sites()
+	if args.site is None:
+		site, host = DEFAULT_SITE, None
+	else:
+		site, host = tokenize(args.site)
+	if site not in sts:
+		prog_error(f"unknown site: {site}", args)
+	if host is None:
+		if len(sts[site].hosts) > 0:
+			host = DEFAULT_HOST
+		else:
+			host = None
+	else:
+		if host not in sts[site].hosts:
+			prog_error(f"unknown host: {host}", args)
+	return sts, site, host
+
+def resolve_manifest(site = DEFAULT_SITE, host = None):
+	if host is not None:
+		return f"manifest-{site}-{host}.json"
+	elif site != DEFAULT_SITE:
+		return f"manifest-{site}.json"
+	else:
+		return f"manifest.json"
+
 def all_missing(args):
 	if args.user is not False:
 		return False

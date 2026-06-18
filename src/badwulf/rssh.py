@@ -167,6 +167,7 @@ class rssh:
 		verbose: bool = False,
 		progress: bool = False,
 		dry_run: bool = False, 
+		more_args: list[str] | None = None,
 		ask: bool = False) -> subprocess.CompletedProcess:
 		"""
 		Push file/directory from src to dst using rsync
@@ -198,6 +199,8 @@ class rssh:
 			cmd += ["--dry-run"]
 		if self.has_proxy_jump():
 			cmd += ["-e", " ".join(self.rsh)]
+		if more_args is not None:
+			cmd += more_args
 		cmd += [src, dst]
 		if ask:
 			print(f"Data will be synced from: '{src}'")
@@ -216,6 +219,7 @@ class rssh:
 		verbose: bool = False,
 		progress: bool = False,
 		dry_run: bool = False, 
+		more_args: list[str] | None = None,
 		ask: bool = False) -> subprocess.CompletedProcess:
 		"""
 		Pull file/directory from src to dst using rsync
@@ -247,6 +251,8 @@ class rssh:
 			cmd += ["--dry-run"]
 		if self.has_proxy_jump():
 			cmd += ["-e", " ".join(self.rsh)]
+		if more_args is not None:
+			cmd += more_args
 		cmd += [src, dst]
 		if ask:
 			print(f"Data will be synced from: '{src}'")
