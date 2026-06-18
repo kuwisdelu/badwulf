@@ -18,22 +18,37 @@ from ..util import prune
 def resolve_site(args):
 	sts = load_sites()
 	if args.site is None:
-		site, host = DEFAULT_SITE, DEFAULT_HOST
+		site, host = DEFAULT_SITE, None
 	else:
 		site, host = tokenize(args.site)
-		if host is None:
-			host = DEFAULT_HOST
 	if site not in sts:
 		prog_error(f"unknown site: {site}", args)
+	if host is None:
+		if len(sts[site].hosts) > 0:
+			host = DEFAULT_HOST
+		else:
+			host = None
+	else:
+		if host not in sts[site].hosts:
+			prog_error(f"unknown host: {host}", args)
 	return sts, site, host
+
+def resolve_manifest(site = DEFAULT_SITE, host = None):
+	if host is not None:
+		return f"manifest-{site}-{host}.json"
+	elif site != DEFAULT_SITE:
+		return f"manifest-{site}.json"
+	else:
+		return f"manifest.json"
 
 def fetch(args):
 	sts, site, host = resolve_site(args)
 	prefix = DEFAULT_PREFIX if args.prefix is None else args.prefix
-	filename = f"manifest-{site}-{host}.json"
-	dst = os.path.join(sts[site].paths[prefix], filename)
-	sts.pull(site, 
-		src="manifest.json", 
+	filename = resolve_manifest(site, host)
+	dst = os.path.join(sts.local.paths[prefix], filename)
+	sts.pull(
+		site=site, 
+		src=resolve_manifest(), 
 		dst=dst,
 		host_key=host,
 		path_key=prefix,

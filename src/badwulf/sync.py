@@ -201,7 +201,7 @@ class syncer(MutableMapping):
 		:param dst: A relative destination, if different from src
 		:param host_key: (Optional) The other host alias
 		:param path_key: (Optional) The anchor path alias
-		:param kwargs: Additional arguments for rssh.push
+		:param kwargs: Additional arguments for rssh.pull
 		"""
 		has_trailing_slash = True if src[-1] == "/" else False
 		if dst is None:
