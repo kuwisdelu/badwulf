@@ -7,7 +7,6 @@ from .site import DEFAULT_SITE
 from .site import DEFAULT_HOST
 from .site import DEFAULT_PREFIX
 
-from ..db import projindex
 from ..db import projdb
 from ..util import prog_error
 from ..util import tokenize

@@ -10,7 +10,6 @@ from dataclasses import asdict
 from .site import load_sites
 from .site import DEFAULT_PREFIX
 
-from ..db import projmeta
 from ..db import projdb
 from ..util import prog_error
 from ..util import format_bytes
@@ -45,7 +44,7 @@ def resolve_query(args, sts = None):
 			prefix = DEFAULT_PREFIX
 		if prefix not in sts.local.paths:
 			prog_error(f"unknown prefix: {prefix}", args)
-	db = projdb(sts.local.paths[prefix])
+	db = projdb(root=sts.local.paths[prefix])
 	return db, prefix, query
 
 def resolve_project(args, sts = None):
@@ -57,8 +56,8 @@ def resolve_project(args, sts = None):
 			prog_error("working directory is not a project")
 		try:
 			prefix = sts.local.resolve_prefix(path)
-			db = projdb(sts.local.paths[prefix])
-			proj = db.find_by_path(path)
+			db = projdb(root=sts.local.paths[prefix])
+			proj = db.find(path)
 		except ValueError:
 			prog_error(f"no known project tracked at {path}", args)
 	else:
@@ -67,7 +66,7 @@ def resolve_project(args, sts = None):
 			prefix = DEFAULT_PREFIX
 		if prefix not in sts.local.paths:
 			prog_error(f"unknown prefix: {prefix}", args)
-		db = projdb(sts.local.paths[prefix])
+		db = projdb(root=sts.local.paths[prefix])
 		try:
 			proj = db[name]
 		except KeyError:
@@ -107,7 +106,7 @@ def add(args):
 			prog_error(f"unknown prefix: {prefix}", args)
 		path = os.path.join(sts.local.paths[prefix], 
 			args.scope, args.group, name)
-	db = projdb(sts.local.paths[prefix])
+	db = projdb(root=sts.local.paths[prefix])
 	if name in db:
 		prog_error(f"project named '{name}' already exists", args)
 	if not os.path.exists(path):
@@ -139,17 +138,20 @@ def remove(args):
 
 def link(args):
 	db, prefix, proj = resolve_project(args)
-	filename = name if args.filename is None else args.filename
+	filename = proj.name if args.filename is None else args.filename
 	os.symlink(proj.path, filename, target_is_directory=True)
 
 def show(args):
 	db, prefix, query = resolve_query(args)
 	keys, reverse = parse_sort(args)
-	subset = db.index.subset(
-		names=query, 
-		scope=args.scope, 
-		group=args.group)
-	outlist = subset.sorted_by(*keys, reverse=reverse)
+	outlist = (db
+		.subset(
+			names=query, 
+			scope=args.scope, 
+			group=args.group)
+		.sorted_by(
+			*keys, 
+			reverse=reverse)).projects
 	if args.json:
 		outlist = [proj.to_dict() for proj in outlist]
 		print(json.dumps(outlist, indent=2))
@@ -165,15 +167,17 @@ def show(args):
 def search(args):
 	db, prefix, query = resolve_query(args)
 	keys, reverse = parse_sort(args)
-	subset = db.index.subset(
-		scope=args.scope, 
-		group=args.group)
-	outlist = subset.search(
-		pattern=query, 
-		within=args.field,
-		ignore_case=args.ignore_case,
-		sorted_by=keys,
-		reverse=reverse)
+	outlist = (db
+		.subset(
+			scope=args.scope, 
+			group=args.group)
+		.sorted_by(
+			*keys, 
+			reverse=reverse)
+		.search(
+			pattern=query, 
+			within=args.field,
+			ignore_case=args.ignore_case))
 	if args.json:
 		outlist = [asdict(hits) for hits in outlist]
 		print(json.dumps(outlist, indent=2))
@@ -195,12 +199,11 @@ def parse_sort(args):
 	return keys, reverse
 
 def format_proj(proj):
-	d = {
+	return {
 		"path": proj.canonical_path,
 		"size": format_bytes(proj.size),
 		"time": datetime.fromtimestamp(proj.mtime).strftime("%x %X"),
 		"title": proj.meta.title}
-	return d
 
 def print_proj_list(plist, sep = "  "):
 	if len(plist) > 0:
@@ -217,24 +220,24 @@ def print_proj_list(plist, sep = "  "):
 			print(sep.join(sl))
 
 def format_search(proj):
-	lst = []
+	hits = []
 	for field, hit in proj.hits.items():
 		ctx = [proj.name, field]
 		match hit:
 			case str():
-				lst.append({"ctx": ctx, "hit": hit})
+				hits.append({"ctx": ctx, "hit": hit})
 			case list():
 				for subhit in hit:
 					match subhit:
 						case str():
-							lst.append({"ctx": ctx, "hit": hit})
+							hits.append({"ctx": ctx, "hit": hit})
 						case dict():
 							for k, v in subhit.items():
-								lst.append({"ctx": ctx + [k], "hit": v})
+								hits.append({"ctx": ctx + [k], "hit": v})
 			case dict():
 				for k, v in hit.items():
-					lst.append({"ctx": ctx + [k], "hit": v})
-	return lst
+					hits.append({"ctx": ctx + [k], "hit": v})
+	return hits
 
 def print_search_list(plist, sep = ":  "):
 	if len(plist) > 0:

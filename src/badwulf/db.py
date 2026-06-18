@@ -13,7 +13,7 @@ from collections.abc import Mapping
 from collections.abc import MutableMapping
 from dataclasses import dataclass
 from dataclasses import asdict
-from dataclasses import fields
+from dataclasses import field
 from operator import attrgetter
 
 from .util import mkpath
@@ -182,6 +182,27 @@ class projdata:
 		return self._tree_stat
 
 	@property
+	def name(self) -> str:
+		"""
+		Get the name of the project
+		"""
+		return self.meta.name
+
+	@property
+	def size(self) -> int:
+		"""
+		Get size of the dataset directory contents in bytes
+		"""
+		return self._fetch_tree_stat()["size"]
+
+	@property
+	def mtime(self) -> float:
+		"""
+		Get last modified timestamp for the dataset directory contents
+		"""
+		return self._fetch_tree_stat()["mtime"]
+
+	@property
 	def meta(self) -> projmeta:
 		"""
 		Get project metadata
@@ -226,27 +247,6 @@ class projdata:
 		Get last modified timestamp for metadata.toml
 		"""
 		return self._fetch_meta_stat()["mtime"]	
-
-	@property
-	def name(self) -> str:
-		"""
-		Get the name of the project
-		"""
-		return self.meta.name
-
-	@property
-	def size(self) -> int:
-		"""
-		Get size of the dataset directory contents in bytes
-		"""
-		return self._fetch_tree_stat()["size"]
-
-	@property
-	def mtime(self) -> float:
-		"""
-		Get last modified timestamp for the dataset directory contents
-		"""
-		return self._fetch_tree_stat()["mtime"]
 
 	@property
 	def canonical_path(self) -> str:
@@ -347,70 +347,145 @@ class projdata:
 			p = os.path.dirname(p)
 		return cls(path=p)
 
-class projindex(MutableMapping):
+@dataclass
+class projdb(Mapping):
 	"""
-	Index of scientific research projects and metadata
+	Database of scientific research projects
+	:ivar projects: List of projects
+	:ivar root: The path to the database root directory
+	:ivar manifest: The path to a manifest json file
+	:ivar autosave: Write detected changes back to the manifest?
 	:ivar _index: Mapping of projects by name (case-insensitive)
 	"""
-	_index: dict[str, projdata]
+	projects: list[projdata] = field(default_factory=list)
+	root: str | None = None
+	manifest: str | None = None
+	autosave: bool | None = None
+	_index: dict[str, projdata] | None = None
 
-	def __init__(self, d: dict[str, projdata] | None = None):
-		"""
-		Create an projindex from a dict
-		"""
-		if d is None:
-			self._index = {}
-		else:
-			self._index = d
+	def __post_init__(self):
+		if self.root is not None:
+			self.root = mkpath(self.root, must_exist=True)
+		if self.manifest is not None:
+			self.manifest = mkpath(self.manifest, must_exist=True)
+		if self.autosave is None:
+			if self.root is None:
+				self.autosave = False
+			else:
+				self.autosave = True
+		if self.autosave and self.manifest is None:
+			self.manifest = os.path.join(self.root, "manifest.json")
+		self.ensure()
 
-	def __getitem__(self, key: str) -> projdata:
+	def __getitem__(self, key: str) -> projdata | None:
 		"""
-		Get a projdata item in the index
+		Get a projdata item from the database index
 		"""
-		return self._index[key.casefold()]
-
-	def __setitem__(self, key: str, value: projdata) -> None:
-		"""
-		Set a projdata item in the index
-		"""
-		self._index[key.casefold()] = value
-
-	def __delitem__(self, key: str) -> None:
-		"""
-		Delete a projdata item in the index
-		"""
-		del self._index[key.casefold()]
+		return self._fetch_index()[key.casefold()]
 
 	def __len__(self) -> int:
 		"""
-		Get the number of projects in the index
+		Get the number of projects in the database index
 		"""
-		return len(self._index)
+		return len(self._fetch_index())
 
 	def __iter__(self):
 		"""
-		Get an iterator over the database keys
+		Get an iterator over the database index keys
 		"""
-		return iter(self._index)
+		return iter(self._fetch_index())
 
-	def filter(self, function: Callable[[projdata], bool]) -> projindex:
+	def _fetch_index(self) -> dict[str, projdata]:
 		"""
-		Filter the projects and return a new projindex
+		Rebuild the index by project name
+		"""
+		if self._index is None:
+			self._index = {
+				proj.name.casefold(): proj 
+				for proj in self.projects}
+		return self._index
+
+	def _reload_from_root(self) -> None:
+		"""
+		Reloads projects by scanning from the database root
+		"""
+		if not os.path.isdir(self.root):
+			raise NotADirectoryError(f"root must be a directory: {self.root}")
+		paths = tree_find(self.root, r"^metadata\.toml$", prune_on_match=True)
+		self.projects = [projdata.from_path(p) for p in paths]
+		self._index = None
+
+	def _reload_from_manifest(self) -> None:
+		"""
+		Reloads projects by reading the database manifest
+		"""
+		with open(self.manifest) as f:
+			self.projects = [projdata.from_dict(d) for d in json.load(f)]
+			self._index = None
+
+	def _reload_and_fetch_changes(self) -> list[projdata]:
+		"""
+		Fetch cached metadata from manifest and return changed projects
+		"""
+		self._reload_from_root()
+		with open(self.manifest) as f:
+			manifest = [projdata.from_dict(d) for d in json.load(f)]
+		cache = {proj.path: proj for proj in manifest}
+		changelist = []
+		for proj in self.projects:
+			cached = cache.get(proj.path)
+			if cached is None or proj.meta_hash != cached.meta_hash:
+				changelist.append(proj)
+			else:
+				proj.meta = cached.meta
+		return changelist
+
+	def root_exists(self) -> bool:
+		"""
+		Checks if the database root exists
+		"""
+		return self.root is not None and os.path.isdir(self.root)
+
+	def manifest_exists(self) -> bool:
+		"""
+		Checks if the database manifest exists
+		"""
+		return self.manifest is not None and os.path.exists(self.manifest)
+
+	def find(self, path: str) -> projdata:
+		"""
+		Find a project by its path
+		:param path: The (real) path to the project directory
+		:raises ValueError: If no matching project is found
+		"""
+		path = mkpath(path)
+		for proj in self.values():
+			if proj.is_local():
+				if os.path.samefile(proj.path, path):
+					return proj
+			else:
+				if mkpath(proj.path) == path:
+					return proj
+		raise ValueError(f"no project found for {path}")
+
+	def filter(self, function: Callable[[projdata], bool]) -> projdb:
+		"""
+		Filter the projects and return a new projdb
 		:param function: A function returning True for projdata to keep
-		:returns: A new projindex object (referencing original projects)
+		:returns: A new projdb (referencing original projects)
 		"""
-		return projindex({k: v for k, v in self.items() if function(v)})
+		return projdb([proj for proj in self.projects if function(proj)])
 
 	def subset(self,
 		names: Collection[str] | None = None,
 		scope: Collection[str] | None = None,
-		group: Collection[str] | None = None) -> projindex:
+		group: Collection[str] | None = None) -> projdb:
 		"""
-		Subset the projects and return a new projindex
-		:param names: A set of project names to keep
-		:param scope: A set of scopes to keep
-		:param group: A set of groups to keep
-		:returns: A new projindex object (referencing original projects)
+		Subset the projects and return a new projdb
+		:param names: Patterns of names to keep
+		:param scope: Patterns of scopes to keep
+		:param group: Patterns of groups to keep
+		:returns: A new projdb (referencing original projects)
 		"""
 		if isinstance(names, str):
 			names = [names]
@@ -433,23 +508,23 @@ class projindex(MutableMapping):
 
 	def sorted(self,
 		key: Callable[[projdata], Any],
-		reverse: bool = False) -> list[projdata]:
+		reverse: bool = False) -> projdb:
 		"""
-		Return projects in ascending sort order based on a key function
+		Sort projects based on a key function and return a new projdb
 		:param key: A function taking a projdata returning a comparable key
 		:param reverse: Sort in descending order?
-		:returns: A list of sorted projdata objects
+		:returns: A new projdb (referencing original projects)
 		"""
-		return sorted(self.values(), key=key, reverse=reverse)
+		return projdb(sorted(self.projects, key=key, reverse=reverse))
 
 	def sorted_by(self,
 		*stats: str,
-		reverse: bool = False) -> list[projdata]:
+		reverse: bool = False) -> projdb:
 		"""
-		Return projects in ascending sort order by directory file stats
+		Return projects in ascending sort order by project tree stats
 		:param stats: One or more of ('name', 'size', 'mtime')
 		:param reverse: Sort in descending order?
-		:returns: A list of sorted projdata objects
+		:returns: A new projdb (referencing original projects)
 		"""
 		expected = ("name", "size", "mtime")
 		if stats is None or not all(st in expected for st in stats):
@@ -460,9 +535,7 @@ class projindex(MutableMapping):
 		pattern: str, 
 		within: Collection[str] | None = None,
 		ignore_case: bool = False,
-		context_width: int = 60,
-		sorted_by: Collection[str] | None = None,
-		reverse: bool = False) -> list[projsearch]:
+		context_width: int = 60) -> list[projsearch]:
 		"""
 		Search indexed metadata for a regular expression
 		:param pattern: The search pattern
@@ -472,171 +545,34 @@ class projindex(MutableMapping):
 		:returns: A list of projsearch objects with nonzero hits
 		"""
 		hits = []
-		if sorted_by is None:
-			projects = self.sorted_by("name", reverse=reverse)
-		else:
-			projects = self.sorted_by(*sorted_by, reverse=reverse)
-		for proj in projects:
+		for proj in self.projects:
 			hit = proj.meta.search(pattern, within, ignore_case, context_width)
 			if hit is not None:
 				hits.append(hit)
 		return hits
 
-	def find_by_path(self, path: str) -> projdata:
-		"""
-		Find a project by its directory path
-		:param path: The (real) path to the project directory
-		:raises ValueError: If no matching project is found
-		"""
-		path = mkpath(path)
-		for proj in self.values():
-			if proj.is_local():
-				if os.path.samefile(proj.path, path):
-					return proj
-			else:
-				if mkpath(proj.path) == path:
-					return proj
-		raise ValueError(f"no project found for {path}")
-
-	@classmethod
-	def from_list(cls, lst: list[projdata]):
-		"""
-		Create an projindex from a list
-		:param lst: A list of projdata objects
-		:returns: An projindex object:
-		"""
-		return cls({proj.meta.name.casefold(): proj for proj in lst})
-
-	@classmethod
-	def from_file(cls, f: io.TextIOBase | io.BufferedIOBase):
-		"""
-		Create an projindex from a json file
-		:param f: An open json file
-		:returns: A projindex object
-		"""
-		lst = [projdata.from_dict(d) for d in json.load(f)]
-		return cls.from_list(lst)
-
-	@classmethod
-	def from_path(cls, p: str):
-		"""
-		Create an projindex from a json file
-		:param p: The path to a manifest.json file
-		:returns: An projindex object
-		"""
-		p = mkpath(p, must_exist=True)
-		with open(p) as f:
-			return cls.from_file(f)
-
-class projdb(Mapping):
-	"""
-	Database of scientific research projects
-	:ivar root: The path to the database root
-	:ivar projects: List of projects detected under root
-	:ivar use_manifest: Read/write a manifest.json?
-	:ivar _index: Mapping of projects by name (case-insensitive)
-	"""
-	root: str
-	projects: list[projdata]
-	use_manifest: bool = True
-	_index: projindex | None = None
-
-	def __init__(self, root: str, use_manifest = True):
-		"""
-		Create an projdb from a database directory
-		:param root: The path to the database root
-		:param use_manifest: Read/write a manifest.json?
-		"""
-		self.root = mkpath(root, must_exist=True)
-		if not os.path.isdir(self.root):
-			raise NotADirectoryError(f"root must be a directory: {self.root}")
-		paths = tree_find(self.root, r"^metadata\.toml$", prune_on_match=True)
-		self.projects = [projdata.from_path(p) for p in paths]
-		self.use_manifest = use_manifest
-		self.ensure()
-
-	def __getitem__(self, key: str) -> projdata | None:
-		"""
-		Get a projdata item from the database
-		"""
-		return self.index[key]
-
-	def __len__(self) -> int:
-		"""
-		Get the number of projects in the database
-		"""
-		return len(self.index)
-
-	def __iter__(self):
-		"""
-		Get an iterator over the database keys
-		"""
-		return iter(self.index)
-
-	@property
-	def index(self) -> projindex:
-		"""
-		Get the database index
-		"""
-		if self._index is None:
-			self.ensure()
-		return self._index
-
 	def ensure(self) -> None:
 		"""
 		Ensures the database is in a valid state
 		"""
-		if self.use_manifest and self.manifest_exists():
-			self.refresh()
-		else:
-			self.rebuild()
+		if self.root_exists() and self.manifest_exists():
+			changelist = self._reload_and_fetch_changes()
+			if self.autosave and len(changelist) > 0:
+				self.save()
+		elif self.root_exists():
+			self._reload_from_root()
+			if self.autosave and self.manifest is not None:
+				self.save()
+		elif self.manifest_exists():
+			self._reload_from_manifest()
 
-	def rebuild(self) -> None:
+	def save(self, indent: int = "\t") -> None:
 		"""
-		Rebuilds the database from the projects alone
-		"""
-		self._index = projindex.from_list(self.projects)
-		if self.use_manifest:
-			self.dump()
-
-	def refresh(self) -> None:
-		"""
-		Refreshes the database from the projects + manifest
-		"""
-		with open(self.manifest_path) as f:
-			lst = json.load(f)
-		manifest = {proj["path"]: projdata.from_dict(proj) for proj in lst}
-		index = projindex()
-		num_cache_miss = 0
-		for proj in self.projects:
-			cached = manifest.get(proj.path)
-			if cached is None or proj.meta_hash != cached.meta_hash:
-				num_cache_miss += 1
-			else:
-				proj.meta = cached.meta
-			index[proj.meta.name] = proj
-		self._index = index
-		if num_cache_miss > 0 and self.use_manifest:
-			self.dump()
-
-	def dump(self, indent: int = "\t") -> None:
-		"""
-		Dumps the database to manifest.json
+		Saves the database to the manifest
 		:param indent: Number of spaces to indent json
 		"""
-		lst = [proj.to_dict() for proj in self.projects]
-		with open(self.manifest_path, "w") as f:
-			json.dump(lst, f, indent=indent)
-
-	@property
-	def manifest_path(self) -> str:
-		"""
-		Get path to the database manifest
-		"""
-		return os.path.join(self.root, "manifest.json")
-
-	def manifest_exists(self) -> bool:
-		"""
-		Checks if the database manifest exists
-		"""
-		return os.path.exists(self.manifest_path)
+		if self.manifest is None:
+			raise ValueError("manifest must be a valid filepath")
+		outlist = [proj.to_dict() for proj in self.projects]
+		with open(self.manifest, "w") as f:
+			json.dump(outlist, f, indent=indent)

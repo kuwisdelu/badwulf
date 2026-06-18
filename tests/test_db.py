@@ -6,7 +6,6 @@ import shutil
 
 from badwulf.db import projmeta
 from badwulf.db import projdata
-from badwulf.db import projindex
 from badwulf.db import projdb
 
 def _testindex():
@@ -78,46 +77,41 @@ def test_projdata_move_copy_unlink():
 	assert os.path.exists(proj.path)
 	td.cleanup()
 
-def test_projindex():
-	d = projindex.from_path(_testindex())
-	assert "example0" in d
-	assert isinstance(d["example0"], projdata)
-	assert [k for k, v, in d.items()] == list(d.keys())
-	assert [v for k, v, in d.items()] == list(d.values())
-	assert d["example0"].is_local()
-	sizes1 = [proj.size for proj in d.sorted_by("size")]
-	sizes2 = [proj.size for proj in d.sorted_by("size", reverse=True)]
+def test_projdb_only_manifest():
+	db = projdb(manifest=_testindex())
+	assert "example0" in db
+	assert isinstance(db["example0"], projdata)
+	assert [k for k, v, in db.items()] == list(db.keys())
+	assert [v for k, v, in db.items()] == list(db.values())
+	assert db["example0"].is_local()
+	sizes1 = [proj.size for proj in db.sorted_by("size").projects]
+	sizes2 = [proj.size for proj in db.sorted_by("size", reverse=True).projects]
 	assert sizes1 == sorted(sizes1)
 	assert sizes2 == sorted(sizes2, reverse=True)
-	mtimes1 = [proj.mtime for proj in d.sorted_by("mtime")]
-	mtimes2 = [proj.mtime for proj in d.sorted_by("mtime", reverse=True)]
+	mtimes1 = [proj.mtime for proj in db.sorted_by("mtime").projects]
+	mtimes2 = [proj.mtime for proj in db.sorted_by("mtime", reverse=True).projects]
 	assert mtimes1 == sorted(mtimes1)
 	assert mtimes2 == sorted(mtimes2, reverse=True)
-	assert len(d.subset({"data0", "data1"})) == 2
-	assert len(d.subset(scope={"public"})) == 1
-	assert len(d.subset(scope={"private"})) == 4
-	assert len(d.subset({"data0"}, scope={"public"})) == 0
-	assert len(d.subset({"data0"}, scope={"private"})) == 1
-	assert len(d.subset(group={"Example"})) == 1
-	assert len(d.subset(group={"Bad Wolf Corporation"})) == 4
-	hits1 = d.search("Bad")
-	hits2 = d.search("Bad", within={"title"})
-	hits3 = d.search("bad", within={"title"}, ignore_case=True)
+	assert len(db.subset({"data0", "data1"})) == 2
+	assert len(db.subset(scope={"public"})) == 1
+	assert len(db.subset(scope={"private"})) == 4
+	assert len(db.subset({"data0"}, scope={"public"})) == 0
+	assert len(db.subset({"data0"}, scope={"private"})) == 1
+	assert len(db.subset(group={"Example"})) == 1
+	assert len(db.subset(group={"Bad Wolf Corporation"})) == 4
+	hits1 = db.search("Bad")
+	hits2 = db.search("Bad", within={"title"})
+	hits3 = db.search("bad", within={"title"}, ignore_case=True)
 	assert len(hits1) == 5
 	assert len(hits2) == 1
 	assert len(hits3) == 1
-	assert d["example0"] == d.get("example0")
-	assert d.get("Bad Wolf") is None
-
-def test_projdb_without_manifest():
-	db = projdb(_testdb(), use_manifest=False)
-	assert "example0" in db
-	assert not db.manifest_exists()
+	assert db["example0"] == db.get("example0")
+	assert db.get("Bad Wolf") is None
 
 def test_projdb_with_manifest():
 	td = tempfile.TemporaryDirectory()
 	root = shutil.copytree(_testdb(), os.path.join(td.name, "testdb"))
-	db = projdb(root, use_manifest=True)
+	db = projdb(root=root)
 	assert "example0" in db
 	assert db.manifest_exists()
 	td.cleanup()
