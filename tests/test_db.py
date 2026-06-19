@@ -8,7 +8,7 @@ from badwulf.db import projmeta
 from badwulf.db import projdata
 from badwulf.db import projdb
 
-def _testindex():
+def _testmanifest():
 	try:
 		return os.path.join(os.path.dirname(__file__), 
 			"testfiles", "manifest.json")
@@ -77,8 +77,8 @@ def test_projdata_move_copy_unlink():
 	assert os.path.exists(proj.path)
 	td.cleanup()
 
-def test_projdb_only_manifest():
-	db = projdb(manifest=_testindex())
+def test_projdb_manifest_only():
+	db = projdb.from_manifest(_testmanifest())
 	assert "example0" in db
 	assert isinstance(db["example0"], projdata)
 	assert [k for k, v, in db.items()] == list(db.keys())
@@ -108,10 +108,33 @@ def test_projdb_only_manifest():
 	assert db["example0"] == db.get("example0")
 	assert db.get("Bad Wolf") is None
 
-def test_projdb_with_manifest():
+def test_projdb_with_root():
 	td = tempfile.TemporaryDirectory()
 	root = shutil.copytree(_testdb(), os.path.join(td.name, "testdb"))
-	db = projdb(root=root)
+	db = projdb.from_root(root)
 	assert "example0" in db
+	assert not db.manifest_exists()
+	db.refresh()
 	assert db.manifest_exists()
+	size1 = os.stat(db.manifest).st_size
+	proj = projdata("/dev/null")
+	proj.meta = projmeta(name="NULL", scope="private", group="scratch")
+	db["null"] = proj
+	assert "null" in db
+	assert db["null"] == proj
+	del db["null"]
+	assert "null" not in db
+	del db["example0"]
+	assert "example0" not in db
+	db.save()
+	size2 = os.stat(db.manifest).st_size
+	assert size2 < size1
+	db.rebuild()
+	size3 = os.stat(db.manifest).st_size
+	assert size3 > size2
+	assert "example0" in db
+	db.refresh()
+	size4 = os.stat(db.manifest).st_size
+	assert size4 == size3
+	assert "example0" in db
 	td.cleanup()

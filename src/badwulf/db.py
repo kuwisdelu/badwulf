@@ -7,10 +7,9 @@ import json
 import tomllib
 import datetime
 
+from collections.abc import MutableMapping
 from collections.abc import Collection
 from collections.abc import Callable
-from collections.abc import Mapping
-from collections.abc import MutableMapping
 from dataclasses import dataclass
 from dataclasses import asdict
 from dataclasses import field
@@ -348,7 +347,7 @@ class projdata:
 		return cls(path=p)
 
 @dataclass
-class projdb(Mapping):
+class projdb(MutableMapping):
 	"""
 	Database of scientific research projects
 	:ivar projects: List of projects
@@ -358,30 +357,43 @@ class projdb(Mapping):
 	:ivar _index: Mapping of projects by name (case-insensitive)
 	"""
 	projects: list[projdata] = field(default_factory=list)
-	root: str | None = None
 	manifest: str | None = None
-	autosave: bool | None = None
-	_index: dict[str, projdata] | None = None
+	root: str | None = None
+	_index: dict[str, int] | None = None
 
 	def __post_init__(self):
-		if self.root is not None:
-			self.root = mkpath(self.root, must_exist=True)
 		if self.manifest is not None:
 			self.manifest = mkpath(self.manifest)
-		if self.autosave is None:
-			if self.root is None:
-				self.autosave = False
-			else:
-				self.autosave = True
-		if self.autosave and self.manifest is None:
-			self.manifest = os.path.join(self.root, "manifest.json")
-		self.ensure()
+		if self.root is not None:
+			self.root = mkpath(self.root, must_exist=True)
+			if self.manifest is None:
+				self.manifest = os.path.join(self.root, "manifest.json")
 
-	def __getitem__(self, key: str) -> projdata | None:
+	def __getitem__(self, key: str) -> projdata:
 		"""
-		Get a projdata item from the database index
+		Get a projdata item in the database index
 		"""
-		return self._fetch_index()[key.casefold()]
+		i = self._fetch_index()[key.casefold()]
+		return self.projects[i]
+
+	def __setitem__(self, key: str, value: projdata) -> None:
+		"""
+		Set a projdata item in the database index
+		"""
+		try:
+			i = self._fetch_index()[key.casefold()]
+			self.projects[i] = value
+		except KeyError:
+			self.projects.append(value)
+			self._index = None
+
+	def __delitem__(self, key: str) -> None:
+		"""
+		Delete a projdata item from the database index
+		"""
+		i = self._fetch_index()[key.casefold()]
+		del self.projects[i]
+		self._index = None
 
 	def __len__(self) -> int:
 		"""
@@ -395,50 +407,15 @@ class projdb(Mapping):
 		"""
 		return iter(self._fetch_index())
 
-	def _fetch_index(self) -> dict[str, projdata]:
+	def _fetch_index(self) -> dict[str, int]:
 		"""
-		Rebuild the index by project name
+		Fetch index of projects by name
 		"""
 		if self._index is None:
 			self._index = {
-				proj.name.casefold(): proj 
-				for proj in self.projects}
+				proj.name.casefold(): i 
+				for i, proj in enumerate(self.projects)}
 		return self._index
-
-	def _reload_from_root(self) -> None:
-		"""
-		Reloads projects by scanning from the database root
-		"""
-		if not os.path.isdir(self.root):
-			raise NotADirectoryError(f"root must be a directory: {self.root}")
-		paths = tree_find(self.root, r"^metadata\.toml$", prune_on_match=True)
-		self.projects = [projdata.from_path(p) for p in paths]
-		self._index = None
-
-	def _reload_from_manifest(self) -> None:
-		"""
-		Reloads projects by reading the database manifest
-		"""
-		with open(self.manifest) as f:
-			self.projects = [projdata.from_dict(d) for d in json.load(f)]
-			self._index = None
-
-	def _reload_and_fetch_changes(self) -> list[projdata]:
-		"""
-		Fetch cached metadata from manifest and return changed projects
-		"""
-		self._reload_from_root()
-		with open(self.manifest) as f:
-			manifest = [projdata.from_dict(d) for d in json.load(f)]
-		cache = {proj.path: proj for proj in manifest}
-		changelist = []
-		for proj in self.projects:
-			cached = cache.get(proj.path)
-			if cached is None or proj.meta_hash != cached.meta_hash:
-				changelist.append(proj)
-			else:
-				proj.meta = cached.meta
-		return changelist
 
 	def root_exists(self) -> bool:
 		"""
@@ -451,6 +428,68 @@ class projdb(Mapping):
 		Checks if the database manifest exists
 		"""
 		return self.manifest is not None and os.path.exists(self.manifest)
+
+	def load(self):
+		"""
+		Load projects from root or manifest (or both)
+		"""
+		if self.root_exists():
+			self.load_from_root()
+		else:
+			self.load_from_manifest()
+
+	def load_from_root(self) -> None:
+		"""
+		Load projects by scanning from the database root
+		"""
+		if not os.path.isdir(self.root):
+			raise NotADirectoryError(f"root must be a directory: {self.root}")
+		paths = tree_find(self.root, r"^metadata\.toml$", prune_on_match=True)
+		self.projects = [projdata.from_path(p) for p in paths]
+		self._index = None
+
+	def load_from_manifest(self) -> None:
+		"""
+		Load projects by reading the database manifest
+		"""
+		with open(self.manifest) as f:
+			self.projects = [projdata.from_dict(d) for d in json.load(f)]
+			self._index = None
+
+	def reconcile_manifest(self) -> list[projdata]:
+		"""
+		Load metadata from manifest and return projects that differ
+		"""
+		with open(self.manifest) as f:
+			manifest = [projdata.from_dict(d) for d in json.load(f)]
+		cache = {proj.path: proj for proj in manifest}
+		changes = []
+		for proj in self.projects:
+			cached = cache.get(proj.path)
+			if cached is None or proj.meta_hash != cached.meta_hash:
+				changes.append(proj)
+			else:
+				proj.meta = cached.meta
+		return changes
+
+	def rebuild(self) -> None:
+		"""
+		Load from root and save to manifest
+		"""
+		self.load_from_root()
+		self.save()
+
+	def refresh(self) -> None:
+		"""
+		Load from root + cache and save manifest if changed
+		"""
+		self.load_from_root()
+		if self.manifest_exists():
+			changes = self.reconcile_manifest()
+			if len(changes) > 0 or not self.manifest_exists():
+				self.save()
+		else:
+			self.save()
 
 	def find(self, path: str) -> projdata:
 		"""
@@ -551,22 +590,6 @@ class projdb(Mapping):
 				hits.append(hit)
 		return hits
 
-	def ensure(self) -> None:
-		"""
-		Ensures the database is in a valid state
-		"""
-		if self.root_exists() and self.manifest_exists():
-			changelist = self._reload_and_fetch_changes()
-			if self.autosave and len(changelist) > 0:
-				self.save()
-		elif self.root_exists():
-			self._reload_from_root()
-			if self.autosave and self.manifest is not None:
-				self.save()
-		elif self.manifest_exists():
-			self._reload_from_manifest()
-		self._index = None
-
 	def save(self, indent: int = "\t") -> None:
 		"""
 		Saves the database to the manifest
@@ -577,3 +600,25 @@ class projdb(Mapping):
 		outlist = [proj.to_dict() for proj in self.projects]
 		with open(self.manifest, "w") as f:
 			json.dump(outlist, f, indent=indent)
+
+	@classmethod
+	def from_root(cls, root: str):
+		"""
+		Create a projdb from a directory path
+		:param p: The path to the database root
+		:returns: A projdb object
+		"""
+		db = cls(root=root)
+		db.load_from_root()
+		return db
+
+	@classmethod
+	def from_manifest(cls, manifest: str):
+		"""
+		Create a projdb from a manifest json path
+		:param p: The path to the manifest
+		:returns: A projdb object
+		"""
+		db = cls(manifest=manifest)
+		db.load_from_manifest()
+		return db
