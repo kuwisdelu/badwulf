@@ -160,13 +160,13 @@ class projmeta:
 		:returns: A projdata object
 		"""
 		d = prune(d)
-		def iso(x):
-			if isinstance(x, str):
-				return datetime.date.fromisoformat(x)
-			else:
+		def asdate(x):
+			if isinstance(x, datetime.date):
 				return x
+			else:
+				return datetime.date.fromisoformat(x)
 		if d.get("date") is not None:
-			d["date"] = {k: iso(v) for k, v in d["date"].items()}
+			d["date"] = {k: asdate(v) for k, v in d["date"].items()}
 		return cls(**d)
 
 @dataclass
