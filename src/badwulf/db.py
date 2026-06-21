@@ -15,6 +15,7 @@ from dataclasses import asdict
 from dataclasses import field
 from operator import attrgetter
 
+from .util import quote
 from .util import mkpath
 from .util import tree_find
 from .util import tree_stat
@@ -105,6 +106,41 @@ class projmeta:
 				hits=hits)
 		else:
 			return None
+
+	def format(self, indent: str = "\t") -> list[str]:
+		"""
+		Format as lines for metadata.toml
+		:param indent: String for indentation
+		"""
+		lines = []
+		lines.append(f'name = "{self.name}"\n')
+		lines.append(f'scope = "{self.scope}"\n')
+		lines.append(f'group = "{self.group}"\n')
+		if self.title is not None:
+			lines.append(f'title = "{self.title}"\n')
+		if self.date is not None:
+			for k, v in self.date.items():
+				lines.append(f"date.{k} = {v.isoformat()}\n")
+		if self.keywords is not None:
+			lines.append(f"keywords = {self.keywords}\n")
+		if self.formats is not None:
+			lines.append(f"formats = {self.formats}\n")
+		if self.contact is not None:
+			if len(self.contact) > 0:
+				lines.append(f"contact = [\n")
+				for d in self.contact:
+					s = ", ".join([f'"{k}" = "{v}"' for k, v in d.items()])
+					lines.append(f"{indent}{{{s}}},\n")
+				lines.append(f"]\n")
+			else:
+				lines.append(f"contact = []\n")
+		if self.description is not None:
+			for k, v in self.description.items():
+				lines.append(f'description.{k} = "{v}"\n')
+		if self.reference is not None:
+			for k, v in self.reference.items():
+				lines.append(f'reference.{k} = "{v}"\n')
+		return lines
 
 	def to_dict(self) -> dict[str, Any]:
 		"""
@@ -299,7 +335,16 @@ class projdata:
 			raise FileExistsError(f"copy destination already exists: {dst}")
 		else:
 			shutil.copytree(self.path, dst)
-		return projdata.from_path(dst)
+		return projdata(dst)
+
+	def save(self, indent: str = "\t") -> None:
+		"""
+		Save to metadata.toml
+		:param indent: The string to use for indentation
+		"""
+		lines = self.meta.format(indent=indent)
+		with open(self.path) as f:
+			f.writelines(lines)
 
 	def unlink(self) -> None:
 		"""
@@ -337,14 +382,21 @@ class projdata:
 	@classmethod
 	def from_path(cls, p: str):
 		"""
-		Create a projdata from a file path or directory
-		:param p: The path to a directory or a metadata.toml file
+		Create a projdata from any path in a project tree
+		:param p: A path in a project tree with metadata.toml at the root
 		:returns: A projdata object
 		"""
-		p = mkpath(p, must_exist=True)
-		if not os.path.isdir(p):
-			p = os.path.dirname(p)
-		return cls(path=p)
+		meta_path = None
+		current, parent = p, os.path.dirname(p)
+		while meta_path is None and not os.path.samefile(current, parent):
+			try:
+				meta_path = detect(r"^metadata\.toml$", p)
+			except FileNotFoundError:
+				current = parent
+				parent = os.path.dirname(current)
+		if meta_path is None:
+			raise FileNotFoundError("not a project tree with metadata.toml")
+		return cls(path=os.path.dirname(meta_path))
 
 @dataclass
 class projdb(MutableMapping):
@@ -445,7 +497,7 @@ class projdb(MutableMapping):
 		if not os.path.isdir(self.root):
 			raise NotADirectoryError(f"root must be a directory: {self.root}")
 		paths = tree_find(self.root, r"^metadata\.toml$", prune_on_match=True)
-		self.projects = [projdata.from_path(p) for p in paths]
+		self.projects = [projdata(os.path.dirname(p)) for p in paths]
 		self._index = None
 
 	def load_from_manifest(self) -> None:

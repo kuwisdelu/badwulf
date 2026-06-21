@@ -1,4 +1,3 @@
-
 import os
 import tempfile
 
@@ -63,9 +62,9 @@ def test_mkpath_mktree_etc():
 	assert os.path.exists(tmp)
 	assert tmp in tree_find(pd, "testfile")
 	with open(tmp, "a") as f:
-		f.write("I am the Bad Wolf.")
+		f.write("I am the Bad Wolf.\n")
 	st = tree_stat(pd)
-	assert st["size"] == 18
+	assert st["size"] == 19
 	rmtree(pd, force=True)
 	assert not os.path.exists(tmp)
 	assert not os.path.exists(pd)	

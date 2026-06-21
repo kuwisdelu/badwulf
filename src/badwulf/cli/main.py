@@ -1,4 +1,5 @@
 import argparse
+import getpass
 from importlib import metadata
 
 from . import site
@@ -68,7 +69,7 @@ def _add_site(p, opt=False):
 
 def _add_site_option(p):
 	help_text = "site specification"
-	help_text += f" (if not '{site.DEFAULT_SITE}')"
+	help_text += f" (if not '{site.LOCAL_SITE}')"
 	p.add_argument("-S", "--site", 
 		help=help_text,
 		metavar=SITE_METAVAR)
@@ -140,18 +141,25 @@ def _add_sync_group(p):
 
 def register_add(subparsers):
 	p = subparsers.add_parser("add", 
-		help="Create an empty project",
-		aliases=["init"])
+		help="Create an empty project")
 	p.set_defaults(func=proj.add, parser=p)
-	_add_project(p, opt=True, cwd=True)
+	_add_project(p)
+	p.add_argument("-E", "--editor",
+		help="text editor to use")
 	p.add_argument("-s", "--scope", 
 		help=f"project scope (default: {proj.DEFAULT_SCOPE})",
-		action="store",
 		default=proj.DEFAULT_SCOPE)
 	p.add_argument("-g", "--group", 
 		help=f"project group (default: {proj.DEFAULT_GROUP})",
-		action="store",
 		default=proj.DEFAULT_GROUP)
+	p.add_argument("--title", 
+		help=f"project title",
+		default="")
+	p.add_argument("--contact-name", 
+		help=f"contact name (default: {getpass.getuser()})",
+		default=getpass.getuser())
+	p.add_argument("--contact-email", 
+		help=f"contact email")
 
 def register_edit(subparsers):
 	p = subparsers.add_parser("edit", 
@@ -261,7 +269,7 @@ def register_site(subparsers):
 		help="Site name",
 		metavar="NAME",
 		nargs="?",
-		default=site.DEFAULT_SITE)
+		default=site.LOCAL_SITE)
 	g.add_argument("-v", "--verbose", 
 		help="verbose output",
 		action="store_true")

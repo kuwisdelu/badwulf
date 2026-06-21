@@ -1,4 +1,3 @@
-
 import os
 import tomllib
 import tempfile
@@ -26,7 +25,7 @@ def _testdb():
 
 def test_projdata_meta_search():
 	p = ("public", "example", "example0")
-	proj = projdata.from_path(os.path.join(_testdb(), *p))
+	proj = projdata(os.path.join(_testdb(), *p))
 	assert proj.is_local()
 	assert proj.size == proj.meta_size
 	assert proj.meta.has_scope("public")
@@ -45,10 +44,13 @@ def test_projdata_meta_search():
 	assert set(s5.hits.keys()) == {"keywords"}
 	d = proj.to_dict()
 	assert projdata.from_dict(d).to_dict() == proj.to_dict()
+	lines = proj.meta.format()
+	meta = projmeta(**tomllib.loads("".join(lines)))
+	assert meta == proj.meta
 
 def test_projdata_move_copy_unlink():
 	p = ("public", "example", "example0")
-	proj = projdata.from_path(os.path.join(_testdb(), *p))
+	proj = projdata(os.path.join(_testdb(), *p))
 	td = tempfile.TemporaryDirectory()
 	dst_cp = os.path.join(td.name, "test-cp", *p)
 	dst_mv = os.path.join(td.name, "test-mv", *p)

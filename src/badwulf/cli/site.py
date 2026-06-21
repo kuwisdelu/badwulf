@@ -1,8 +1,12 @@
 import os
 import json
 
-from ..sync import profile
-from ..sync import syncer
+from ..core import LOCAL_SITE
+from ..core import DEFAULT_HOST
+from ..core import DEFAULT_PREFIX
+from ..core import profile
+from ..core import profiles
+from ..core import dbsyncer
 from ..util import prog_error
 from ..util import tokenize
 from ..util import mkpath
@@ -10,36 +14,15 @@ from ..util import mktree
 from ..util import detect
 from ..util import prune
 
-DEFAULT_SITE = "local"
+LOCAL_SITE = "local"
 DEFAULT_HOST = "default"
 DEFAULT_PREFIX = "default"
 
-def detect_sites():
-	if "BADWULF_SITES" in os.environ:
-		path = mkpath(os.getenv("BADWULF_SITES"))
-	else:
-		try:
-			path = detect(r"^\.?badwulf-sites\.json$", 
-				".", "~", mkpath("~", ".badwulf"))
-		except FileNotFoundError:
-			prefix = mkpath("~", ".badwulf")
-			if not os.path.isdir(prefix):
-				mktree(prefix)
-			path = mkpath(prefix, "badwulf-sites.json")
-			site = profile(paths={DEFAULT_PREFIX: prefix})
-			sts = syncer({DEFAULT_SITE: site})
-			with open(path, "w") as f:
-				json.dump(sts.to_dict(), f, indent="\t")
-	return path
-
-def load_sites():
-	return syncer.from_path(detect_sites())
-
-def resolve_site(args, sts):
+def resolve_site(args, sts = None):
 	if sts is None:
-		sts = load_sites()
+		sts = dbsyncer.from_default_locations()
 	if args.site is None:
-		site, host = DEFAULT_SITE, None
+		site, host = LOCAL_SITE, None
 	else:
 		site, host = tokenize(args.site)
 	if site not in sts:
@@ -54,13 +37,17 @@ def resolve_site(args, sts):
 			prog_error(f"unknown host: {host}", args)
 	return sts, site, host
 
-def resolve_manifest(site = DEFAULT_SITE, host = None):
+def resolve_manifest(site = LOCAL_SITE, host = None):
 	if host is not None:
 		return f"manifest-{site}-{host}.json"
-	elif site != DEFAULT_SITE:
+	elif site != LOCAL_SITE:
 		return f"manifest-{site}.json"
 	else:
 		return f"manifest.json"
+
+def tokenize_to_dict(*items):
+	items = [tokenize(s) for s in items if s is not None]
+	return {k: v for k, v in items}
 
 def all_missing(args):
 	if args.user is not False:
@@ -74,10 +61,6 @@ def all_missing(args):
 	if args.proxy_host is not False:
 		return False
 	return True
-
-def tokenize_to_dict(*items):
-	items = [tokenize(s) for s in items if s is not None]
-	return {k: v for k, v in items}
 
 def main(args):
 	match args.subcommand:
@@ -95,20 +78,19 @@ def main(args):
 			remove(args)
 
 def add(args):
-	path = detect_sites()
-	sts = syncer.from_path(path)
-	if args.name in sts:
+	dbs = dbsyncer.from_default_locations()
+	if args.name in dbs.sites:
 		prog_error(f"site '{args.name}' already exists", args)
 	else:
-		sts[args.name] = profile()
+		dbs.sites[args.name] = profile()
 	with open(path, "w") as f:
-		json.dump(sts.to_dict(), f, indent="\t")
+		json.dump(dbs.sites.to_dict(), f, indent="\t")
 	if not all_missing(args):
 		set_vars(args)
 
 def get_vars(args):
-	sts = load_sites()
-	site = sts.get(args.name)
+	dbs = dbsyncer.from_default_locations()
+	site = dbs.sites.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
 	if all_missing(args):
@@ -160,9 +142,8 @@ def get_vars(args):
 		print_site(d)
 
 def set_vars(args):
-	path = detect_sites()
-	sts = syncer.from_path(path)
-	site = sts.get(args.name)
+	dbs = dbsyncer.from_default_locations()
+	site = dbs.sites.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
 	if all_missing(args):
@@ -207,13 +188,11 @@ def set_vars(args):
 				prog_error("empty string invalid for hosts", args)
 			else:
 				site.proxy["host"] = args.proxy_host
-	with open(path, "w") as f:
-		json.dump(sts.to_dict(), f, indent="\t")
+	dbs.save_sites()
 
 def unset_vars(args):
-	path = detect_sites()
-	sts = syncer.from_path(path)
-	site = sts.get(args.name)
+	dbs = dbsyncer.from_default_locations()
+	site = dbs.sites.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
 	if all_missing(args):
@@ -260,36 +239,32 @@ def unset_vars(args):
 				del site.proxy_user["host"]
 			else:
 				args.parser.error("unexpected argument to unset --proxy-host")
-	with open(path, "w") as f:
-		json.dump(sts.to_dict(), f, indent="\t")
+	dbs.save_sites()
 
 def remove(args):
-	path = detect_sites()
-	sts = syncer.from_path(path)
-	if args.name not in sts:
+	dbs = dbsyncer.from_default_locations()
+	if args.name not in dbs.sites:
 		prog_error(f"no site named '{args.name}'", args)
 	else:
-		del sts[args.name]
-	with open(path, "w") as f:
-		json.dump(sts.to_dict(), f, indent="\t")
+		del dbs.sites[args.name]
+	dbs.save_sites()
 
 def show(args):
-	path = detect_sites()
-	sts = syncer.from_path(path)
+	dbs = dbsyncer.from_default_locations()
 	if args.json:
-		print(json.dumps(sts.to_dict(), indent=2))
+		print(json.dumps(dbs.sites.to_dict(), indent=2))
 	else:
 		if args.verbose:
-			print(f"{path}:")
-			d = sts.to_dict()
+			print(f"{dbs.path}:")
+			d = dbs.sites.to_dict()
 			print()
-			for name in sts.keys():
+			for name in dbs.sites.keys():
 				print(f"{name}:")
 				print_site(d[name])
 				print()
 		else:
-			for name in sts.keys():
-				if name == DEFAULT_SITE:
+			for name in dbs.sites.keys():
+				if name == LOCAL_SITE:
 					print(f"{name} *")
 				else:
 					print(f"{name}")

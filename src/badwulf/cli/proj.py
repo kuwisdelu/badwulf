@@ -7,14 +7,14 @@ from datetime import datetime
 from datetime import timezone
 from dataclasses import asdict
 
-from .site import load_sites
 from .site import resolve_site
 from .site import resolve_manifest
-from .site import DEFAULT_SITE
+from .site import LOCAL_SITE
 from .site import DEFAULT_HOST
 from .site import DEFAULT_PREFIX
 
 from ..db import projdb
+from ..db import projdata
 from ..util import prog_error
 from ..util import format_bytes
 from ..util import rtokenize
@@ -24,18 +24,6 @@ from ..util import detect
 
 DEFAULT_SCOPE = "private"
 DEFAULT_GROUP = "scratch"
-
-def detect_project():
-	current = os.getcwd()
-	parent = os.path.dirname(current)
-	while not os.path.samefile(current, parent):
-		try:
-			path = detect(r"^metadata\.toml$", current)
-			return os.path.dirname(path)
-		except FileNotFoundError:
-			current = parent
-			parent = os.path.dirname(current)
-	return None
 
 def resolve_query(args, sts = None):
 	sts, site, host = resolve_site(args, sts)
@@ -57,7 +45,7 @@ def resolve_query(args, sts = None):
 
 def resolve_project(args, sts = None):
 	if sts is None:
-		sts = load_sites()
+		sts = dbsyncer.from_default_locations()
 	if args.project is None:
 		path = detect_project()
 		if path is None:
@@ -96,25 +84,31 @@ def template(scope, group, name):
 	return fields
 
 def add(args):
-	sts = load_sites()
+	dbs = dbsyncer.from_default_locations()
+	cwd = os.getcwd()
 	if args.project is None:
-		if detect_project() is not None:
+		try:
+			proj = projdata.from_path(cwd)
+		except FileNotFoundError:
+			proj = None
+		if proj is not None:
 			prog_error("project is already initialized", args)
 		try:
-			prefix = sts.local.detect_prefix()
+			prefix = dbs.local.alias_of_path(cwd, parents=True)
 		except ValueError:
 			prog_error("project is not under a known prefix", args)
-		name = os.path.basename(os.getcwd())
-		path = os.getcwd()
+		path, name = cwd, os.path.basename(cwd)
 	else:
 		prefix, name = rtokenize(args.project)
-		if prefix is None:
-			prefix = DEFAULT_PREFIX
-		if prefix not in sts.local.paths:
-			prog_error(f"unknown prefix: {prefix}", args)
-		path = os.path.join(sts.local.paths[prefix], 
-			args.scope, args.group, name)
-	db = projdb(root=sts.local.paths[prefix])
+		# if prefix is None:
+		# 	prefix = DEFAULT_PREFIX
+		# if prefix not in dbs.local.paths:
+		# 	prog_error(f"unknown prefix: {prefix}", args)
+		# path = os.path.join(dbs.local.paths[prefix], 
+		# 	args.scope, args.group, name)
+	# db = projdb(root=sts.local.paths[prefix])
+	# TODO
+	db = dbs.get(prefix=prefix)
 	if name in db:
 		prog_error(f"project named '{name}' already exists", args)
 	if not os.path.exists(path):

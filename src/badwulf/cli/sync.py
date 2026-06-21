@@ -2,8 +2,7 @@ import os
 import sys
 import json
 
-from .site import load_sites
-from .site import DEFAULT_SITE
+from .site import LOCAL_SITE
 from .site import DEFAULT_HOST
 from .site import DEFAULT_PREFIX
 from .proj import resolve_project
@@ -18,9 +17,9 @@ from ..util import prune
 
 def resolve_site(args, sts = None):
 	if sts is None:
-		sts = load_sites()
+		sts = dbsyncer.from_default_locations()
 	if args.site is None:
-		site, host = DEFAULT_SITE, None
+		site, host = LOCAL_SITE, None
 	else:
 		site, host = tokenize(args.site)
 	if site not in sts:
@@ -35,10 +34,10 @@ def resolve_site(args, sts = None):
 			prog_error(f"unknown host: {host}", args)
 	return sts, site, host
 
-def resolve_manifest(site = DEFAULT_SITE, host = None):
+def resolve_manifest(site = LOCAL_SITE, host = None):
 	if host is not None:
 		return f"manifest-{site}-{host}.json"
-	elif site != DEFAULT_SITE:
+	elif site != LOCAL_SITE:
 		return f"manifest-{site}.json"
 	else:
 		return f"manifest.json"
@@ -65,11 +64,11 @@ def fetch(args):
 		print(f"Fetched manifest from {site} to {manifest_path}")
 
 def pull(args):
-	sts = load_sites()
+	sts = dbsyncer.from_default_locations()
 	prog_error("NOT IMPLEMENTED YET", args)
 
 def push(args):
-	sts = load_sites()
+	sts = dbsyncer.from_default_locations()
 	sts, site, host = resolve_site(args)
 	db, prefix, proj = resolve_project(args)
 	manifest = resolve_manifest(site, host)
@@ -119,6 +118,6 @@ def push(args):
 		print(f"Pushed '{proj.name}' to {site}")
 
 def status(args):
-	sts = load_sites()
+	sts = dbsyncer.from_default_locations()
 	prog_error("NOT IMPLEMENTED YET", args)
 

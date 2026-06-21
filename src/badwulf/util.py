@@ -262,13 +262,11 @@ def tree_stat(
 def detect(
 	pattern: str,
 	*paths: str,
-	skip_dirs: bool = True,
 	ignore_case: bool = False) -> str:
 	"""
 	Detect a file pattern in a multiple possible directories
 	:param pattern: The pattern
 	:param paths: The directories (in priority order)
-	:param skip_dirs: Should directories be skipped?
 	:param ignore_case: Should case be ignored?
 	:raises FileNotFoundError: If the file pattern can't be found
 	:returns: The path of the first detected file
@@ -277,8 +275,6 @@ def detect(
 		if os.path.isdir(path):
 			filenames = os.listdir(path)
 			for name in filenames:
-				if os.path.isdir(name) and skip_dirs:
-					continue
 				if grep1(pattern, name, ignore_case) is not None:
 					return mkpath(path, name)
 	raise FileNotFoundError(f"no match for {pattern}")

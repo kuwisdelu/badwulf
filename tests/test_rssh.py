@@ -1,10 +1,8 @@
-
 import os
 import getpass
 import tempfile
 
-from badwulf import rssh
-
+from badwulf.rssh import rssh
 from badwulf.util import touch
 from badwulf.util import mktree
 from badwulf.util import rmtree
