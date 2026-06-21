@@ -49,6 +49,16 @@ class projmeta:
 	description: dict[str, str] | None = None
 	reference: dict[str, str] | None = None
 
+	@property
+	def canonical_path(self) -> str:
+		"""
+		Get the (relative) canonical path (defined as scope/group/name)
+		"""
+		return os.path.join(
+			self.scope.casefold(), 
+			self.group.casefold(), 
+			self.name)
+
 	def has_name(self, pattern: str) -> bool:
 		"""
 		Detect if the project's name matches a pattern
@@ -217,6 +227,13 @@ class projdata:
 		return self._tree_stat
 
 	@property
+	def canonical_path(self) -> str:
+		"""
+		Get the (relative) canonical path (defined as scope/group/name)
+		"""
+		return self.meta.canonical_path
+
+	@property
 	def name(self) -> str:
 		"""
 		Get the name of the project
@@ -282,16 +299,6 @@ class projdata:
 		Get last modified timestamp for metadata.toml
 		"""
 		return self._fetch_meta_stat()["mtime"]	
-
-	@property
-	def canonical_path(self) -> str:
-		"""
-		Get the (relative) canonical path (defined as scope/group/name)
-		"""
-		return os.path.join(
-			self.meta.scope.casefold(), 
-			self.meta.group.casefold(), 
-			self.meta.name)
 
 	def is_local(self) -> bool:
 		"""
