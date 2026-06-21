@@ -17,6 +17,7 @@ from operator import attrgetter
 
 from .util import quote
 from .util import mkpath
+from .util import mktree
 from .util import tree_find
 from .util import tree_stat
 from .util import grep
@@ -151,6 +152,16 @@ class projmeta:
 			for k, v in self.reference.items():
 				lines.append(f'reference.{k} = "{v}"\n')
 		return lines
+
+	def save(self, path: str, indent: str = "\t") -> None:
+		"""
+		Save to toml file
+		:param path: The path to the metadata.toml file
+		:param indent: The string to use for indentation
+		"""
+		lines = self.format(indent=indent)
+		with open(path, "w") as f:
+			f.writelines(lines)
 
 	def to_dict(self) -> dict[str, Any]:
 		"""
@@ -349,9 +360,7 @@ class projdata:
 		Save to metadata.toml
 		:param indent: The string to use for indentation
 		"""
-		lines = self.meta.format(indent=indent)
-		with open(self.path) as f:
-			f.writelines(lines)
+		self.meta.save(self.meta_path, indent=indent)
 
 	def unlink(self) -> None:
 		"""
@@ -535,20 +544,52 @@ class projdb(MutableMapping):
 		"""
 		Load from root and save to manifest
 		"""
-		self.load_from_root()
+		if self.root_exists():
+			self.load_from_root()
 		self.save()
 
 	def refresh(self) -> None:
 		"""
 		Load from root + cache and save manifest if changed
 		"""
-		self.load_from_root()
+		if self.root_exists():
+			self.load_from_root()
 		if self.manifest_exists():
 			changes = self.reconcile_manifest()
 			if len(changes) > 0 or not self.manifest_exists():
 				self.save()
 		else:
 			self.save()
+
+	def create(self, 
+		name: str,
+		scope: str,
+		group: str,
+		*, 
+		path: str | None = None,
+		indent: str = "\t",
+		**kwargs: Any) -> projdata:
+		"""
+		Create and initialize a project tree
+		:param name: The project identifier
+		:param scope: The scoping for how the project can be used
+		:param group: The grouping for the org or repository
+		:param kwargs: Additional arguments to projmeta constructor
+		:param path: The path to the project (if not canonical path)
+		"""
+		meta = projmeta(name, scope, group, **kwargs)
+		if path is None:
+			path = os.path.join(self.root, meta.canonical_path)
+		if not os.path.isdir(path):
+			if os.path.exists(path):
+				raise NotADirectoryError(f"project tree is not a directory: {path}")
+			else:
+				mktree(path, force=True)
+		proj = projdata(path, meta)
+		if os.path.exists(proj.meta_path):
+			raise FileExistsError(f"project already initialized: {proj.meta_path}")
+		proj.save(indent=indent)
+		return proj
 
 	def find(self, path: str) -> projdata:
 		"""

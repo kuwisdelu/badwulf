@@ -213,17 +213,16 @@ class dbsyncer:
 		site, host, prefix = self.resolve(site, host, prefix)
 		if site == LOCAL_SITE:
 			root = self.local.paths[prefix]
-			manifest = "manifest.json"
+			manifest = os.path.join(root, "manifest.json")
 		else:
 			root = None
 			if host is None:
-				manifest = os.path.join(
-					self.local.paths[prefix],
-					f"manifest-{site}.json")
+				manifest_filename =f"manifest-{site}.json"
 			else:
-				manifest = os.path.join(
-					self.local.paths[prefix],
-					f"manifest-{site}-{host}.json")
+				manifest_filename = f"manifest-{site}-{host}.json"
+			manifest = os.path.join(
+				self.local.paths[prefix],
+				manifest_filename)
 		return projdb(root=root, manifest=manifest)
 
 	def bridge(self, site: str, host: str | None = None) -> rssh:

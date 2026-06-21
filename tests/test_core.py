@@ -23,14 +23,6 @@ def _testsites():
 		return os.path.join("..", "tests", 
 			"testfiles", "badwulf-sites.json")
 
-def _testdb():
-	try:
-		return os.path.join(os.path.dirname(__file__), 
-			"testdb")
-	except NameError:
-		return os.path.join("..", "tests", 
-			"testdb")
-
 def test_profile():
 	p = profile(
 		hosts={"0": "node0"},
@@ -71,8 +63,15 @@ def test_dbsyncer_push_pull():
 	pd2 = os.path.join(td.name, "testdir2")
 	os.environ["BADWULF_TESTDIR1"] = pd1
 	os.environ["BADWULF_TESTDIR2"] = pd2
-	shutil.copytree(_testdb(), pd1)
-	db = dbs.get(prefix=DEFAULT_PREFIX)
-	db.load()
-	assert "example0" in db
+	mktree(pd1)
+	mktree(pd2)
+	db = dbs.get()
+	proj = db.create(
+		name="test0",
+		scope="private",
+		group="scratch")
+	assert os.path.exists(proj.meta_path)
+	with open(proj.meta_path, "rb") as f:
+		d = tomllib.load(f)
+	assert d == proj.meta.to_dict()
 	td.cleanup()
