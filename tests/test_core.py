@@ -21,13 +21,23 @@ def _testsites():
 			"testfiles", "badwulf-sites.json")
 
 def test_profile():
-	p = profile(
+	pf = profile(
 		hosts={"0": "node0"},
 		paths={"a": "/projects/a"})
-	assert p.get_host_alias_for("node0") == "0"
-	assert p.get_host_alias_for("NODE0") == "0"
-	assert p.get_path_alias_for("/projects/a") == "a"
-	assert p.get_path_alias_for("/projects/a/b/c", parents=True) == "a"
+	pf.set_default_host("head")
+	pf.set_default_path("/home")
+	assert pf.normalize_host_alias("0") == "0"
+	assert pf.normalize_path_alias("a") == "a"
+	assert pf.normalize_host_alias(None) == "default"
+	assert pf.normalize_path_alias(None) == "default"
+	assert pf.get_host("0") == pf.hosts["0"]
+	assert pf.get_path("a") == pf.paths["a"]
+	assert pf.get_host(None) == pf.hosts["default"]
+	assert pf.get_path(None) == pf.paths["default"]
+	assert pf.get_host_alias_for("node0") == "0"
+	assert pf.get_host_alias_for("NODE0") == "0"
+	assert pf.get_path_alias_for("/projects/a") == "a"
+	assert pf.get_path_alias_for("/projects/a/b/c", parents=True) == "a"
 
 def test_profiles():
 	sts = profiles.from_path(_testsites())
@@ -43,7 +53,8 @@ def test_profiles():
 
 def test_dbsyncer_sites():
 	dbs = dbsyncer.from_path(_testsites())
-	assert dbs.sites["local"] == dbs.local
+	assert db.local_name == "local"
+	assert dbs.local == dbs.sites["local"]
 	origin = dbs.remote("origin")
 	assert origin.user == "bad-wolf"
 	assert origin.host == "time.vortex"
@@ -53,7 +64,7 @@ def test_dbsyncer_sites():
 	assert other.user == getpass.getuser()
 	assert other.host == "localhost"
 
-def test_dbsyncer_push_pull():
+def test_dbsyncer_proj_sync():
 	td = tempfile.TemporaryDirectory()
 	dbs = dbsyncer.from_path(_testsites())
 	pd1 = os.path.join(td.name, "testdir1")
