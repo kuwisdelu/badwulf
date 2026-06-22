@@ -42,8 +42,7 @@ def test_profiles():
 	assert sts.to_dict() == copy.to_dict()
 
 def test_dbsyncer_sites():
-	dbs = dbsyncer(sites_path=_testsites())
-	dbs.load_sites()
+	dbs = dbsyncer.from_path(_testsites())
 	assert dbs.sites["local"] == dbs.local
 	origin = dbs.remote("origin")
 	assert origin.user == "bad-wolf"
@@ -56,8 +55,7 @@ def test_dbsyncer_sites():
 
 def test_dbsyncer_push_pull():
 	td = tempfile.TemporaryDirectory()
-	dbs = dbsyncer(sites_path=_testsites())
-	dbs.load_sites()
+	dbs = dbsyncer.from_path(_testsites())
 	pd1 = os.path.join(td.name, "testdir1")
 	pd2 = os.path.join(td.name, "testdir2")
 	os.environ["BADWULF_TESTDIR1"] = pd1

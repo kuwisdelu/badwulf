@@ -338,6 +338,15 @@ class dbsyncer:
 			proxy_host=cfg.proxy.get("host"))
 
 	@classmethod
+	def from_path(cls, p: str):
+		"""
+		Create a dbsyncer from a json file and load sites
+		"""
+		dbs = cls(sites_path=mkpath(p, must_exist=True))
+		dbs.ensure_sites()
+		return dbs
+
+	@classmethod
 	def from_default_locations(cls):
 		"""
 		Attempts to initialize from the following locations:
