@@ -17,9 +17,9 @@ from .util import detect
 from .util import mkpath
 from .util import prune
 
-LOCAL_SITE = "local"
-DEFAULT_HOST = "default"
-DEFAULT_PREFIX = "default"
+BADWULF_SITES = os.getenv("BADWULF_SITES", None)
+BADWULF_LOCAL = os.getenv("BADWULF_LOCAL", "local")
+DEFAULT_ALIAS = "default"
 
 @dataclass
 class profile:
@@ -45,7 +45,73 @@ class profile:
 		if self.proxy is None:
 			self.proxy = {}
 
-	def alias_of_host(self, host: str) -> str:
+	def normalize_host_alias(self, alias: str | None) -> str | None:
+		"""
+		Normalize a host alias
+		:param alias: A possible host alias or None
+		:raises KeyError: If the alias is invalid
+		:returns: A valid host alias (or None if no hosts)
+		"""
+		if alias is None and len(self.hosts) > 0:
+			alias = DEFAULT_ALIAS
+		if alias is not None and alias not in self.hosts:
+			raise KeyError(f"unknown host alias: {alias}")
+		else:
+			return alias
+
+	def normalize_path_alias(self, alias: str | None) -> str:
+		"""
+		Normalize a path alias
+		:param alias: A possible path alias or None
+		:raises KeyError: If the alias is invalid
+		:returns: A valid path alias
+		"""
+		if alias is None:
+			alias = DEFAULT_ALIAS
+		if alias not in self.paths:
+			raise KeyError(f"unknown path alias: {alias}")
+		else:
+			return alias
+
+	def get_host(self, alias: str | None) -> str | None:
+		"""
+		Get a host by its alias, after normalizing
+		:param alias: A host alias
+		:raises KeyError: If normalization fails
+		:returns: A hostname (or None if no hosts)
+		"""
+		return self.hosts.get(self.normalize_host_alias(alias))
+
+	def get_path(self, alias: str | None) -> str:
+		"""
+		Get a path by its alias, after normalizing
+		:param alias: A path alias
+		:raises KeyError: If normalization fails
+		:returns: A filepath
+		"""
+		return self.paths.get(self.normalize_path_alias(alias))
+
+	def set_default_host(self, host: str | None) -> None:
+		"""
+		Set (or unset) the default host for a site profile
+		:param host: A hostname
+		"""
+		if host is None and DEFAULT_ALIAS in self.hosts:
+			del self.hosts[DEFAULT_ALIAS]
+		else:
+			self.hosts[DEFAULT_ALIAS] = host
+
+	def set_default_path(self, path: str | None) -> None:
+		"""
+		Set (or unset) the default path for a site profile
+		:param path: A filepath
+		"""
+		if path is None and DEFAULT_ALIAS in self.paths:
+			del self.paths[DEFAULT_ALIAS]
+		else:
+			self.paths[DEFAULT_ALIAS] = path
+
+	def get_host_alias_for(self, host: str) -> str:
 		"""
 		Resolve a host alias from a hostname
 		:param host: The hostname
@@ -59,7 +125,7 @@ class profile:
 				return k
 		raise ValueError(f"not a known host: {host}")
 
-	def alias_of_path(self, path: str, parents: bool = False) -> str:
+	def get_path_alias_for(self, path: str, parents: bool = False) -> str:
 		"""
 		Resolve a path alias from a filepath
 		:param path: The filepath
@@ -157,49 +223,82 @@ class dbsyncer:
 	Sync projects and data between sites
 	"""
 	def __init__(self, 
-		path: str, 
-		sites: dict[str, profile] | None = None):
+		sites: profiles | None = None,
+		sites_path: str = "badwulf-sites.json",
+		local_name: str = BADWULF_LOCAL):
 		"""
 		Initializes dbsyncer from a json file or from defaults
 		:param path: Path to the json file defining sites
 		:param sites: A profiles object mapping aliases-to-sites
 		"""
-		self.path = mkpath(path)
-		if sites is None:
-			self.load_sites()
-		else:
-			self.sites = sites
+		self.sites = sites
+		self.sites_path = mkpath(sites_path)
+		self.local_name = local_name
 
 	@property
 	def local(self) -> profile:
 		"""
 		Get the local work site profile
 		"""
-		return self.sites[LOCAL_SITE]
+		return self.sites[self.local_name]
 
-	def resolve(self,
-		site: str | None = None, 
-		host: str | None = None,
-		prefix: str | None = None) -> tuple[str]:
+	@local.setter
+	def local(self, value: profile) -> None:
 		"""
-		Resolve valid aliases for the tracked databases
-		:returns: A tuple of site, host, prefix
+		Set the local work site profile
+		"""
+		self.sites[self.local_name] = value
+
+	def load_sites(self) -> None:
+		"""
+		Load the work site profiles
+		"""
+		self.sites = profiles.from_path(self.sites_path)
+
+	def save_sites(self, indent="\t") -> None:
+		"""
+		Save the work site profiles
+		"""
+		with open(self.path, "w") as f:
+			json.dump(self.sites.to_dict(), f, indent=indent)
+
+	def ensure_sites(self) -> None:
+		"""
+		Ensure work site profiles are loaded and persisted
+		"""
+		if os.path.exists(self.sites_path):
+			self.load_sites()
+		else:
+			if self.sites is None:
+				prefix = os.path.dirname(self.sites_path)
+				self.local = profile()
+				self.local.set_default_path(prefix)
+			self.save_sites()
+
+	def normalize_site_name(self, site: str | None) -> str:
+		"""
+		Normalize a site name
+		:param site: A possible site name or None
+		:raises KeyError: If the name is invalid
+		:returns: A valid site name
 		"""
 		if site is None:
-			site = LOCAL_SITE
+			site = self.local_name
 		if site not in self.sites:
 			raise KeyError(f"unknown site: {site}")
-		if host is None and len(self.sites[site].hosts) > 0:
-			host = DEFAULT_HOST
-		if host is not None and host not in self.sites[site].hosts:
-			raise KeyError(f"unknown host: {host}")
-		if prefix is None:
-			prefix = DEFAULT_PREFIX
-		if prefix not in self.sites[site].paths:
-			raise KeyError(f"unknown prefix: {prefix}")
-		return site, host, prefix
+		else:
+			return site
 
-	def get(self, 
+	def get_site(self, site: str | None) -> str:
+		"""
+		Get a site profile by its name, after normalizing
+		:param site: A site name
+		:raises KeyError: If normalization fails
+		:returns: A site profile
+		"""
+		return self.sites.get(self.normalize_site_name(site))
+
+	def get_db(self, 
 		site: str | None = None, 
 		host: str | None = None,
 		prefix: str | None = None) -> projdb:
@@ -210,54 +309,33 @@ class dbsyncer:
 		:param prefix: The prefix alias (if not default)
 		:returns: A projdb object
 		"""
-		site, host, prefix = self.resolve(site, host, prefix)
-		if site == LOCAL_SITE:
-			root = self.local.paths[prefix]
+		site = self.normalize_site_name(site)
+		host = self.get_site(site).normalize_host_alias(host)
+		if site == self.local_name:
+			root = self.local.get_path(prefix)
 			manifest = os.path.join(root, "manifest.json")
 		else:
 			root = None
 			if host is None:
-				manifest_filename =f"manifest-{site}.json"
+				filename =f"manifest-{site}.json"
 			else:
-				manifest_filename = f"manifest-{site}-{host}.json"
-			manifest = os.path.join(
-				self.local.paths[prefix],
-				manifest_filename)
+				filename = f"manifest-{site}-{host}.json"
+			manifest = os.path.join(self.local.get_path(prefix), filename)
 		return projdb(root=root, manifest=manifest)
 
-	def bridge(self, site: str, host: str | None = None) -> rssh:
+	def remote(self, site: str, host: str | None = None) -> rssh:
 		"""
-		Get an rssh object to another site
+		Get an rssh object to a node at another site
 		:param site: The site name
 		:param host: The host alias (if remote and not default)
 		:returns: An rssh object
 		"""
-		site = self.sites[site]
-		if host is None and len(site.hosts) > 0:
-			host = site.hosts[DEFAULT_HOST]
-		else:
-			host = site.hosts[host]
+		cfg = self.get_site(site)
 		return rssh(
-			user=site.user,
-			host=host,
-			proxy_user=site.proxy.get("user"),
-			proxy_host=site.proxy.get("host"))
-
-	def load_sites(self) -> None:
-		"""
-		Load the work site profiles
-		"""
-		if os.path.exists(self.path):
-			self.sites = profiles.from_path(self.path)
-		else:
-			self.sites = profiles({LOCAL_SITE: profile()})
-
-	def save_sites(self, indent="\t") -> None:
-		"""
-		Save the work site profiles
-		"""
-		with open(self.path, "w") as f:
-			json.dump(self.sites.to_dict(), f, indent=indent)
+			user=cfg.user,
+			host=cfg.get_host(host),
+			proxy_user=cfg.proxy.get("user"),
+			proxy_host=cfg.proxy.get("host"))
 
 	@classmethod
 	def from_default_locations(cls):
@@ -266,21 +344,18 @@ class dbsyncer:
 		1. $BADWULF_SITES 
 		2. ~/.badwulf-sites.json
 		3. ~/.badwulf/.badwulf-sites.json 
-		and creates default prefix at (3) if none exist
+		and defaults to (3) if none exist
 		"""
-		if "BADWULF_SITES" in os.environ:
-			return cls(os.getenv("BADWULF_SITES"))
-		try:
-			path = detect(r"^\.?badwulf-sites\.json$", 
-				"~", mkpath("~", ".badwulf"))
-			return cls(path)
-		except FileNotFoundError:
-			prefix = mkpath("~", ".badwulf")
-			if not os.path.isdir(prefix):
-				mktree(prefix)
-			path = mkpath(prefix, "badwulf-sites.json")
-			site = profile(paths={DEFAULT_PREFIX: prefix})
-			sites = profiles({LOCAL_SITE: site})
-			dbs = cls(path, sites=sites)
-			dbs.save_sites()
-			return dbs
+		sites_path = BADWULF_SITES
+		if sites_path is None:
+			try:
+				sites_path = detect(r"^\.?badwulf-sites\.json$", 
+					"~", mkpath("~", ".badwulf"))
+			except FileNotFoundError:
+				prefix = mkpath("~", ".badwulf")
+				if not os.path.isdir(prefix):
+					mktree(prefix)
+				sites_path = mkpath(prefix, "badwulf-sites.json")
+		dbs = cls(sites_path=sites_path)
+		dbs.ensure_sites()
+		return dbs

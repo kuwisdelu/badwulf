@@ -4,9 +4,6 @@ import tomllib
 import getpass
 import tempfile
 
-from badwulf.core import LOCAL_SITE
-from badwulf.core import DEFAULT_HOST
-from badwulf.core import DEFAULT_PREFIX
 from badwulf.core import profile
 from badwulf.core import profiles
 from badwulf.core import dbsyncer
@@ -27,14 +24,14 @@ def test_profile():
 	p = profile(
 		hosts={"0": "node0"},
 		paths={"a": "/projects/a"})
-	assert p.alias_of_host("node0") == "0"
-	assert p.alias_of_host("NODE0") == "0"
-	assert p.alias_of_path("/projects/a") == "a"
-	assert p.alias_of_path("/projects/a/b/c", parents=True) == "a"
+	assert p.get_host_alias_for("node0") == "0"
+	assert p.get_host_alias_for("NODE0") == "0"
+	assert p.get_path_alias_for("/projects/a") == "a"
+	assert p.get_path_alias_for("/projects/a/b/c", parents=True) == "a"
 
 def test_profiles():
 	sts = profiles.from_path(_testsites())
-	assert LOCAL_SITE in sts
+	assert "local" in sts
 	test = profile()
 	assert sts.get("test") is None
 	sts["test"] = test
@@ -45,27 +42,29 @@ def test_profiles():
 	assert sts.to_dict() == copy.to_dict()
 
 def test_dbsyncer_sites():
-	dbs = dbsyncer(_testsites())
-	assert dbs.sites[LOCAL_SITE] == dbs.local
-	origin = dbs.bridge("origin")
+	dbs = dbsyncer(sites_path=_testsites())
+	dbs.load_sites()
+	assert dbs.sites["local"] == dbs.local
+	origin = dbs.remote("origin")
 	assert origin.user == "bad-wolf"
 	assert origin.host == "time.vortex"
 	assert origin.proxy_user == "root"
 	assert origin.proxy_host == "login.dimension.time"
-	other = dbs.bridge("other")
+	other = dbs.remote("other")
 	assert other.user == getpass.getuser()
 	assert other.host == "localhost"
 
 def test_dbsyncer_push_pull():
 	td = tempfile.TemporaryDirectory()
-	dbs = dbsyncer(_testsites())
+	dbs = dbsyncer(sites_path=_testsites())
+	dbs.load_sites()
 	pd1 = os.path.join(td.name, "testdir1")
 	pd2 = os.path.join(td.name, "testdir2")
 	os.environ["BADWULF_TESTDIR1"] = pd1
 	os.environ["BADWULF_TESTDIR2"] = pd2
 	mktree(pd1)
 	mktree(pd2)
-	db = dbs.get()
+	db = dbs.get_db()
 	proj = db.create(
 		name="test0",
 		scope="private",

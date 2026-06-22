@@ -7,7 +7,7 @@ from . import proj
 from . import sync
 
 SITE_METAVAR = "SITE[:HOST]"
-PROJ_METAVAR = "[PREFIX:]NAME"
+PROJ_METAVAR = "[PREFIX:]PROJECT"
 QUERY_METAVAR = "[PREFIX:]QUERY"
 
 def main():

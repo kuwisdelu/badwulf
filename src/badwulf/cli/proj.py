@@ -94,7 +94,7 @@ def add(args):
 		if proj is not None:
 			prog_error("project is already initialized", args)
 		try:
-			prefix = dbs.local.alias_of_path(cwd, parents=True)
+			prefix = dbs.local.get_path_alias_for(cwd, parents=True)
 		except ValueError:
 			prog_error("project is not under a known prefix", args)
 		path, name = cwd, os.path.basename(cwd)
