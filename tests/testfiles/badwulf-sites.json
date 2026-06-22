@@ -2,7 +2,7 @@
 	"local":
 	{
 		"paths": {
-			"default": "$BADWULF_TESTDIR1"
+			"default": "$TMPDIR"
 		}
 	},
 	"other": 
@@ -12,7 +12,7 @@
 			"default": "localhost"
 		},
 		"paths": {
-			"default": "$BADWULF_TESTDIR2"
+			"default": "$TMPDIR"
 		}
 	},
 	"origin": 

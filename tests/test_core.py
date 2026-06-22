@@ -53,14 +53,14 @@ def test_profiles():
 
 def test_dbsyncer_sites():
 	dbs = dbsyncer.from_path(_testsites())
-	assert db.local_name == "local"
+	assert dbs.local_name == "local"
 	assert dbs.local == dbs.sites["local"]
-	origin = dbs.remote("origin")
+	origin = dbs.get_syncer("origin")
 	assert origin.user == "bad-wolf"
 	assert origin.host == "time.vortex"
 	assert origin.proxy_user == "root"
 	assert origin.proxy_host == "login.dimension.time"
-	other = dbs.remote("other")
+	other = dbs.get_syncer("other")
 	assert other.user == getpass.getuser()
 	assert other.host == "localhost"
 
@@ -69,17 +69,27 @@ def test_dbsyncer_proj_sync():
 	dbs = dbsyncer.from_path(_testsites())
 	pd1 = os.path.join(td.name, "testdir1")
 	pd2 = os.path.join(td.name, "testdir2")
-	os.environ["BADWULF_TESTDIR1"] = pd1
-	os.environ["BADWULF_TESTDIR2"] = pd2
 	mktree(pd1)
 	mktree(pd2)
-	db = dbs.get_db()
-	proj = db.create(
+	dbs.get_site("local").set_default_path(pd1)
+	dbs.get_site("other").set_default_path(pd2)
+	db1 = dbs.get_db()
+	db2 = dbs.get_db("other")
+	proj = db1.create(
 		name="test0",
 		scope="private",
 		group="scratch")
 	assert os.path.exists(proj.meta_path)
-	with open(proj.meta_path, "rb") as f:
-		d = tomllib.load(f)
-	assert d == proj.meta.to_dict()
+	db1.refresh()
+	assert db1["test0"].meta == proj.meta
+	dbs.fetch("other", silent=True)
+	assert db2.manifest_exists()
+	db2.refresh()
+	assert len(db2) == 0
+	dbs.push("test0", "other")
+	assert os.path.exists(os.path.join(pd2, proj.canonical_path))
+	db1["test0"].unlink()
+	assert not proj.is_local()
+	db1.refresh()
+	assert "test0" not in db1
 	td.cleanup()

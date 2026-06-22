@@ -209,11 +209,11 @@ class projsearch:
 @dataclass
 class projdata:
 	"""
-	Project metadata and file stats for its contents
-	:ivar path: The (real) path to the project directory
+	Project metadata and file stats for its directory tree
+	:ivar path: The (real) path to the project tree
 	:ivar _meta: Project metadata
 	:ivar _meta_stat: File stats for project metadata.toml
-	:ivar _tree_stat: File stats for project directory
+	:ivar _tree_stat: File stats for project tree
 	"""
 	path: str
 	_meta: projmeta | None = None
@@ -419,9 +419,8 @@ class projdb(MutableMapping):
 	"""
 	Database of scientific research projects
 	:ivar projects: List of projects
-	:ivar root: The path to the database root directory
 	:ivar manifest: The path to a manifest json file
-	:ivar autosave: Write detected changes back to the manifest?
+	:ivar root: The path to the database root directory
 	:ivar _index: Mapping of projects by name (case-insensitive)
 	"""
 	projects: list[projdata] = field(default_factory=list)
@@ -542,22 +541,30 @@ class projdb(MutableMapping):
 
 	def rebuild(self) -> None:
 		"""
-		Load from root and save to manifest
+		Reload and persist manifest
 		"""
 		if self.root_exists():
 			self.load_from_root()
-		self.save()
+			self.save()
+		elif self.manifest_exists():
+			self.load_from_manifest()
+		else:
+			self.save()
 
 	def refresh(self) -> None:
 		"""
-		Load from root + cache and save manifest if changed
+		Reload and persist manifest, fetching metadata from manifest
 		"""
 		if self.root_exists():
 			self.load_from_root()
-		if self.manifest_exists():
-			changes = self.reconcile_manifest()
-			if len(changes) > 0 or not self.manifest_exists():
+			if self.manifest_exists():
+				changes = self.reconcile_manifest()
+				if len(changes) > 0 or not self.manifest_exists():
+					self.save()
+			else:
 				self.save()
+		elif self.manifest_exists():
+			self.load_from_manifest()
 		else:
 			self.save()
 
@@ -570,13 +577,15 @@ class projdb(MutableMapping):
 		indent: str = "\t",
 		**kwargs: Any) -> projdata:
 		"""
-		Create and initialize a project tree
+		Create and initialize a local project tree
 		:param name: The project identifier
 		:param scope: The scoping for how the project can be used
 		:param group: The grouping for the org or repository
 		:param kwargs: Additional arguments to projmeta constructor
 		:param path: The path to the project (if not canonical path)
 		"""
+		if not self.root_exists():
+			raise ValueError("root must exist and be a directory")
 		meta = projmeta(name, scope, group, **kwargs)
 		if path is None:
 			path = os.path.join(self.root, meta.canonical_path)

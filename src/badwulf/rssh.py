@@ -159,65 +159,11 @@ class rssh:
 		if self.process is not None:
 			self.process = None
 
-	def push(self, 
-		src: str, 
-		dst: str, 
-		mirror: bool = False,
-		silent: bool = False,
-		verbose: bool = False,
-		progress: bool = False,
-		dry_run: bool = False, 
-		more_args: list[str] | None = None,
-		ask: bool = False) -> subprocess.CompletedProcess:
-		"""
-		Push file/directory from src to dst using rsync
-		:param src: The source path on localhost
-		:param dst: The destination path on target host
-		:param mirror: Delete files in dst that aren't in src?
-		:param silent: Capture output from stdout?
-		:param verbose: Be more verbose?
-		:param progress: Report and preserve partial progress?
-		:param dry_run: Report what would be done without doing it?
-		:param ask: Confirm before pushing?
-		"""
-		if src[-1] == "/":
-			src = mkpath(src, must_exist=True)
-			if src[-1] != "/":
-				src += "/"
-		else:
-			src = mkpath(src, must_exist=True)
-		if self.has_remote():
-			dst = f"{self.destination}:{dst}"
-		cmd = ["rsync", "-a"]
-		if progress:
-			cmd += ["-P"]
-		if mirror:
-			cmd += ["--delete"]
-		if verbose:
-			cmd += ["--verbose"]
-		if dry_run:
-			cmd += ["--dry-run"]
-		if self.has_proxy_jump():
-			cmd += ["-e", " ".join(self.rsh)]
-		if more_args is not None:
-			cmd += more_args
-		cmd += [src, dst]
-		if ask:
-			print(f"Data will be synced from: '{src}'")
-			print(f"Data will be synced to: '{dst}'")
-			print("The following command will be run:")
-			print(" ".join(cmd))
-			if not confirm("Continue?"):
-				return
-		return subprocess.run(cmd, capture_output=silent)
-
 	def pull(self, 
 		src: str, 
 		dst: str, 
 		mirror: bool = False,
 		silent: bool = False,
-		verbose: bool = False,
-		progress: bool = False,
 		dry_run: bool = False, 
 		more_args: list[str] | None = None,
 		ask: bool = False) -> subprocess.CompletedProcess:
@@ -241,12 +187,54 @@ class rssh:
 		else:
 			dst = mkpath(dst, must_exist=False)
 		cmd = ["rsync", "-a"]
-		if progress:
-			cmd += ["-P"]
 		if mirror:
 			cmd += ["--delete"]
-		if verbose:
-			cmd += ["--verbose"]
+		if dry_run:
+			cmd += ["--dry-run"]
+		if self.has_proxy_jump():
+			cmd += ["-e", " ".join(self.rsh)]
+		if more_args is not None:
+			cmd += more_args
+		cmd += [src, dst]
+		if ask:
+			print(f"Data will be synced from: '{src}'")
+			print(f"Data will be synced to: '{dst}'")
+			print("The following command will be run:")
+			print(" ".join(cmd))
+			if not confirm("Continue?"):
+				return
+		return subprocess.run(cmd, capture_output=silent)
+
+	def push(self, 
+		src: str, 
+		dst: str, 
+		mirror: bool = False,
+		silent: bool = False,
+		dry_run: bool = False, 
+		more_args: list[str] | None = None,
+		ask: bool = False) -> subprocess.CompletedProcess:
+		"""
+		Push file/directory from src to dst using rsync
+		:param src: The source path on localhost
+		:param dst: The destination path on target host
+		:param mirror: Delete files in dst that aren't in src?
+		:param silent: Capture output from stdout?
+		:param verbose: Be more verbose?
+		:param progress: Report and preserve partial progress?
+		:param dry_run: Report what would be done without doing it?
+		:param ask: Confirm before pushing?
+		"""
+		if src[-1] == "/":
+			src = mkpath(src, must_exist=True)
+			if src[-1] != "/":
+				src += "/"
+		else:
+			src = mkpath(src, must_exist=True)
+		if self.has_remote():
+			dst = f"{self.destination}:{dst}"
+		cmd = ["rsync", "-a"]
+		if mirror:
+			cmd += ["--delete"]
 		if dry_run:
 			cmd += ["--dry-run"]
 		if self.has_proxy_jump():
@@ -263,9 +251,10 @@ class rssh:
 				return
 		return subprocess.run(cmd, capture_output=silent)
 	
-	def shell(self):
+	def run(self, command: list[str] | None = None):
 		"""
-		Connect to an unrestricted shell session
+		Run an unrestricted shell command
 		"""
 		dst = self.destination if self.has_remote() else "localhost"
-		return subprocess.run(self.rsh + [self.dst])
+		command = [] if command is None else command
+		return subprocess.run(self.rsh + [self.dst] + command)

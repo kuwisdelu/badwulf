@@ -234,6 +234,7 @@ class dbsyncer:
 		self.sites = sites
 		self.sites_path = mkpath(sites_path)
 		self.local_name = local_name
+		self._db = {}
 
 	@property
 	def local(self) -> profile:
@@ -298,6 +299,20 @@ class dbsyncer:
 		"""
 		return self.sites.get(self.normalize_site_name(site))
 
+	def get_syncer(self, site: str, host: str | None = None) -> rssh:
+		"""
+		Get an rssh object to a node at another site
+		:param site: The site name
+		:param host: The host alias (if remote and not default)
+		:returns: An rssh object
+		"""
+		site = self.get_site(site)
+		return rssh(
+			user=site.user,
+			host=site.get_host(host),
+			proxy_user=site.proxy.get("user"),
+			proxy_host=site.proxy.get("host"))
+
 	def get_db(self, 
 		site: str | None = None, 
 		host: str | None = None,
@@ -321,21 +336,93 @@ class dbsyncer:
 			else:
 				filename = f"manifest-{site}-{host}.json"
 			manifest = os.path.join(self.local.get_path(prefix), filename)
-		return projdb(root=root, manifest=manifest)
+		dbkey = (root, manifest)
+		if dbkey not in self._db:
+			self._db[dbkey] = projdb(root=root, manifest=manifest)
+			self._db[dbkey].refresh()
+		return self._db[dbkey]
 
-	def remote(self, site: str, host: str | None = None) -> rssh:
+	def fetch(self, 
+		site: str, 
+		host: str | None = None,
+		prefix: str | None = None,
+		**kwargs: Any) -> None:
 		"""
-		Get an rssh object to a node at another site
+		Fetch a manifest for a project database at another site
 		:param site: The site name
-		:param host: The host alias (if remote and not default)
-		:returns: An rssh object
+		:param host: The host alias (if not default)
+		:param prefix: The prefix alias (if not default)
+		:param kwargs: Arguments passed to rssh.pull
 		"""
-		cfg = self.get_site(site)
-		return rssh(
-			user=cfg.user,
-			host=cfg.get_host(host),
-			proxy_user=cfg.proxy.get("user"),
-			proxy_host=cfg.proxy.get("host"))
+		con = self.get_syncer(site, host)
+		db_remote = self.get_db(site, host, prefix)
+		if not db_remote.manifest_exists():
+			db_remote.save()
+		dst = db_remote.manifest
+		src = os.path.join(
+			self.get_site(site).get_path(prefix), 
+			"manifest.json")
+		con.pull(src=src, dst=dst, **kwargs)
+
+	def pull(self, 
+		name: str,
+		site: str, 
+		host: str | None = None,
+		prefix: str | None = None,
+		**kwargs: Any) -> None:
+		"""
+		Pull a project from a node at another site
+		:param name: The project name
+		:param site: The site name
+		:param host: The host alias (if not default)
+		:param prefix: The prefix alias (if not default)
+		:param kwargs: Arguments passed to rssh.pull
+		"""
+		con = self.get_syncer(site, host)
+		db_local = self.get_db(None, None, prefix)
+		db_remote = self.get_db(site, host, prefix)
+		try:
+			db_remote.load()
+			proj = db_remote[name]
+		except KeyError:
+			raise KeyError(f"no project in manifest named '{name}'")
+		src = proj.path
+		if src[-1] != "/":
+			src += "/"
+		dst = os.path.join(
+			self.local.get_path(prefix), 
+			proj.canonical_path)
+		con.pull(src=src, dst=dst, **kwargs)
+
+	def push(self, 
+		name: str,
+		site: str, 
+		host: str | None = None,
+		prefix: str | None = None,
+		**kwargs: Any) -> None:
+		"""
+		Push a project to a node at another site
+		:param name: The project name
+		:param site: The site name
+		:param host: The host alias (if not default)
+		:param prefix: The prefix alias (if not default)
+		:param kwargs: Arguments passed to rssh.push
+		"""
+		con = self.get_syncer(site, host)
+		db_local = self.get_db(None, None, prefix)
+		db_remote = self.get_db(site, host, prefix)
+		try:
+			db_local.load()
+			proj = db_local[name]
+		except KeyError:
+			raise KeyError(f"no project in manifest named '{name}'")
+		src = proj.path
+		if src[-1] != "/":
+			src += "/"
+		dst = os.path.join(
+			self.get_site(site).get_path(prefix), 
+			proj.canonical_path)
+		con.push(src=src, dst=dst, **kwargs)
 
 	@classmethod
 	def from_path(cls, p: str):
