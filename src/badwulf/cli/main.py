@@ -90,9 +90,9 @@ def _add_mirror(p):
 		help="delete files on destination that aren't in source?",
 		action="store_true")
 
-def _add_force(p):
-	p.add_argument("--force", 
-		help="force transfer even if rejected?",
+def _add_no_progress(p):
+	p.add_argument("--no-progress", 
+		help="no partial progress",
 		action="store_true")
 
 def _add_ask(p):
@@ -131,6 +131,7 @@ def _add_sync_group(p):
 	_add_site(p)
 	_add_project(p)
 	_add_dry_run(p)
+	_add_no_progress(p)
 	_add_mirror(p)
 	_add_ask(p)
 
@@ -216,7 +217,7 @@ def register_fetch(subparsers):
 	p = subparsers.add_parser("fetch", 
 		help="Get manifest of projects from another site")
 	p.set_defaults(func=sync.fetch, parser=p)
-	_add_site(p, opt=True)
+	_add_site(p)
 	_add_prefix(p, opt=True)
 	_add_dry_run(p)
 	_add_ask(p)
@@ -237,7 +238,6 @@ def register_status(subparsers):
 	p = subparsers.add_parser("status", 
 		help="Get status of tracked projects")
 	p.set_defaults(func=sync.status, parser=p)
-	_add_site(p, opt=True)
 	_add_prefix(p, opt=True)
 	_add_json(p)
 

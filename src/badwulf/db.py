@@ -220,6 +220,16 @@ class projdata:
 	_meta_stat: dict[str, int | float] | None = None
 	_tree_stat: dict[str, int | float] | None = None
 
+	def _fetch_meta(self, force = False) -> projmeta:
+		"""
+		Get project metadata
+		"""
+		if self._meta is None:
+			with open(self.meta_path, "rb") as file:
+				d = tomllib.load(file)
+			self._meta = projmeta(**d)
+		return self._meta
+
 	def _fetch_meta_stat(self, force = False) -> dict[str, int | float]:
 		"""
 		Get stats for project metadata.toml
@@ -231,7 +241,7 @@ class projdata:
 
 	def _fetch_tree_stat(self, force = False) -> dict[str, int | float]:
 		"""
-		Get stats for project directory
+		Get stats for project tree
 		"""
 		if self._tree_stat is None or force:
 			self._tree_stat = tree_stat(self.path)
@@ -270,11 +280,7 @@ class projdata:
 		"""
 		Get project metadata
 		"""
-		if self._meta is None:
-			with open(self.meta_path, "rb") as file:
-				d = tomllib.load(file)
-			self._meta = projmeta(**d)
-		return self._meta
+		return self._fetch_meta()
 
 	@meta.setter
 	def meta(self, value: projmeta) -> None:
@@ -370,6 +376,15 @@ class projdata:
 		self._meta = None
 		self._meta_stat = None
 		self._tree_stat = None
+
+	def realize(self) -> projdata:
+		"""
+		Fetch all project metadata and file stats
+		"""
+		self._fetch_meta()
+		self._fetch_meta_stat()
+		self._fetch_tree_stat()
+		return self
 
 	def to_dict(self) -> dict[str: Any]:
 		"""

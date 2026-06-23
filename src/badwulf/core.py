@@ -422,7 +422,7 @@ class dbsyncer:
 			src += "/"
 		dst = os.path.join(self.local_prefix(prefix), proj.canonical_path)
 		local_db = self.local_db(prefix)
-		local_db[name] = replace(proj, path=dst)
+		local_db[name] = replace(proj.realize(), path=dst)
 		local_db.save()
 		return sync.pull(src=src, dst=dst, **kwargs)
 
@@ -451,7 +451,7 @@ class dbsyncer:
 			src += "/"
 		dst = os.path.join(self.get_prefix(site, prefix), proj.canonical_path)
 		remote_db = self.get_db(site, host, prefix)
-		remote_db[name] = replace(proj, path=dst)
+		remote_db[name] = replace(proj.realize(), path=dst)
 		remote_db.save()
 		return sync.push(src=src, dst=dst, **kwargs)
 

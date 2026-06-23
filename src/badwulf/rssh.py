@@ -164,6 +164,7 @@ class rssh:
 		dst: str, 
 		mirror: bool = False,
 		silent: bool = False,
+		progress: bool = False,
 		dry_run: bool = False, 
 		more_args: list[str] | None = None,
 		ask: bool = False) -> subprocess.CompletedProcess:
@@ -187,6 +188,8 @@ class rssh:
 		else:
 			dst = mkpath(dst, must_exist=False)
 		cmd = ["rsync", "-a"]
+		if progress:
+			cmd += ["-P"]
 		if mirror:
 			cmd += ["--delete"]
 		if dry_run:
@@ -210,6 +213,7 @@ class rssh:
 		dst: str, 
 		mirror: bool = False,
 		silent: bool = False,
+		progress: bool = False,
 		dry_run: bool = False, 
 		more_args: list[str] | None = None,
 		ask: bool = False) -> subprocess.CompletedProcess:
@@ -233,6 +237,8 @@ class rssh:
 		if self.has_remote():
 			dst = f"{self.destination}:{dst}"
 		cmd = ["rsync", "-a"]
+		if progress:
+			cmd += ["-P"]
 		if mirror:
 			cmd += ["--delete"]
 		if dry_run:
