@@ -71,7 +71,6 @@ def check(args):
 	dbs = dbsyncer.from_default_locations()
 	prefix = args.prefix
 	db = dbs.local_db(prefix)
-	db.load_from_root()
 	if args.fix:
 		print("Canonicalizing project locations...")
 		moved = db.canonicalize()
