@@ -7,12 +7,7 @@ from datetime import datetime
 from datetime import timezone
 from dataclasses import asdict
 
-from .site import resolve_site
-from .site import resolve_manifest
-from .site import LOCAL_SITE
-from .site import DEFAULT_HOST
-from .site import DEFAULT_PREFIX
-
+from ..core import dbsyncer
 from ..db import projdb
 from ..db import projdata
 from ..util import prog_error

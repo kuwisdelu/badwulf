@@ -1,9 +1,7 @@
 import os
 import json
 
-from ..core import LOCAL_SITE
-from ..core import DEFAULT_HOST
-from ..core import DEFAULT_PREFIX
+from ..core import DEFAULT_ALIAS
 from ..core import profile
 from ..core import profiles
 from ..core import dbsyncer
@@ -13,37 +11,6 @@ from ..util import mkpath
 from ..util import mktree
 from ..util import detect
 from ..util import prune
-
-LOCAL_SITE = "local"
-DEFAULT_HOST = "default"
-DEFAULT_PREFIX = "default"
-
-def resolve_site(args, sts = None):
-	if sts is None:
-		sts = dbsyncer.from_default_locations()
-	if args.site is None:
-		site, host = LOCAL_SITE, None
-	else:
-		site, host = tokenize(args.site)
-	if site not in sts:
-		prog_error(f"unknown site: {site}", args)
-	if host is None:
-		if len(sts[site].hosts) > 0:
-			host = DEFAULT_HOST
-		else:
-			host = None
-	else:
-		if host not in sts[site].hosts:
-			prog_error(f"unknown host: {host}", args)
-	return sts, site, host
-
-def resolve_manifest(site = LOCAL_SITE, host = None):
-	if host is not None:
-		return f"manifest-{site}-{host}.json"
-	elif site != LOCAL_SITE:
-		return f"manifest-{site}.json"
-	else:
-		return f"manifest.json"
 
 def tokenize_to_dict(*items):
 	items = [tokenize(s) for s in items if s is not None]
@@ -81,10 +48,8 @@ def add(args):
 	dbs = dbsyncer.from_default_locations()
 	if args.name in dbs.sites:
 		prog_error(f"site '{args.name}' already exists", args)
-	else:
-		dbs.sites[args.name] = profile()
-	with open(path, "w") as f:
-		json.dump(dbs.sites.to_dict(), f, indent="\t")
+	dbs.sites[args.name] = profile()
+	dbs.save_sites()
 	if not all_missing(args):
 		set_vars(args)
 
@@ -255,7 +220,7 @@ def show(args):
 		print(json.dumps(dbs.sites.to_dict(), indent=2))
 	else:
 		if args.verbose:
-			print(f"{dbs.path}:")
+			print(f"{dbs.sites_path}:")
 			d = dbs.sites.to_dict()
 			print()
 			for name in dbs.sites.keys():
@@ -264,7 +229,7 @@ def show(args):
 				print()
 		else:
 			for name in dbs.sites.keys():
-				if name == LOCAL_SITE:
+				if name == dbs.local_name:
 					print(f"{name} *")
 				else:
 					print(f"{name}")

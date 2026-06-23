@@ -52,7 +52,7 @@ def _add_project(p, opt=False, cwd=False):
 def _add_prefix(p, opt=False, cwd=False):
 	help_text = "database prefix"
 	if cwd:
-		help_text += f" (if not '{site.DEFAULT_PREFIX}')"
+		help_text += f" (if not default)"
 	nargs = "?" if opt else None
 	p.add_argument("prefix", 
 		help=help_text,
@@ -69,7 +69,7 @@ def _add_site(p, opt=False):
 
 def _add_site_option(p):
 	help_text = "site specification"
-	help_text += f" (if not '{site.LOCAL_SITE}')"
+	help_text += f" (if not local)"
 	p.add_argument("-S", "--site", 
 		help=help_text,
 		metavar=SITE_METAVAR)
@@ -268,8 +268,7 @@ def register_site(subparsers):
 	p.add_argument("name",
 		help="Site name",
 		metavar="NAME",
-		nargs="?",
-		default=site.LOCAL_SITE)
+		nargs="?")
 	g.add_argument("-v", "--verbose", 
 		help="verbose output",
 		action="store_true")

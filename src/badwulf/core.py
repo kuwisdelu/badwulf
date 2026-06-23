@@ -273,7 +273,7 @@ class dbsyncer:
 		"""
 		Save the work site profiles
 		"""
-		with open(self.path, "w") as f:
+		with open(self.sites_path, "w") as f:
 			json.dump(self.sites.to_dict(), f, indent=indent)
 
 	def ensure_sites(self) -> None:
