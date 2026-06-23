@@ -440,7 +440,7 @@ class dbsyncer:
 		:param prefix: The prefix alias (if not default)
 		:param kwargs: Arguments passed to rssh.push
 		"""
-		con = self.get_syncer(site, host)
+		sync = self.get_syncer(site, host)
 		local_db = self.local_db(prefix)
 		try:
 			proj = local_db[name]
@@ -453,7 +453,7 @@ class dbsyncer:
 		remote_db = self.get_db(site, host, prefix)
 		remote_db[name] = replace(proj, path=dst)
 		remote_db.save()
-		con.push(src=src, dst=dst, **kwargs)
+		return sync.push(src=src, dst=dst, **kwargs)
 
 	@classmethod
 	def from_path(cls, p: str):
