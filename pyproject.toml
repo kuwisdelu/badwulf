@@ -5,24 +5,21 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "badwulf"
-version = "0.1.27"
+version = "0.2.0"
 authors = [
 	{name = "Kylie A. Bemis", email = "k.bemis@northeastern.edu"}
 ]
-description = "Minimal manager for Beowulf clusters and scientific data"
+description = "Minimal manager for project data on Beowulf clusters"
 readme = "README.md"
 license = {text = "Artistic License 2.0"}
-requires-python = ">=3.10"
-dependencies = [
-	"tomli >= 1.1.0 ; python_version < '3.11'"
-]
+requires-python = ">=3.11"
 classifiers = [
-	"Development Status :: 3 - Alpha",
+	"Development Status :: 3 - Beta",
 	"Programming Language :: Python :: 3",
-	"Programming Language :: Python :: 3.10",
 	"Programming Language :: Python :: 3.11",
 	"Programming Language :: Python :: 3.12",
 	"Programming Language :: Python :: 3.13",
+	"Programming Language :: Python :: 3.14",
 	"License :: OSI Approved :: Artistic License",
 	"Intended Audience :: Science/Research",
 	"Operating System :: Unix",
@@ -37,7 +34,6 @@ test = ["pytest"]
 
 [external]
 dependencies = [
-	"pkg:generic/zsh",
 	"pkg:generic/ssh",
 	"pkg:generic/rsync",
 ]
