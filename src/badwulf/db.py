@@ -773,6 +773,13 @@ class projdb(MutableMapping):
 				hits.append(hit)
 		return hits
 
+	def difference(self, other: projdb) -> projdb:
+		"""
+		Get only projects that are not in another database (by name)
+		"""
+		names = set(self.keys()).difference(set(other.keys()))
+		return projdb([self[name] for name in names])
+
 	def save(self, indent: int = "\t") -> None:
 		"""
 		Saves the database to the manifest

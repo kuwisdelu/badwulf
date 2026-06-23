@@ -251,7 +251,6 @@ def register_status(subparsers):
 		help="Get status of projects across sites")
 	p.set_defaults(func=sync.status, parser=p)
 	_add_prefix(p, opt=True)
-	_add_json(p)
 
 def register_site(subparsers):
 	p = subparsers.add_parser("site", 

@@ -85,6 +85,24 @@ def push(args):
 	print(f"Transfer complete")
 
 def status(args):
-	sts = dbsyncer.from_default_locations()
-	prog_error("NOT IMPLEMENTED YET", args)
-
+	dbs = dbsyncer.from_default_locations()
+	prefix = args.prefix
+	local_db = dbs.local_db(prefix)
+	print(f"{dbs.local_name}: {dbs.local_prefix(prefix)}\n")
+	for k, v in dbs.sites.items():
+		if k == dbs.local_name:
+			continue
+		if len(v.hosts) > 0:
+			hosts = v.hosts.keys()
+		else:
+			hosts = [None]
+		for h in hosts:
+			print(f"{k}:" if h is None else f"{k}:{h}:")
+			remote_db = dbs.get_db(k, None, prefix)
+			add_db = remote_db.difference(local_db).sorted_by("name")
+			for proj in add_db.projects:
+				print(f"+{proj.name}")
+			sub_db = local_db.difference(remote_db).sorted_by("name")
+			for proj in sub_db.projects:
+				print(f"-{proj.name}")
+			print("")
