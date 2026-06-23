@@ -1,3 +1,6 @@
+
+# CLI argument parsing
+
 import argparse
 from importlib import metadata
 
