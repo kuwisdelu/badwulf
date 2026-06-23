@@ -24,13 +24,18 @@ def prog_text(
 	else:
 		return f"{args.parser.prog}: {label}: {text}"
 
-def prog_error(text: str, args: argparse.Namespace) -> None:
+def prog_error(text: str | Exception, args: argparse.Namespace) -> None:
 	"""
 	Exit a program with a formatted error message
 	:param text: The error message
 	:param args: Namespace from argparse (must include "parser")
 	:raises SystemExit: With a nonzero exit code
 	"""
+	if isinstance(text, Exception):
+		if isinstance(text, KeyError):
+			text = text.args[0]
+		else:
+			text = str(text)
 	sys.exit(prog_text(text, args, label="error"))
 
 def to_bytes(x: int, units: str = "bytes") -> int:
@@ -114,20 +119,24 @@ def confirm(msg: str, suffix: str = " (yes/no): ") -> bool:
 		else:
 			print("Invalid input. Please enter yes/no.")
 
-def tokenize(text: str, sep: str = ":") -> tuple[str]:
+def tokenize(text: str | None, sep: str = ":") -> tuple[str | None]:
 	"""
 	Tokenize into two strings based on the first separator
 	"""
+	if text is None:
+		return (None, None)
 	s1, sep, s2 = text.partition(sep)
 	if sep == "":
 		return (text, None)
 	else:
 		return (s1, s2)
 
-def rtokenize(text: str, sep: str = ":") -> tuple[str]:
+def rtokenize(text: str | None, sep: str = ":") -> tuple[str | None]:
 	"""
 	Tokenize into two strings based on the last separator
 	"""
+	if text is None:
+		return (None, None)
 	s1, sep, s2 = text.rpartition(sep)
 	if sep == "":
 		return (None, text)

@@ -8,10 +8,9 @@ from datetime import timezone
 from dataclasses import asdict
 
 from ..core import dbsyncer
-from ..db import projdb
-from ..db import projdata
 from ..util import prog_error
 from ..util import format_bytes
+from ..util import tokenize
 from ..util import rtokenize
 from ..util import mkpath
 from ..util import mktree
@@ -19,170 +18,6 @@ from ..util import detect
 
 DEFAULT_SCOPE = "private"
 DEFAULT_GROUP = "scratch"
-
-def resolve_query(args, sts = None):
-	sts, site, host = resolve_site(args, sts)
-	if args.query is None:
-		prefix, query = DEFAULT_PREFIX, None
-	else:
-		prefix, query = rtokenize(args.query)
-		if prefix is None:
-			prefix = DEFAULT_PREFIX
-		if prefix not in sts[site].paths:
-			prog_error(f"unknown prefix: {prefix}", args)
-	if sts[site] == sts.local:
-		db = projdb(root=sts[site].paths[prefix])
-	else:
-		manifest = resolve_manifest(site, host)
-		manifest_path = os.path.join(sts.local.paths[prefix], manifest)
-		db = projdb(manifest=manifest_path)
-	return db, prefix, query
-
-def resolve_project(args, sts = None):
-	if sts is None:
-		sts = dbsyncer.from_default_locations()
-	if args.project is None:
-		path = detect_project()
-		if path is None:
-			prog_error("working directory is not a project")
-		try:
-			prefix = sts.local.resolve_prefix(path)
-			db = projdb(root=sts.local.paths[prefix])
-			proj = db.find(path)
-		except ValueError:
-			prog_error(f"no known project tracked at {path}", args)
-	else:
-		prefix, name = rtokenize(args.project)
-		if prefix is None:
-			prefix = DEFAULT_PREFIX
-		if prefix not in sts.local.paths:
-			prog_error(f"unknown prefix: {prefix}", args)
-		db = projdb(root=sts.local.paths[prefix])
-		try:
-			proj = db[name]
-		except KeyError:
-			prog_error(f"no project named {name}", args)
-	return db, prefix, proj
-
-def template(scope, group, name):
-	fields = []
-	fields.append(f'name = "{name}"')
-	fields.append(f'scope = "{scope}"')
-	fields.append(f'group = "{group}"')
-	fields.append(f'title = "{name}"')
-	fields.append(f'date.created = {date.today().isoformat()}')
-	fields.append(f'keywords = []')
-	fields.append(f'formats = []')
-	fields.append(f'contact = [{{name = "{getpass.getuser()}"}}]')
-	fields.append(f'description.abstract = ""')
-	fields.append("")
-	return fields
-
-def add(args):
-	dbs = dbsyncer.from_default_locations()
-	cwd = os.getcwd()
-	if args.project is None:
-		try:
-			proj = projdata.from_path(cwd)
-		except FileNotFoundError:
-			proj = None
-		if proj is not None:
-			prog_error("project is already initialized", args)
-		try:
-			prefix = dbs.local.get_path_alias_for(cwd, parents=True)
-		except ValueError:
-			prog_error("project is not under a known prefix", args)
-		path, name = cwd, os.path.basename(cwd)
-	else:
-		prefix, name = rtokenize(args.project)
-		# if prefix is None:
-		# 	prefix = DEFAULT_PREFIX
-		# if prefix not in dbs.local.paths:
-		# 	prog_error(f"unknown prefix: {prefix}", args)
-		# path = os.path.join(dbs.local.paths[prefix], 
-		# 	args.scope, args.group, name)
-	# db = projdb(root=sts.local.paths[prefix])
-	# TODO
-	db = dbs.get(prefix=prefix)
-	if name in db:
-		prog_error(f"project named '{name}' already exists", args)
-	if not os.path.exists(path):
-		mktree(path, force=True)
-		print(f"Created project tree at {path}")
-	p = os.path.join(path, "metadata.toml")
-	with open(p, "w") as f:
-		f.write("\n".join(template(args.scope, args.group, name)))
-	print(f"Initialized {p}")
-
-def edit(args):
-	db, prefix, proj = resolve_project(args)
-	filename = os.path.join(proj.path, "metadata.toml")
-	editor = args.editor
-	if editor is None:
-		editor = os.getenv("VISUAL")
-	if editor is None:
-		editor = os.getenv("EDITOR")
-	if editor is None:
-		editor = "vi"
-	cmd = [editor, filename]
-	os.execvp(editor, cmd)
-
-def remove(args):
-	db, prefix, proj = resolve_project(args)
-	path = proj.path
-	proj.unlink()
-	print(f"Deleted project tree at {path}")
-
-def link(args):
-	db, prefix, proj = resolve_project(args)
-	filename = proj.name if args.filename is None else args.filename
-	os.symlink(proj.path, filename, target_is_directory=True)
-
-def show(args):
-	db, prefix, query = resolve_query(args)
-	keys, reverse = parse_sort(args)
-	outlist = (db
-		.subset(
-			names=query, 
-			scope=args.scope, 
-			group=args.group)
-		.sorted_by(
-			*keys, 
-			reverse=reverse)).projects
-	if args.json:
-		outlist = [proj.to_dict() for proj in outlist]
-		print(json.dumps(outlist, indent=2))
-	elif args.long:
-		print_proj_list(outlist)
-	elif args.path:
-		for proj in outlist:
-			print(proj.path)
-	else:
-		for proj in outlist:
-			print(proj.name)
-
-def search(args):
-	db, prefix, query = resolve_query(args)
-	keys, reverse = parse_sort(args)
-	outlist = (db
-		.subset(
-			scope=args.scope, 
-			group=args.group)
-		.sorted_by(
-			*keys, 
-			reverse=reverse)
-		.search(
-			pattern=query, 
-			within=args.field,
-			ignore_case=args.ignore_case))
-	if args.json:
-		outlist = [asdict(hits) for hits in outlist]
-		print(json.dumps(outlist, indent=2))
-	elif args.path:
-		for hits in outlist:
-			print(db[hits.name].path)
-	else:
-		print_search_list(outlist)
 
 def parse_sort(args):
 	if len(args.sort) > 0:
@@ -194,6 +29,132 @@ def parse_sort(args):
 	keys.append("name")
 	reverse = True if len(args.reverse) > 0 else False
 	return keys, reverse
+
+def add(args):
+	dbs = dbsyncer.from_default_locations()
+	prefix, name = rtokenize(args.project)
+	try:
+		db = dbs.local_db(prefix)
+		proj = db.create(
+			name=name,
+			scope=args.scope,
+			group=args.group,
+			title="",
+			date={"created": date.today()},
+			keywords=[],
+			formats=[],
+			contact=[{"name": getpass.getuser()}],
+			description={"abstract": ""})
+		print(f"Initialized {proj.meta_path}")
+		db.save()
+	except Exception as e:
+		prog_error(e, args)
+
+def edit(args):
+	dbs = dbsyncer.from_default_locations()
+	prefix, name = rtokenize(args.project)
+	try:
+		proj = dbs.local_db(prefix)[name]
+	except Exception as e:
+		prog_error(e, args)
+	editor = args.editor
+	if editor is None:
+		editor = os.getenv("VISUAL")
+	if editor is None:
+		editor = os.getenv("EDITOR")
+	if editor is None:
+		editor = "vi"
+	cmd = [editor, proj.meta_path]
+	os.execvp(editor, cmd)
+
+def remove(args):
+	dbs = dbsyncer.from_default_locations()
+	prefix, name = rtokenize(args.project)
+	try:
+		db = dbs.local_db(prefix)
+		proj = db[name]
+		db.delete(name)
+		print(f"Deleted project tree at {proj.path}")
+		db.save()
+	except Exception as e:
+		prog_error(e, args)
+
+def link(args):
+	dbs = dbsyncer.from_default_locations()
+	prefix, name = rtokenize(args.project)
+	try:
+		proj = dbs.local_db(prefix)[name]
+	except Exception as e:
+		prog_error(e, args)
+	if args.filename is None:
+		filename = proj.name
+	else:
+		filename = args.filename
+	os.symlink(proj.path, filename, target_is_directory=True)
+
+def show(args):
+	dbs = dbsyncer.from_default_locations()
+	site, host = tokenize(args.site)
+	prefix, query = rtokenize(args.query)
+	try:
+		db = dbs.get_db(site, host, prefix)
+	except Exception as e:
+		prog_error(e, args)
+	keys, reverse = parse_sort(args)
+	projects = (db
+		.subset(
+			names=query, 
+			scope=args.scope, 
+			group=args.group)
+		.sorted_by(
+			*keys, 
+			reverse=reverse)).projects
+	if args.json:
+		projects = [proj.to_dict() for proj in projects]
+		print(json.dumps(projects, indent=2))
+	elif args.long:
+		print_proj_list(projects)
+	elif args.path:
+		nodename = ""
+		if host is not None:
+			nodename = dbs.get_site(site).get_host(host) + ":"
+		for proj in projects:
+			print(nodename + proj.path)
+	else:
+		for proj in projects:
+			print(proj.name)
+
+def search(args):
+	dbs = dbsyncer.from_default_locations()
+	site, host = tokenize(args.site)
+	prefix, query = rtokenize(args.query)
+	try:
+		db = dbs.get_db(site, host, prefix)
+	except Exception as e:
+		prog_error(str(e), args)
+	keys, reverse = parse_sort(args)
+	hitslist = (db
+		.subset(
+			scope=args.scope, 
+			group=args.group)
+		.sorted_by(
+			*keys, 
+			reverse=reverse)
+		.search(
+			pattern=query, 
+			within=args.field,
+			ignore_case=args.ignore_case))
+	if args.json:
+		hitslist = [asdict(hits) for hits in hitslist]
+		print(json.dumps(hitslist, indent=2))
+	elif args.path:
+		nodename = ""
+		if host is not None:
+			nodename = dbs.get_site(site).get_host(host) + ":"
+		for hits in hitslist:
+			print(nodename + db[hits.name].path)
+	else:
+		print_search_list(hitslist)
 
 def format_proj(proj):
 	return {

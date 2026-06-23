@@ -1,9 +1,7 @@
 import os
 import json
 
-from ..core import DEFAULT_ALIAS
 from ..core import profile
-from ..core import profiles
 from ..core import dbsyncer
 from ..util import prog_error
 from ..util import tokenize

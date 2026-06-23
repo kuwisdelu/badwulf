@@ -56,7 +56,7 @@ class profile:
 		if alias is None and len(self.hosts) > 0:
 			alias = DEFAULT_ALIAS
 		if alias is not None and alias not in self.hosts:
-			raise KeyError(f"unknown host alias: {alias}")
+			raise KeyError(f"unknown host alias: '{alias}'")
 		else:
 			return alias
 
@@ -70,7 +70,7 @@ class profile:
 		if alias is None:
 			alias = DEFAULT_ALIAS
 		if alias not in self.paths:
-			raise KeyError(f"unknown path alias: {alias}")
+			raise KeyError(f"unknown path alias: '{alias}'")
 		else:
 			return alias
 
@@ -299,7 +299,7 @@ class dbsyncer:
 		if site is None:
 			site = self.local_name
 		if site not in self.sites:
-			raise KeyError(f"unknown site: {site}")
+			raise KeyError(f"unknown site: '{site}'")
 		else:
 			return site
 

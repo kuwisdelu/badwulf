@@ -144,22 +144,12 @@ def register_add(subparsers):
 		help="Create an empty project")
 	p.set_defaults(func=proj.add, parser=p)
 	_add_project(p)
-	p.add_argument("-E", "--editor",
-		help="text editor to use")
 	p.add_argument("-s", "--scope", 
 		help=f"project scope (default: {proj.DEFAULT_SCOPE})",
 		default=proj.DEFAULT_SCOPE)
 	p.add_argument("-g", "--group", 
 		help=f"project group (default: {proj.DEFAULT_GROUP})",
 		default=proj.DEFAULT_GROUP)
-	p.add_argument("--title", 
-		help=f"project title",
-		default="")
-	p.add_argument("--contact-name", 
-		help=f"contact name (default: {getpass.getuser()})",
-		default=getpass.getuser())
-	p.add_argument("--contact-email", 
-		help=f"contact email")
 
 def register_edit(subparsers):
 	p = subparsers.add_parser("edit", 
