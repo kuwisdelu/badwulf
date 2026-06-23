@@ -83,7 +83,12 @@ def _add_group_filter(p):
 
 def _add_dry_run(p):
 	p.add_argument("-n", "--dry-run", 
-		help="simulate what would happen without doing it?",
+		help="simulate actions without applying changes?",
+		action="store_true")
+
+def _add_verbose(p):
+	p.add_argument("-v", "--verbose", 
+		help="show verbose output",
 		action="store_true")
 
 def _add_mirror(p):
@@ -99,7 +104,7 @@ def _add_no_progress(p):
 
 def _add_ask(p):
 	p.add_argument("--ask", 
-		help="ask confirmation before performing the operation?",
+		help="ask for confirmation?",
 		action="store_true")
 
 def _add_path(p):
@@ -132,6 +137,7 @@ def _add_filter_group(p):
 def _add_sync_group(p):
 	_add_site(p)
 	_add_project(p)
+	_add_verbose(p)
 	_add_dry_run(p)
 	_add_no_progress(p)
 	_add_mirror(p)
@@ -231,6 +237,7 @@ def register_fetch(subparsers):
 	p.set_defaults(func=sync.fetch, parser=p)
 	_add_site(p)
 	_add_prefix(p, opt=True)
+	_add_verbose(p)
 	_add_dry_run(p)
 	_add_ask(p)
 
@@ -266,9 +273,7 @@ def register_site(subparsers):
 		help="Site name",
 		metavar="NAME",
 		nargs="?")
-	g.add_argument("-v", "--verbose", 
-		help="verbose output",
-		action="store_true")
+	_add_verbose(g)
 	p.add_argument("--user", 
 		help="site user",
 		nargs="?",

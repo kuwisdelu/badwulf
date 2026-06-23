@@ -18,6 +18,7 @@ def fetch(args):
 	try:
 		target  = (site, host, prefix)
 		proc = dbs.pull_manifest(*target,
+			verbose=args.verbose,
 			dry_run=args.dry_run, 
 			ask=args.ask)
 	except Exception as e:
@@ -36,6 +37,7 @@ def pull(args):
 		target = (site, host, prefix)
 		print(f"Copying manifest from '{site}'...")
 		proc = dbs.pull_manifest(*target,
+			verbose=args.verbose,
 			dry_run=args.dry_run, 
 			ask=args.ask)
 	except Exception as e:
@@ -47,6 +49,7 @@ def pull(args):
 		print(f"Syncing '{name}' project tree from '{site}'...")
 		proc = dbs.pull_tree(*target,
 			mirror=args.mirror,
+			verbose=args.verbose,
 			progress=args.progress,
 			dry_run=args.dry_run,
 			ask=args.ask)
@@ -65,6 +68,7 @@ def push(args):
 		print(f"Syncing '{name}' project tree to '{site}'...")
 		proc = dbs.push_tree(*target,
 			mirror=args.mirror,
+			verbose=args.verbose,
 			progress=args.progress,
 			dry_run=args.dry_run,
 			ask=args.ask)
@@ -76,6 +80,7 @@ def push(args):
 		target = (site, host, prefix)
 		print(f"Copying manifest to '{site}'...")
 		proc = dbs.push_manifest(*target,
+			verbose=args.verbose,
 			dry_run=args.dry_run,
 			ask=args.ask)
 	except Exception as e:
@@ -92,13 +97,18 @@ def status(args):
 	for k, v in dbs.sites.items():
 		if k == dbs.local_name:
 			continue
+		else:
+			try:
+				v.get_path(prefix)
+			except KeyError:
+				continue
 		if len(v.hosts) > 0:
 			hosts = v.hosts.keys()
 		else:
 			hosts = [None]
 		for h in hosts:
 			print(f"{k}:" if h is None else f"{k}:{h}:")
-			remote_db = dbs.get_db(k, None, prefix)
+			remote_db = dbs.get_db(k, h, prefix)
 			add_db = remote_db.difference(local_db).sorted_by("name")
 			for proj in add_db.projects:
 				print(f"+{proj.name}")

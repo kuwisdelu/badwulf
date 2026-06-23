@@ -165,6 +165,7 @@ class rssh:
 		dst: str, 
 		mirror: bool = False,
 		silent: bool = False,
+		verbose: bool = False,
 		progress: bool = False,
 		dry_run: bool = False, 
 		more_args: list[str] | None = None,
@@ -193,6 +194,8 @@ class rssh:
 			cmd += ["-P"]
 		if mirror:
 			cmd += ["--delete"]
+		if verbose:
+			cmd += ["--verbose"]
 		if dry_run:
 			cmd += ["--dry-run"]
 		if self.has_proxy_jump():
@@ -214,6 +217,7 @@ class rssh:
 		dst: str, 
 		mirror: bool = False,
 		silent: bool = False,
+		verbose: bool = False,
 		progress: bool = False,
 		dry_run: bool = False, 
 		more_args: list[str] | None = None,
@@ -242,6 +246,8 @@ class rssh:
 			cmd += ["-P"]
 		if mirror:
 			cmd += ["--delete"]
+		if verbose:
+			cmd += ["--verbose"]
 		if dry_run:
 			cmd += ["--dry-run"]
 		if self.has_proxy_jump():

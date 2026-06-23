@@ -340,6 +340,7 @@ class dbsyncer:
 		"""
 		site = self.normalize_site_name(site)
 		host = self.get_site(site).normalize_host_alias(host)
+		prefix = self.get_site(site).normalize_path_alias(prefix)
 		if site == self.local_name:
 			root = self.local.get_path(prefix)
 			manifest = os.path.join(root, "manifest.json")
