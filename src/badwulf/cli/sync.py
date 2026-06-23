@@ -47,7 +47,7 @@ def pull(args):
 		print(f"Syncing '{name}' project tree from '{site}'...")
 		proc = dbs.pull_tree(*target,
 			mirror=args.mirror,
-			progress=not args.no_progress,
+			progress=args.progress,
 			dry_run=args.dry_run,
 			ask=args.ask)
 	except Exception as e:
@@ -65,7 +65,7 @@ def push(args):
 		print(f"Syncing '{name}' project tree to '{site}'...")
 		proc = dbs.push_tree(*target,
 			mirror=args.mirror,
-			progress=not args.no_progress,
+			progress=args.progress,
 			dry_run=args.dry_run,
 			ask=args.ask)
 	except Exception as e:

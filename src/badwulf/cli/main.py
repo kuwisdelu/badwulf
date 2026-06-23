@@ -25,6 +25,7 @@ def build_parser():
 	# create and query projects
 	register_add(sub)
 	register_edit(sub)
+	register_check(sub)
 	register_remove(sub)
 	register_link(sub)
 	register_list(sub)
@@ -82,7 +83,7 @@ def _add_group_filter(p):
 
 def _add_dry_run(p):
 	p.add_argument("-n", "--dry-run", 
-		help="show what would happen without doing it?",
+		help="simulate what would happen without doing it?",
 		action="store_true")
 
 def _add_mirror(p):
@@ -93,7 +94,8 @@ def _add_mirror(p):
 def _add_no_progress(p):
 	p.add_argument("--no-progress", 
 		help="no partial progress",
-		action="store_true")
+		action="store_false",
+		dest="progress")
 
 def _add_ask(p):
 	p.add_argument("--ask", 
@@ -137,7 +139,8 @@ def _add_sync_group(p):
 
 def register_add(subparsers):
 	p = subparsers.add_parser("add", 
-		help="Create an empty project")
+		help="Create an empty project",
+		aliases=["init"])
 	p.set_defaults(func=proj.add, parser=p)
 	_add_project(p)
 	p.add_argument("-s", "--scope", 
@@ -154,6 +157,15 @@ def register_edit(subparsers):
 	_add_project(p)
 	p.add_argument("-E", "--editor",
 		help="text editor to use")
+
+def register_check(subparsers):
+	p = subparsers.add_parser("check", 
+		help="Check projects for issues")
+	p.set_defaults(func=proj.check, parser=p)
+	_add_prefix(p, opt=True)
+	p.add_argument("--fix",
+		help="fix issues where possible",
+		action="store_true")
 
 def register_remove(subparsers):
 	p = subparsers.add_parser("remove",
@@ -236,7 +248,7 @@ def register_push(subparsers):
 
 def register_status(subparsers):
 	p = subparsers.add_parser("status", 
-		help="Get status of tracked projects")
+		help="Get status of projects across sites")
 	p.set_defaults(func=sync.status, parser=p)
 	_add_prefix(p, opt=True)
 	_add_json(p)

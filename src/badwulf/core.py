@@ -335,6 +335,7 @@ class dbsyncer:
 		:param site: The site name (if not local)
 		:param host: The host alias (if not default)
 		:param prefix: The prefix alias (if not default)
+		:param skip_load: Skip loading the database?
 		:returns: A projdb object
 		"""
 		site = self.normalize_site_name(site)
@@ -352,7 +353,10 @@ class dbsyncer:
 		dbkey = (root, manifest)
 		if dbkey not in self._db:
 			self._db[dbkey] = projdb(root=root, manifest=manifest)
-			self._db[dbkey].refresh()
+			try:
+				self._db[dbkey].refresh()
+			except Exception:
+				self._db[dbkey].load()
 		return self._db[dbkey]
 
 	def get_prefix(self, 

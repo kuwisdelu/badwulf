@@ -628,6 +628,42 @@ class projdb(MutableMapping):
 		self[name].unlink()
 		del self[name]
 
+	def check(self) -> list[tuple[str]]:
+		"""
+		Check local projects for issues
+		:returns: A list of (path, issue) tuples
+		"""
+		issues = []
+		for proj in self.projects:
+			if not proj.is_local():
+				issues.append((proj.path, "metadata.toml does not exist"))
+			try:
+				expected = proj.canonical_path
+				if proj.is_misplaced_relative(self.root):
+					issues.append((proj.path, f"expected {expected}"))
+			except Exception:
+				issues.append((proj.path, "failed to load metadata.toml"))
+		return issues
+
+	def canonicalize(self) -> list[tuple[str]]:
+		"""
+		Move local projects into their canonical locations
+		:returns: A list of (old path, new path) tuples
+		"""
+		moved = []
+		for proj in self.projects:
+			if not proj.is_local():
+				continue
+			try:
+				expected = proj.canonical_path
+				if proj.is_misplaced_relative(self.root):
+					origin = proj.path
+					proj.place_relative(self.root)
+					moved.append((origin, proj.path))
+			except Exception:
+				pass
+		return moved
+
 	def find(self, path: str) -> projdata:
 		"""
 		Find a project by its path

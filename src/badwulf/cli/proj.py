@@ -67,6 +67,26 @@ def edit(args):
 	cmd = [editor, proj.meta_path]
 	os.execvp(editor, cmd)
 
+def check(args):
+	dbs = dbsyncer.from_default_locations()
+	prefix = args.prefix
+	db = dbs.local_db(prefix)
+	db.load_from_root()
+	if args.fix:
+		print("Canonicalizing project locations...")
+		moved = db.canonicalize()
+		if len(moved) > 0:
+			print(f"{len(moved)} project(s) moved:")
+			for old, new in moved:
+				print(f"{old} -> {new}")
+	issues = db.check()
+	if len(issues) > 0:
+		print(f"{len(issues)} issue(s):")
+		for path, msg in issues:
+			print(f"{path}: {msg}")
+	else:
+		print("Everything okay")
+
 def remove(args):
 	dbs = dbsyncer.from_default_locations()
 	prefix, name = rtokenize(args.project)
