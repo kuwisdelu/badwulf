@@ -79,12 +79,12 @@ def test_dbsyncer_proj_sync():
 		name="test0",
 		scope="private",
 		group="scratch")
+	db1.save()
 	p1 = os.path.join(pd1, proj.canonical_path)
 	p2 = os.path.join(pd2, proj.canonical_path)
 	assert os.path.samefile(p1, proj.path)
 	assert os.path.exists(p1)
 	assert not os.path.exists(p2)
-	db1.refresh()
 	assert db1["test0"].meta == proj.meta
 	dbs.push_tree("test0", "other")
 	dbs.push_manifest("other")
@@ -92,12 +92,14 @@ def test_dbsyncer_proj_sync():
 	assert os.path.exists(p2)
 	assert os.path.exists(os.path.join(pd1, "manifest.json"))
 	assert os.path.exists(os.path.join(pd2, "manifest.json"))
-	proj.unlink()
-	db1.refresh()
+	db1.delete("test0")
+	db1.save()
+	assert "test0" not in db1
 	assert not os.path.exists(p1)
 	assert os.path.exists(p2)
 	dbs.pull_manifest("other")
 	dbs.pull_tree("test0", "other")
+	assert "test0" in db1
 	assert os.path.exists(p1)
 	assert os.path.exists(p2)
 	td.cleanup()

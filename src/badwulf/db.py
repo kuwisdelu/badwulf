@@ -598,7 +598,20 @@ class projdb(MutableMapping):
 		if os.path.exists(proj.meta_path):
 			raise FileExistsError(f"project already initialized: {proj.meta_path}")
 		proj.save(indent=indent)
+		self[name] = proj
 		return proj
+
+	def delete(self, name: str) -> None:
+		"""
+		Delete a local project tree
+		:param name: The project identifier
+		"""
+		if not self.root_exists():
+			raise ValueError("root must exist and be a directory")
+		if name not in self:
+			raise KeyError(f"no project named {name}")
+		self[name].unlink()
+		del self[name]
 
 	def find(self, path: str) -> projdata:
 		"""
