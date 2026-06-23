@@ -775,7 +775,7 @@ class projdb(MutableMapping):
 
 	def difference(self, other: projdb) -> projdb:
 		"""
-		Get only projects that are not in another database (by name)
+		Get projects in this database but not the other (by name)
 		"""
 		names = set(self.keys()).difference(set(other.keys()))
 		return projdb([self[name] for name in names])

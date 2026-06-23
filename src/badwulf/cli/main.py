@@ -301,4 +301,4 @@ def register_run(subparsers):
 	p.add_argument("command",
 		help="command to run",
 		metavar="COMMAND",
-		nargs="?")
+		nargs="*")

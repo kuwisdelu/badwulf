@@ -87,7 +87,8 @@ class rssh:
 		"""
 		user = self.user
 		if self.has_remote():
-			user += "@"
+			if user != "":
+				user += "@"
 			if self.is_open():
 				return f"{user}localhost"
 			else:
@@ -112,7 +113,7 @@ class rssh:
 		"""
 		Check if host is remote (including localhost)
 		"""
-		return self.host is not None and len(self.host) > 0
+		return self.host is not None and self.host != ""
 
 	def has_proxy_jump(self) -> bool:
 		"""

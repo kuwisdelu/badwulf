@@ -233,7 +233,12 @@ def show(args):
 					print(f"{name}")
 
 def run(args):
-	prog_error("NOT IMPLEMENTED YET", args)
+	dbs = dbsyncer.from_default_locations()
+	site, host = tokenize(args.site)
+	sync = dbs.get_syncer(site, host)
+	dst = sync.destination if sync.has_remote() else "localhost"
+	cmd = sync.rsh + [dst] + args.command
+	os.execvp(cmd[0], cmd)
 
 def print_site(d):
 	if "user" in d:
