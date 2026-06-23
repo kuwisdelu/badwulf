@@ -39,20 +39,16 @@ def build_parser():
 	register_run(sub)
 	return p
 
-def _add_project(p, opt=False, cwd=False):
+def _add_project(p, opt=False):
 	help_text = "project specification"
-	if cwd:
-		help_text += " (if not current directory)"
 	nargs = "?" if opt else None
 	p.add_argument("project", 
 		help=help_text,
 		metavar=PROJ_METAVAR,
 		nargs=nargs)
 
-def _add_prefix(p, opt=False, cwd=False):
+def _add_prefix(p, opt=False):
 	help_text = "database prefix"
-	if cwd:
-		help_text += f" (if not default)"
 	nargs = "?" if opt else None
 	p.add_argument("prefix", 
 		help=help_text,
@@ -60,7 +56,7 @@ def _add_prefix(p, opt=False, cwd=False):
 		nargs=nargs)
 
 def _add_site(p, opt=False):
-	help_text = "target site specification"
+	help_text = "site specification"
 	nargs = "?" if opt else None
 	p.add_argument("site", 
 		help=help_text,
@@ -133,10 +129,9 @@ def _add_filter_group(p):
 
 def _add_sync_group(p):
 	_add_site(p)
-	_add_project(p, opt=True, cwd=True)
+	_add_project(p)
 	_add_dry_run(p)
 	_add_mirror(p)
-	_add_force(p)
 	_add_ask(p)
 
 def register_add(subparsers):
@@ -155,7 +150,7 @@ def register_edit(subparsers):
 	p = subparsers.add_parser("edit", 
 		help="Edit project metadata")
 	p.set_defaults(func=proj.edit, parser=p)
-	_add_project(p, opt=True, cwd=True)
+	_add_project(p)
 	p.add_argument("-E", "--editor",
 		help="text editor to use")
 
@@ -221,8 +216,8 @@ def register_fetch(subparsers):
 	p = subparsers.add_parser("fetch", 
 		help="Get manifest of projects from another site")
 	p.set_defaults(func=sync.fetch, parser=p)
-	_add_site(p)
-	_add_prefix(p, opt=True, cwd=True)
+	_add_site(p, opt=True)
+	_add_prefix(p, opt=True)
 	_add_dry_run(p)
 	_add_ask(p)
 
@@ -242,7 +237,8 @@ def register_status(subparsers):
 	p = subparsers.add_parser("status", 
 		help="Get status of tracked projects")
 	p.set_defaults(func=sync.status, parser=p)
-	_add_prefix(p, opt=True, cwd=True)
+	_add_site(p, opt=True)
+	_add_prefix(p, opt=True)
 	_add_json(p)
 
 def register_site(subparsers):
