@@ -115,4 +115,6 @@ def status(args):
 			sub_db = local_db.difference(remote_db).sorted_by("name")
 			for proj in sub_db.projects:
 				print(f"-{proj.name}")
+			if len(add_db) == 0 and len(sub_db) == 0:
+				print("Everything synced")
 			print("")
