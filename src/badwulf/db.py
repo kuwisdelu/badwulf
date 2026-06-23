@@ -583,6 +583,52 @@ class projdb(MutableMapping):
 		else:
 			self.save()
 
+	def canonicalize(self) -> list[tuple[str]]:
+		"""
+		Move local projects into their canonical locations
+		:returns: A list of (old path, new path) tuples
+		"""
+		moved = []
+		for proj in self.projects:
+			if not proj.is_local():
+				continue
+			try:
+				expected = proj.canonical_path
+				if proj.is_misplaced_relative(self.root):
+					origin = proj.path
+					try:
+						proj.place_relative(self.root)
+						moved.append((origin, proj.path))
+					except OSError:
+						moved.append((origin, "FAILED"))
+			except Exception:
+				pass
+		return moved
+
+	def check(self) -> list[tuple[str]]:
+		"""
+		Check local projects for issues
+		:returns: A list of (path, issue) tuples
+		"""
+		checked = {}
+		issues = []
+		for proj in self.projects:
+			k = os.path.relpath(proj.path, self.root)
+			if not proj.is_local():
+				issues.append((k, "metadata.toml does not exist"))
+				continue
+			try:
+				expected = os.path.join(self.root, proj.canonical_path)
+				if proj.name in checked:
+					issues.append((k, f"duplicate at {checked[proj.name]}"))
+				else:
+					checked[proj.name] = proj.path
+				if proj.is_misplaced_relative(self.root):
+					issues.append((k, f"expected at {expected}"))
+			except Exception:
+				issues.append((k, "failed to load metadata.toml"))
+		return issues
+
 	def create(self, 
 		name: str,
 		scope: str,
@@ -627,42 +673,6 @@ class projdb(MutableMapping):
 			raise KeyError(f"no project named {name}")
 		self[name].unlink()
 		del self[name]
-
-	def check(self) -> list[tuple[str]]:
-		"""
-		Check local projects for issues
-		:returns: A list of (path, issue) tuples
-		"""
-		issues = []
-		for proj in self.projects:
-			if not proj.is_local():
-				issues.append((proj.path, "metadata.toml does not exist"))
-			try:
-				expected = proj.canonical_path
-				if proj.is_misplaced_relative(self.root):
-					issues.append((proj.path, f"expected {expected}"))
-			except Exception:
-				issues.append((proj.path, "failed to load metadata.toml"))
-		return issues
-
-	def canonicalize(self) -> list[tuple[str]]:
-		"""
-		Move local projects into their canonical locations
-		:returns: A list of (old path, new path) tuples
-		"""
-		moved = []
-		for proj in self.projects:
-			if not proj.is_local():
-				continue
-			try:
-				expected = proj.canonical_path
-				if proj.is_misplaced_relative(self.root):
-					origin = proj.path
-					proj.place_relative(self.root)
-					moved.append((origin, proj.path))
-			except Exception:
-				pass
-		return moved
 
 	def find(self, path: str) -> projdata:
 		"""

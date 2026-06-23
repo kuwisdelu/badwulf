@@ -81,8 +81,8 @@ def check(args):
 	issues = db.check()
 	if len(issues) > 0:
 		print(f"{len(issues)} issue(s):")
-		for path, msg in issues:
-			print(f"{path}: {msg}")
+		for k, v in issues:
+			print(f"{k}: {v}")
 	else:
 		print("Everything okay")
 
