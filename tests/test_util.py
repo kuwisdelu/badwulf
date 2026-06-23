@@ -39,7 +39,7 @@ def test_tokenize():
 	assert tokenize(":Wolf") == ("", "Wolf")
 	assert tokenize("Bad") == ("Bad", None)
 
-def test_tokenize():
+def test_rtokenize():
 	assert rtokenize("Bad:Wolf") == ("Bad", "Wolf")
 	assert rtokenize("Bad:") == ("Bad", "")
 	assert rtokenize(":Wolf") == ("", "Wolf")
@@ -123,11 +123,11 @@ def test_grep():
 	assert qs2["Final"] == ["Bad Wolf", None, None, None]
 
 def test_prune():
-	l = [1, 2, None]
-	assert prune(l) == [1, 2]
+	lst = [1, 2, None]
+	assert prune(lst) == [1, 2]
 	d = {"a": 1, "b": 2, "c": None}
 	assert prune(d) == {"a": 1, "b": 2}
-	x1 = [l, d]
+	x1 = [lst, d]
 	assert prune(x1) == [[1, 2], {"a": 1, "b": 2}]
 	x2 = [{"b": None}]
 	assert prune(x2) == []

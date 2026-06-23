@@ -4,18 +4,18 @@
 import os
 import io
 import json
-import socket
-import subprocess
 
 from collections.abc import MutableMapping
 from dataclasses import dataclass
 from dataclasses import asdict
 from dataclasses import replace
+from typing import Any
 
 from .db import projdb
 from .rssh import rssh
 from .util import detect
 from .util import mkpath
+from .util import mktree
 from .util import prune
 
 BADWULF_SITES = os.getenv("BADWULF_SITES", None)

@@ -5,9 +5,6 @@ from ..core import profile
 from ..core import dbsyncer
 from ..util import prog_error
 from ..util import tokenize
-from ..util import mkpath
-from ..util import mktree
-from ..util import detect
 from ..util import prune
 
 def tokenize_to_dict(*items):
@@ -242,7 +239,7 @@ def run(args):
 
 def print_site(d):
 	if "user" in d:
-		print(f"user={d["user"]}")
+		print(f'user={d["user"]}')
 	if "hosts" in d:
 		for k, v in d["hosts"].items():
 			print(f"host={k}:{v}")
@@ -250,6 +247,6 @@ def print_site(d):
 		for k, v in d["paths"].items():
 			print(f"path={k}:{v}")
 	if "proxy" in d and "user" in d["proxy"]:
-		print(f"proxy-user={d["proxy"]["user"]}")
+		print(f'proxy-user={d["proxy"]["user"]}')
 	if "proxy" in d and "host" in d["proxy"]:
-		print(f"proxy-host={d["proxy"]["host"]}")
+		print(f'proxy-host={d["proxy"]["host"]}')

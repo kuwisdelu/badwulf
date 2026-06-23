@@ -1,6 +1,8 @@
 
 # Experiment data manager
 
+from __future__ import annotations
+
 import os
 import shutil
 import json
@@ -14,8 +16,9 @@ from dataclasses import dataclass
 from dataclasses import asdict
 from dataclasses import field
 from operator import attrgetter
+from typing import Any
 
-from .util import quote
+from .util import detect
 from .util import mkpath
 from .util import mktree
 from .util import tree_find
@@ -138,13 +141,13 @@ class projmeta:
 			lines.append(f"formats = {self.formats}\n")
 		if self.contact is not None:
 			if len(self.contact) > 0:
-				lines.append(f"contact = [\n")
+				lines.append("contact = [\n")
 				for d in self.contact:
 					s = ", ".join([f'"{k}" = "{v}"' for k, v in d.items()])
 					lines.append(f"{indent}{{{s}}},\n")
-				lines.append(f"]\n")
+				lines.append("]\n")
 			else:
-				lines.append(f"contact = []\n")
+				lines.append("contact = []\n")
 		if self.description is not None:
 			for k, v in self.description.items():
 				lines.append(f'description.{k} = "{v}"\n')
@@ -593,7 +596,6 @@ class projdb(MutableMapping):
 			if not proj.is_local():
 				continue
 			try:
-				expected = proj.canonical_path
 				if proj.is_misplaced_relative(self.root):
 					origin = proj.path
 					try:

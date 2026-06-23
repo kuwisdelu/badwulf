@@ -1,10 +1,8 @@
 import os
 import json
-import tomllib
 import getpass
 from datetime import date
 from datetime import datetime
-from datetime import timezone
 from dataclasses import asdict
 
 from ..core import dbsyncer
@@ -12,9 +10,6 @@ from ..util import prog_error
 from ..util import format_bytes
 from ..util import tokenize
 from ..util import rtokenize
-from ..util import mkpath
-from ..util import mktree
-from ..util import detect
 
 DEFAULT_SCOPE = "private"
 DEFAULT_GROUP = "scratch"
@@ -228,4 +223,4 @@ def print_search_list(plist, sep = ":  "):
 		for hit in hlist:
 			name = (hit["ctx"][0] + sep).ljust(name_len)
 			ctx = (sep.join(hit["ctx"][1:]) + sep).ljust(ctx_len)
-			print(f"{name}{ctx}{hit["hit"]}")
+			print(f'{name}{ctx}{hit["hit"]}')

@@ -1,16 +1,11 @@
 import os
-import shutil
-import tomllib
 import getpass
 import tempfile
 
 from badwulf.core import profile
 from badwulf.core import profiles
 from badwulf.core import dbsyncer
-from badwulf.util import touch
-from badwulf.util import mkpath
 from badwulf.util import mktree
-from badwulf.util import rmtree
 
 def _testsites():
 	try:
@@ -73,33 +68,32 @@ def test_dbsyncer_proj_sync():
 	mktree(pd2)
 	dbs.get_site("local").set_default_path(pd1)
 	dbs.get_site("other").set_default_path(pd2)
-	db1 = dbs.get_db()
-	db2 = dbs.get_db("other")
-	proj = db1.create(
+	db = dbs.get_db()
+	proj = db.create(
 		name="test0",
 		scope="private",
 		group="scratch")
-	db1.save()
+	db.save()
 	p1 = os.path.join(pd1, proj.canonical_path)
 	p2 = os.path.join(pd2, proj.canonical_path)
 	assert os.path.samefile(p1, proj.path)
 	assert os.path.exists(p1)
 	assert not os.path.exists(p2)
-	assert db1["test0"].meta == proj.meta
+	assert db["test0"].meta == proj.meta
 	dbs.push_tree("test0", "other")
 	dbs.push_manifest("other")
 	assert os.path.exists(p1)
 	assert os.path.exists(p2)
 	assert os.path.exists(os.path.join(pd1, "manifest.json"))
 	assert os.path.exists(os.path.join(pd2, "manifest.json"))
-	db1.delete("test0")
-	db1.save()
-	assert "test0" not in db1
+	db.delete("test0")
+	db.save()
+	assert "test0" not in db
 	assert not os.path.exists(p1)
 	assert os.path.exists(p2)
 	dbs.pull_manifest("other")
 	dbs.pull_tree("test0", "other")
-	assert "test0" in db1
+	assert "test0" in db
 	assert os.path.exists(p1)
 	assert os.path.exists(p2)
 	td.cleanup()

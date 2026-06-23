@@ -250,7 +250,6 @@ def tree_stat(
 		raise NotADirectoryError(f"path must be a directory: {path}")
 	mtime = os.path.getmtime(path)
 	size = 0
-	it = os.scandir(path)
 	with os.scandir(path) as it:
 		for file in it:
 			if exclude is not None:

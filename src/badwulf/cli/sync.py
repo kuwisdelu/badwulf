@@ -1,15 +1,7 @@
-import os
-import sys
-import json
-
 from ..core import dbsyncer
 from ..util import prog_error
 from ..util import tokenize
 from ..util import rtokenize
-from ..util import mkpath
-from ..util import mktree
-from ..util import rmtree
-from ..util import prune
 
 def fetch(args):
 	dbs = dbsyncer.from_default_locations()
@@ -57,7 +49,7 @@ def pull(args):
 		prog_error(e, args)
 	if proc.returncode != 0:
 		prog_error(f"Failed to sync project tree from '{site}'", args)
-	print(f"Transfer complete")
+	print("Transfer complete")
 
 def push(args):
 	dbs = dbsyncer.from_default_locations()
@@ -87,7 +79,7 @@ def push(args):
 		prog_error(e, args)
 	if proc.returncode != 0:
 		prog_error(f"Failed to copy manifest to '{site}'", args)
-	print(f"Transfer complete")
+	print("Transfer complete")
 
 def status(args):
 	dbs = dbsyncer.from_default_locations()

@@ -30,7 +30,10 @@ Homepage = "https://github.com/kuwisdelu/badwulf"
 Issues = "https://github.com/kuwisdelu/badwulf/issues"
 
 [project.optional-dependencies]
-test = ["pytest"]
+dev = [
+	"pytest",
+	"ruff",
+]
 
 [external]
 dependencies = [

@@ -1,5 +1,4 @@
 import argparse
-import getpass
 from importlib import metadata
 
 from . import site
@@ -20,7 +19,7 @@ def build_parser():
 	p.add_argument("-v", "--version", 
 		help="show version and exit",
 		action="version",
-		version=f"badwulf {metadata.version("badwulf")}")
+		version=f'badwulf {metadata.version("badwulf")}')
 	sub = p.add_subparsers(metavar="command")
 	# create and query projects
 	register_add(sub)
@@ -66,7 +65,6 @@ def _add_site(p, opt=False):
 
 def _add_site_option(p):
 	help_text = "site specification"
-	help_text += f" (if not local)"
 	p.add_argument("-S", "--site", 
 		help=help_text,
 		metavar=SITE_METAVAR)

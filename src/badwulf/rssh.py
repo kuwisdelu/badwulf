@@ -1,12 +1,13 @@
 
 # Restricted SSH manager
 
+from __future__ import annotations
+
 import os
 import subprocess
 
 from time import sleep
 from dataclasses import dataclass
-from dataclasses import asdict
 
 from .util import confirm
 from .util import quote
@@ -270,4 +271,4 @@ class rssh:
 		"""
 		dst = self.destination if self.has_remote() else "localhost"
 		command = [] if command is None else command
-		return subprocess.run(self.rsh + [self.dst] + command)
+		return subprocess.run(self.rsh + [dst] + command)
