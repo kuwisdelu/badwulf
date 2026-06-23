@@ -10,6 +10,7 @@ import subprocess
 from collections.abc import MutableMapping
 from dataclasses import dataclass
 from dataclasses import asdict
+from dataclasses import replace
 
 from .db import projdb
 from .rssh import rssh
@@ -250,6 +251,18 @@ class dbsyncer:
 		"""
 		self.sites[self.local_name] = value
 
+	def local_db(self, prefix: str | None = None) -> projdb:
+		"""
+		Get the local path for a prefix
+		"""
+		return self.get_db(self.local_name, None, prefix)
+
+	def local_prefix(self, prefix: str | None = None) -> str:
+		"""
+		Get the local path for a prefix
+		"""
+		return self.local.get_path(prefix)
+
 	def load_sites(self) -> None:
 		"""
 		Load the work site profiles
@@ -342,29 +355,49 @@ class dbsyncer:
 			self._db[dbkey].refresh()
 		return self._db[dbkey]
 
-	def fetch(self, 
+	def get_prefix(self, 
+		site: str | None = None, 
+		prefix: str | None = None) -> str:
+		"""
+		Get the site prefix for a project database
+		"""
+		return self.get_site(site).get_path(prefix)
+
+	def pull_manifest(self, 
 		site: str, 
 		host: str | None = None,
 		prefix: str | None = None,
 		**kwargs: Any) -> None:
 		"""
-		Fetch a manifest for a project database at another site
+		Pull a manifest from a node at another site
 		:param site: The site name
 		:param host: The host alias (if not default)
 		:param prefix: The prefix alias (if not default)
 		:param kwargs: Arguments passed to rssh.pull
 		"""
-		con = self.get_syncer(site, host)
-		db_remote = self.get_db(site, host, prefix)
-		if not db_remote.manifest_exists():
-			db_remote.save()
-		dst = db_remote.manifest
-		src = os.path.join(
-			self.get_site(site).get_path(prefix), 
-			"manifest.json")
-		con.pull(src=src, dst=dst, **kwargs)
+		sync = self.get_syncer(site, host)
+		src = os.path.join(self.get_prefix(site, prefix), "manifest.json")
+		dst = self.get_db(site, host, prefix).manifest
+		return sync.pull(src=src, dst=dst, **kwargs)
 
-	def pull(self, 
+	def push_manifest(self, 
+		site: str, 
+		host: str | None = None,
+		prefix: str | None = None,
+		**kwargs: Any) -> None:
+		"""
+		Push a manifest to a node at another site
+		:param site: The site name
+		:param host: The host alias (if not default)
+		:param prefix: The prefix alias (if not default)
+		:param kwargs: Arguments passed to rssh.pull
+		"""
+		sync = self.get_syncer(site, host)
+		src = self.get_db(site, host, prefix).manifest
+		dst = os.path.join(self.get_prefix(site, prefix), "manifest.json")
+		return sync.pull(src=src, dst=dst, **kwargs)
+
+	def pull_tree(self, 
 		name: str,
 		site: str, 
 		host: str | None = None,
@@ -378,23 +411,22 @@ class dbsyncer:
 		:param prefix: The prefix alias (if not default)
 		:param kwargs: Arguments passed to rssh.pull
 		"""
-		con = self.get_syncer(site, host)
-		db_local = self.get_db(None, None, prefix)
-		db_remote = self.get_db(site, host, prefix)
+		sync = self.get_syncer(site, host)
+		remote_db = self.get_db(site, host, prefix)
 		try:
-			db_remote.load()
-			proj = db_remote[name]
+			proj = remote_db[name]
 		except KeyError:
 			raise KeyError(f"no project in manifest named '{name}'")
 		src = proj.path
 		if src[-1] != "/":
 			src += "/"
-		dst = os.path.join(
-			self.local.get_path(prefix), 
-			proj.canonical_path)
-		con.pull(src=src, dst=dst, **kwargs)
+		dst = os.path.join(self.local_prefix(prefix), proj.canonical_path)
+		local_db = self.local_db(prefix)
+		local_db[name] = replace(proj, path=dst)
+		local_db.save()
+		return sync.pull(src=src, dst=dst, **kwargs)
 
-	def push(self, 
+	def push_tree(self, 
 		name: str,
 		site: str, 
 		host: str | None = None,
@@ -409,19 +441,18 @@ class dbsyncer:
 		:param kwargs: Arguments passed to rssh.push
 		"""
 		con = self.get_syncer(site, host)
-		db_local = self.get_db(None, None, prefix)
-		db_remote = self.get_db(site, host, prefix)
+		local_db = self.local_db(prefix)
 		try:
-			db_local.load()
-			proj = db_local[name]
+			proj = local_db[name]
 		except KeyError:
 			raise KeyError(f"no project in manifest named '{name}'")
 		src = proj.path
 		if src[-1] != "/":
 			src += "/"
-		dst = os.path.join(
-			self.get_site(site).get_path(prefix), 
-			proj.canonical_path)
+		dst = os.path.join(self.get_prefix(site, prefix), proj.canonical_path)
+		remote_db = self.get_db(site, host, prefix)
+		remote_db[name] = replace(proj, path=dst)
+		remote_db.save()
 		con.push(src=src, dst=dst, **kwargs)
 
 	@classmethod
