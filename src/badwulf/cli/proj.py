@@ -227,3 +227,4 @@ def print_search_list(plist, sep = ":  "):
 			name = (hit["ctx"][0] + sep).ljust(name_len)
 			ctx = (sep.join(hit["ctx"][1:]) + sep).ljust(ctx_len)
 			print(f'{name}{ctx}{hit["hit"]}')
+
