@@ -25,6 +25,9 @@ classifiers = [
 	"Operating System :: Unix",
 ]
 
+[project.scripts]
+wulf = "badwulf.cli:main"
+
 [project.urls]
 Homepage = "https://github.com/kuwisdelu/badwulf"
 Issues = "https://github.com/kuwisdelu/badwulf/issues"
