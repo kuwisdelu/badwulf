@@ -812,17 +812,17 @@ class projdb(MutableMapping):
 		names = set(self.keys()).intersection(set(other.keys()))
 		return projdb([self[name] for name in names])
 
-	def changes(self, other: projdb) -> dict[str, list[str]]:
+	def diffs(self, other: projdb) -> dict[str, list[str]]:
 		"""
-		Get project changes in common projects
+		Get unified diffs of changed projects common to both databases
 		"""
-		changes = {}
+		diffs = {}
 		names = set(self.keys()).intersection(set(other.keys()))
-		for name in names:
+		for name in sorted(names):
 			diff = self[name].diff(other[name])
 			if diff is not None:
-				changes[name] = diff
-		return changes
+				diffs[name] = diff
+		return diffs
 
 	def save(self, indent: int = "\t") -> None:
 		"""

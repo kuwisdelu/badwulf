@@ -108,17 +108,17 @@ def status(args):
 			add_db = remote_db.difference(local_db).sorted_by("name")
 			for proj in add_db.projects:
 				print(f"+{proj.name}")
-			changes = remote_db.changes(local_db)
-			for k, v in changes.items():
+			diffs = remote_db.diffs(local_db)
+			for k, v in diffs.items():
 				print(f"~{k}")
 			del_db = local_db.difference(remote_db).sorted_by("name")
 			for proj in del_db.projects:
 				print(f"-{proj.name}")
-			if len(add_db) == 0 and len(del_db) == 0 and len(changes) == 0:
+			if len(add_db) == 0 and len(del_db) == 0 and len(diffs) == 0:
 				print("Everything synced")
-			elif len(changes) > 0 and args.verbose:
+			elif len(diffs) > 0 and args.verbose:
 				print()
-				for k, v in changes.items():
+				for k, v in diffs.items():
 					print(f"{site} {k}:")
 					print("".join(v))
 			print("")
