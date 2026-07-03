@@ -121,4 +121,5 @@ def status(args):
 				for k, v in diffs.items():
 					print(f"{site} {k}:")
 					print("".join(v))
-			print("")
+			else:
+				print()
