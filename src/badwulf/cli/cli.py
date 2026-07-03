@@ -170,7 +170,7 @@ def register_check(subparsers):
 		help="Check for issues")
 	p.set_defaults(func=proj.check, parser=p)
 	_add_prefix(p, opt=True)
-	p.add_argument("--fix",
+	p.add_argument("-x", "--fix",
 		help="fix issues where possible",
 		action="store_true")
 
