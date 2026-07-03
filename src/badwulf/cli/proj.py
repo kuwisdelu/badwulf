@@ -109,7 +109,7 @@ def link(args):
 		filename = args.filename
 	os.symlink(proj.path, filename, target_is_directory=True)
 
-def show1(args):
+def show_info(args):
 	dbs = dbsyncer.from_default_locations()
 	site, host = tokenize(args.site)
 	prefix, name = rtokenize(args.project)
@@ -144,7 +144,7 @@ def show1(args):
 	else:
 		print("".join(proj.format()))
 
-def show(args):
+def show_list(args):
 	dbs = dbsyncer.from_default_locations()
 	site, host = tokenize(args.site)
 	prefix, query = rtokenize(args.query)

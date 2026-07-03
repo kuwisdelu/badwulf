@@ -198,7 +198,7 @@ def register_list(subparsers):
 		help="List projects",
 		aliases=["ls"])
 	g = p.add_mutually_exclusive_group()
-	p.set_defaults(func=proj.show, parser=p)
+	p.set_defaults(func=proj.show_list, parser=p)
 	p.add_argument("query",
 		help="regex pattern (over project names)",
 		metavar=QUERY_METAVAR,
@@ -238,7 +238,7 @@ def register_info(subparsers):
 		aliases=["cat"],
 		help="Display project metadata")
 	g = p.add_mutually_exclusive_group()
-	p.set_defaults(func=proj.show1, parser=p)
+	p.set_defaults(func=proj.show_info, parser=p)
 	_add_project(p)
 	_add_site_option(p)
 	g.add_argument("--diff",

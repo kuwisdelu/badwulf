@@ -30,7 +30,7 @@ def all_missing(args):
 def main(args):
 	match args.subcommand:
 		case None:
-			show(args)
+			show_list(args)
 		case "add":
 			add(args)
 		case "get":
@@ -212,7 +212,7 @@ def remove(args):
 		del dbs.sites[args.name]
 	dbs.save_sites()
 
-def show(args):
+def show_list(args):
 	dbs = dbsyncer.from_default_locations()
 	if args.json:
 		print(json.dumps(dbs.sites.to_dict(), indent=2))
