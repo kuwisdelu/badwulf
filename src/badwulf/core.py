@@ -4,6 +4,7 @@
 import os
 import io
 import json
+import subprocess
 
 from collections.abc import MutableMapping
 from dataclasses import dataclass
@@ -372,7 +373,7 @@ class dbsyncer:
 		site: str, 
 		host: str | None = None,
 		prefix: str | None = None,
-		**kwargs: Any) -> None:
+		**kwargs: Any) -> subprocess.CompletedProcess:
 		"""
 		Pull a manifest from a node at another site
 		:param site: The site name
@@ -389,7 +390,7 @@ class dbsyncer:
 		site: str, 
 		host: str | None = None,
 		prefix: str | None = None,
-		**kwargs: Any) -> None:
+		**kwargs: Any) -> subprocess.CompletedProces:
 		"""
 		Push a manifest to a node at another site
 		:param site: The site name
@@ -407,13 +408,15 @@ class dbsyncer:
 		site: str, 
 		host: str | None = None,
 		prefix: str | None = None,
-		**kwargs: Any) -> None:
+		mkdirs: bool = False,
+		**kwargs: Any) -> subprocess.CompletedProcess:
 		"""
 		Pull a project from a node at another site
 		:param name: The project name
 		:param site: The site name
 		:param host: The host alias (if not default)
 		:param prefix: The prefix alias (if not default)
+		:param mkdirs: Create all destination paths before syncing?
 		:param kwargs: Arguments passed to rssh.pull
 		"""
 		sync = self.get_syncer(site, host)
@@ -427,22 +430,26 @@ class dbsyncer:
 			src += "/"
 		dst = os.path.join(self.local_prefix(prefix), proj.canonical_path)
 		local_db = self.local_db(prefix)
+		if name not in local_db:
+			mkdirs = True
 		local_db[name] = replace(proj.realize(), path=dst)
 		local_db.save()
-		return sync.pull(src=src, dst=dst, **kwargs)
+		return sync.pull(src=src, dst=dst, mkdirs=mkdirs, **kwargs)
 
 	def push_tree(self, 
 		name: str,
 		site: str, 
 		host: str | None = None,
 		prefix: str | None = None,
-		**kwargs: Any) -> None:
+		mkdirs: bool = False,
+		**kwargs: Any) -> subprocess.CompletedProcess:
 		"""
 		Push a project to a node at another site
 		:param name: The project name
 		:param site: The site name
 		:param host: The host alias (if not default)
 		:param prefix: The prefix alias (if not default)
+		:param mkdirs: Create all destination paths before syncing?
 		:param kwargs: Arguments passed to rssh.push
 		"""
 		sync = self.get_syncer(site, host)
@@ -456,9 +463,11 @@ class dbsyncer:
 			src += "/"
 		dst = os.path.join(self.get_prefix(site, prefix), proj.canonical_path)
 		remote_db = self.get_db(site, host, prefix)
+		if name not in remote_db:
+			mkdirs = True
 		remote_db[name] = replace(proj.realize(), path=dst)
 		remote_db.save()
-		return sync.push(src=src, dst=dst, **kwargs)
+		return sync.push(src=src, dst=dst, mkdirs=mkdirs, **kwargs)
 
 	@classmethod
 	def from_path(cls, p: str):

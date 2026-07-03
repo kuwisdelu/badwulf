@@ -176,7 +176,7 @@ class rssh:
 		Pull file/directory from src to dst using rsync
 		:param src: The source path on target host
 		:param dst: The destination path on localhost
-		:param mkdirs: Create intermediate paths if they don't exist?
+		:param mkdirs: Create all destination paths before syncing?
 		:param mirror: Delete files in dst that aren't in src?
 		:param silent: Capture output from stdout?
 		:param verbose: Be more verbose?
@@ -195,11 +195,14 @@ class rssh:
 			dst = mkpath(dst, must_exist=False)
 		cmd = ["rsync", "-a"]
 		if mkdirs:
-			if ask or verbose:
-				print(f"Creating intermediate directories for: '{dst}'")
+			if ask or not silent:
+				print(f"Creating destination paths before syncing: '{dst}'")
 			if ask and not confirm("Continue?"):
 				return
-			self.run(["mkdir", "-p", dirs])
+			if not dry_run:
+				proc = self.run(["mkdir", "-p", dirs], silent=silent)
+				if proc.returncode != 0:
+					raise IOError("failed to create destination paths")
 		if mirror:
 			cmd += ["--delete"]
 		if verbose:
@@ -237,7 +240,7 @@ class rssh:
 		Push file/directory from src to dst using rsync
 		:param src: The source path on localhost
 		:param dst: The destination path on target host
-		:param mkdirs: Create intermediate paths if they don't exist?
+		:param mkdirs: Create all destination paths before syncing?
 		:param mirror: Delete files in dst that aren't in src?
 		:param silent: Capture output from stdout?
 		:param verbose: Be more verbose?
@@ -256,11 +259,14 @@ class rssh:
 			dst = f"{self.destination}:{dst}"
 		cmd = ["rsync", "-a"]
 		if mkdirs:
-			if ask or verbose:
-				print(f"Creating intermediate directories for: '{dst}'")
+			if ask or not silent:
+				print(f"Creating destination paths before syncing: '{dst}'")
 			if ask and not confirm("Continue?"):
 				return
-			self.run(["mkdir", "-p", dirs])
+			if not dry_run:
+				proc = self.run(["mkdir", "-p", dirs], silent=silent)
+				if proc.returncode != 0:
+					raise IOError("failed to create destination paths")
 		if mirror:
 			cmd += ["--delete"]
 		if verbose:
@@ -283,10 +289,12 @@ class rssh:
 				return
 		return subprocess.run(cmd, capture_output=silent)
 	
-	def run(self, command: list[str] | None = None):
+	def run(self, command: list[str] | None = None, silent: bool = False):
 		"""
 		Run an unrestricted shell command
+		:param command: The command to run
+		:param silent: Capture output from stdout?
 		"""
 		dst = self.destination if self.has_remote() else "localhost"
 		command = [] if command is None else command
-		return subprocess.run(self.rsh + [dst] + command)
+		return subprocess.run(self.rsh + [dst] + command, capture_output=silent)

@@ -95,7 +95,7 @@ def _add_verbose(p):
 
 def _add_mkpath(p):
 	p.add_argument("--mkpath", 
-		help="create intermediate directories if they don't exist?",
+		help="create all destination paths before syncing?",
 		action="store_true")
 
 def _add_mirror(p):
