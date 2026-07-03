@@ -1,6 +1,8 @@
 
 # Project syncing
 
+import sys
+
 from ..core import dbsyncer
 from ..util import prog_error
 from ..util import tokenize
@@ -69,6 +71,8 @@ def push(args):
 			ask=args.ask)
 	except Exception as e:
 		prog_error(e, args)
+	if proc is None:
+		sys.exit()
 	if proc.returncode != 0:
 		prog_error(f"Failed to sync project tree to '{site}'", args)
 	try:
@@ -80,6 +84,8 @@ def push(args):
 			ask=args.ask)
 	except Exception as e:
 		prog_error(e, args)
+	if proc is None:
+		sys.exit()
 	if proc.returncode != 0:
 		prog_error(f"Failed to copy manifest to '{site}'", args)
 	print("Transfer complete")

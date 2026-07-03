@@ -400,7 +400,7 @@ class dbsyncer:
 		sync = self.get_syncer(site, host)
 		src = self.get_db(site, host, prefix).manifest
 		dst = os.path.join(self.get_prefix(site, prefix), "manifest.json")
-		return sync.pull(src=src, dst=dst, **kwargs)
+		return sync.push(src=src, dst=dst, **kwargs)
 
 	def pull_tree(self, 
 		name: str,
