@@ -164,6 +164,7 @@ class rssh:
 	def pull(self, 
 		src: str, 
 		dst: str, 
+		mkdirs: bool = False,
 		mirror: bool = False,
 		silent: bool = False,
 		verbose: bool = False,
@@ -175,6 +176,7 @@ class rssh:
 		Pull file/directory from src to dst using rsync
 		:param src: The source path on target host
 		:param dst: The destination path on localhost
+		:param mkdirs: Create intermediate paths if they don't exist?
 		:param mirror: Delete files in dst that aren't in src?
 		:param silent: Capture output from stdout?
 		:param verbose: Be more verbose?
@@ -182,6 +184,7 @@ class rssh:
 		:param dry_run: Report what would be done without doing it?
 		:param ask: Confirm before pushing?
 		"""
+		dirs = os.path.dirname(dst)
 		if self.has_remote():
 			src = f"{self.destination}:{quote(src)}"
 		if dst[-1] == "/":
@@ -191,12 +194,18 @@ class rssh:
 		else:
 			dst = mkpath(dst, must_exist=False)
 		cmd = ["rsync", "-a"]
-		if progress:
-			cmd += ["-P"]
+		if mkdirs:
+			if ask or verbose:
+				print(f"Creating intermediate directories for: '{dst}'")
+			if ask and not confirm("Continue?"):
+				return
+			self.run(["mkdir", "-p", dirs])
 		if mirror:
 			cmd += ["--delete"]
 		if verbose:
 			cmd += ["--verbose"]
+		if progress:
+			cmd += ["-P"]
 		if dry_run:
 			cmd += ["--dry-run"]
 		if self.has_proxy_jump():
@@ -216,6 +225,7 @@ class rssh:
 	def push(self, 
 		src: str, 
 		dst: str, 
+		mkdirs: bool = False,
 		mirror: bool = False,
 		silent: bool = False,
 		verbose: bool = False,
@@ -227,6 +237,7 @@ class rssh:
 		Push file/directory from src to dst using rsync
 		:param src: The source path on localhost
 		:param dst: The destination path on target host
+		:param mkdirs: Create intermediate paths if they don't exist?
 		:param mirror: Delete files in dst that aren't in src?
 		:param silent: Capture output from stdout?
 		:param verbose: Be more verbose?
@@ -234,6 +245,7 @@ class rssh:
 		:param dry_run: Report what would be done without doing it?
 		:param ask: Confirm before pushing?
 		"""
+		dirs = os.path.dirname(dst)
 		if src[-1] == "/":
 			src = mkpath(src, must_exist=True)
 			if src[-1] != "/":
@@ -243,12 +255,18 @@ class rssh:
 		if self.has_remote():
 			dst = f"{self.destination}:{dst}"
 		cmd = ["rsync", "-a"]
-		if progress:
-			cmd += ["-P"]
+		if mkdirs:
+			if ask or verbose:
+				print(f"Creating intermediate directories for: '{dst}'")
+			if ask and not confirm("Continue?"):
+				return
+			self.run(["mkdir", "-p", dirs])
 		if mirror:
 			cmd += ["--delete"]
 		if verbose:
 			cmd += ["--verbose"]
+		if progress:
+			cmd += ["-P"]
 		if dry_run:
 			cmd += ["--dry-run"]
 		if self.has_proxy_jump():

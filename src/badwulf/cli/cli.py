@@ -93,6 +93,11 @@ def _add_verbose(p):
 		help="show verbose output",
 		action="store_true")
 
+def _add_mkpath(p):
+	p.add_argument("--mkpath", 
+		help="create intermediate directories if they don't exist?",
+		action="store_true")
+
 def _add_mirror(p):
 	p.add_argument("--mirror", 
 		help="delete files on destination that aren't in source?",
@@ -142,6 +147,7 @@ def _add_sync_group(p):
 	_add_verbose(p)
 	_add_dry_run(p)
 	_add_no_progress(p)
+	_add_mkpath(p)
 	_add_mirror(p)
 	_add_ask(p)
 

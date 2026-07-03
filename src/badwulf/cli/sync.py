@@ -45,6 +45,7 @@ def pull(args):
 		target  = (name, site, host, prefix)
 		print(f"Syncing '{name}' project tree from '{site}'...")
 		proc = dbs.pull_tree(*target,
+			mkdirs=args.mkpath,
 			mirror=args.mirror,
 			verbose=args.verbose,
 			progress=args.progress,
@@ -64,6 +65,7 @@ def push(args):
 		target  = (name, site, host, prefix)
 		print(f"Syncing '{name}' project tree to '{site}'...")
 		proc = dbs.push_tree(*target,
+			mkdirs=args.mkpath,
 			mirror=args.mirror,
 			verbose=args.verbose,
 			progress=args.progress,
