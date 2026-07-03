@@ -102,14 +102,23 @@ def status(args):
 		else:
 			hosts = [None]
 		for h in hosts:
-			print(f"{k}:" if h is None else f"{k}:{h}:")
+			site = f"{k}:" if h is None else f"{k}:{h}:"
+			print(site)
 			remote_db = dbs.get_db(k, h, prefix)
 			add_db = remote_db.difference(local_db).sorted_by("name")
 			for proj in add_db.projects:
 				print(f"+{proj.name}")
+			changes = remote_db.changes(local_db)
+			for k, v in changes.items():
+				print(f"~{k}")
 			del_db = local_db.difference(remote_db).sorted_by("name")
 			for proj in del_db.projects:
 				print(f"-{proj.name}")
-			if len(add_db) == 0 and len(del_db) == 0:
+			if len(add_db) == 0 and len(del_db) == 0 and len(changes) == 0:
 				print("Everything synced")
+			elif len(changes) > 0 and args.verbose:
+				print()
+				for k, v in changes.items():
+					print(f"{site} {k}:")
+					print("".join(v))
 			print("")

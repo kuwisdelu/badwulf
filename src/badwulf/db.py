@@ -7,6 +7,7 @@ import os
 import shutil
 import json
 import tomllib
+import difflib
 import datetime
 
 from collections.abc import MutableMapping
@@ -18,6 +19,7 @@ from dataclasses import field
 from operator import attrgetter
 from typing import Any
 
+from .util import format_bytes
 from .util import detect
 from .util import mkpath
 from .util import mktree
@@ -319,6 +321,27 @@ class projdata:
 		Get last modified timestamp for metadata.toml
 		"""
 		return self._fetch_meta_stat()["mtime"]	
+
+	def diff(self, other: projdata) -> list[str] | None:
+		"""
+		Get a unified diff of the project metadata and directory size
+		"""
+		if self.meta == other.meta and self.size == other.size:
+			return None
+		else:
+			t1 = datetime.datetime.fromtimestamp(self.mtime).strftime("%x %X")
+			sl1 = self.meta.format()
+			sl1.append(f"#size# = {format_bytes(self.size)}\n")
+			t2 = datetime.datetime.fromtimestamp(other.mtime).strftime("%x %X")
+			sl2 = other.meta.format()
+			sl2.append(f"#size# = {format_bytes(other.size)}\n")
+			return list(difflib.unified_diff(
+				a=sl1,
+				b=sl2,
+				fromfile=self.path,
+				tofile=other.path,
+				fromfiledate=t1,
+				tofiledate=t2))
 
 	def is_local(self) -> bool:
 		"""
@@ -781,6 +804,25 @@ class projdb(MutableMapping):
 		"""
 		names = set(self.keys()).difference(set(other.keys()))
 		return projdb([self[name] for name in names])
+
+	def intersection(self, other: projdb) -> projdb:
+		"""
+		Get projects in this database and also the other (by name)
+		"""
+		names = set(self.keys()).intersection(set(other.keys()))
+		return projdb([self[name] for name in names])
+
+	def changes(self, other: projdb) -> dict[str, list[str]]:
+		"""
+		Get project changes in common projects
+		"""
+		changes = {}
+		names = set(self.keys()).intersection(set(other.keys()))
+		for name in names:
+			diff = self[name].diff(other[name])
+			if diff is not None:
+				changes[name] = diff
+		return changes
 
 	def save(self, indent: int = "\t") -> None:
 		"""
