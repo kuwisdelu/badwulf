@@ -1,10 +1,12 @@
 
 # Project syncing
 
+import os
 import sys
 
 from ..core import dbsyncer
 from ..util import prog_error
+from ..util import confirm
 from ..util import tokenize
 from ..util import rtokenize
 
@@ -12,6 +14,14 @@ def fetch(args):
 	dbs = dbsyncer.from_default_locations()
 	site, host = tokenize(args.site)
 	prefix = args.prefix
+	manifest = dbs.get_db(site, host, prefix).manifest
+	if args.clear:
+		print(f"Deleting manifest '{manifest}'")
+		if args.ask and not confirm("Continue?"):
+			sys.exit()
+		if not args.dry_run:
+			os.remove(manifest)
+		sys.exit()
 	try:
 		target  = (site, host, prefix)
 		proc = dbs.pull_manifest(*target,
@@ -23,8 +33,7 @@ def fetch(args):
 	if proc.returncode != 0:
 		print(f"Failed to fetch manifest from '{site}'")
 	else:
-		manifest_path = dbs.get_db(site, host, prefix).manifest
-		print(f"Fetched manifest from '{site}' to {manifest_path}")
+		print(f"Fetched manifest from '{site}' to '{manifest}'")
 
 def pull(args):
 	dbs = dbsyncer.from_default_locations()
