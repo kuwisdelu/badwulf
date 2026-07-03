@@ -322,26 +322,31 @@ class projdata:
 		"""
 		return self._fetch_meta_stat()["mtime"]	
 
+	def format(self, indent: str = "\t") -> list[str]:
+		"""
+		Format as lines for metadata.toml
+		:param indent: String for indentation
+		"""
+		time = datetime.datetime.fromtimestamp(self.mtime).isoformat()
+		size = format_bytes(self.size)
+		lines = self.meta.format(indent=indent)
+		lines.append(f"#mtime# = {time}\n")
+		lines.append(f"#size# = {size}\n")
+		return lines
+
 	def diff(self, other: projdata) -> list[str] | None:
 		"""
-		Get a unified diff of the project metadata and directory size
+		Get a unified diff of project metadata and size
 		"""
 		if self.meta == other.meta and self.size == other.size:
 			return None
 		else:
-			t1 = datetime.datetime.fromtimestamp(self.mtime).strftime("%x %X")
-			sl1 = self.meta.format()
-			sl1.append(f"#size# = {format_bytes(self.size)}\n")
-			t2 = datetime.datetime.fromtimestamp(other.mtime).strftime("%x %X")
-			sl2 = other.meta.format()
-			sl2.append(f"#size# = {format_bytes(other.size)}\n")
 			return list(difflib.unified_diff(
-				a=sl1,
-				b=sl2,
+				a=self.format(),
+				b=other.format(),
 				fromfile=self.path,
 				tofile=other.path,
-				fromfiledate=t1,
-				tofiledate=t2))
+				n=0))
 
 	def is_local(self) -> bool:
 		"""

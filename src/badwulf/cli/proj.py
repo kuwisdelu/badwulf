@@ -109,6 +109,41 @@ def link(args):
 		filename = args.filename
 	os.symlink(proj.path, filename, target_is_directory=True)
 
+def show1(args):
+	dbs = dbsyncer.from_default_locations()
+	site, host = tokenize(args.site)
+	prefix, name = rtokenize(args.project)
+	try:
+		db = dbs.get_db(site, host, prefix)
+	except Exception as e:
+		prog_error(e, args)
+	try:
+		proj = db[name]
+	except KeyError:
+		prog_error(f"no match for '{name}' at '{args.site}'", args)
+	if args.json:
+		print(json.dumps(proj.to_dict(), indent=2))
+	elif args.path:
+		nodename = ""
+		if host is not None:
+			nodename = dbs.get_site(site).get_host(host) + ":"
+		print(nodename + proj.path)
+	elif args.diff is not None:
+		site2, host2 = tokenize(args.diff)
+		try:
+			db2 = dbs.get_db(site2, host2, prefix)
+		except KeyError as e:
+			prog_error(e, args)
+		try:
+			proj2 = db2[proj.name]
+		except KeyError:
+			prog_error(f"no match for '{proj.name}' at '{args.diff}'", args)
+		diff = proj.diff(proj2)
+		if diff is not None:
+			print("".join(diff))
+	else:
+		print("".join(proj.format()))
+
 def show(args):
 	dbs = dbsyncer.from_default_locations()
 	site, host = tokenize(args.site)

@@ -32,6 +32,7 @@ def build_parser():
 	register_link(sub)
 	register_list(sub)
 	register_search(sub)
+	register_info(sub)
 	# sync and compare projects
 	register_fetch(sub)
 	register_pull(sub)
@@ -199,7 +200,7 @@ def register_list(subparsers):
 	g = p.add_mutually_exclusive_group()
 	p.set_defaults(func=proj.show, parser=p)
 	p.add_argument("query",
-		help="pattern (over project names)",
+		help="regex pattern (over project names)",
 		metavar=QUERY_METAVAR,
 		nargs="?")
 	p.add_argument("-l", "--long", 
@@ -218,7 +219,7 @@ def register_search(subparsers):
 	g = p.add_mutually_exclusive_group()
 	p.set_defaults(func=proj.search, parser=p)
 	p.add_argument("query",
-		help="pattern (over project metadata)",
+		help="regex pattern (over project metadata)",
 		metavar=QUERY_METAVAR)
 	_add_site_option(p)
 	_add_filter_group(p)
@@ -229,6 +230,20 @@ def register_search(subparsers):
 		help="ignore case",
 		action="store_true")
 	_add_sort_group(p)
+	_add_path(g)
+	_add_json(g)
+
+def register_info(subparsers):
+	p = subparsers.add_parser("info", 
+		aliases=["cat"],
+		help="Display project metadata")
+	g = p.add_mutually_exclusive_group()
+	p.set_defaults(func=proj.show1, parser=p)
+	_add_project(p)
+	_add_site_option(p)
+	g.add_argument("--diff",
+		help="show diff with another site",
+		metavar=SITE_METAVAR)
 	_add_path(g)
 	_add_json(g)
 
