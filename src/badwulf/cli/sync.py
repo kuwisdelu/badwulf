@@ -108,7 +108,7 @@ def status(args):
 			add_db = remote_db.difference(local_db).sorted_by("name")
 			for proj in add_db.projects:
 				print(f"+{proj.name}")
-			diffs = remote_db.diffs(local_db)
+			diffs = local_db.diffs(remote_db)
 			for k, v in diffs.items():
 				print(f"~{k}")
 			del_db = local_db.difference(remote_db).sorted_by("name")
