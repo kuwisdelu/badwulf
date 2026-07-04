@@ -218,7 +218,7 @@ wulf pull origin test
 
 All hosts at the same site are assumed to have prefixes in the same locations. They may even share a filesystem. However, manifests for each host are fetched separately, so they do not need to share storage. If a site has no hosts, the local filesystem is accessed, and SSH uses "localhost" if required.
 
-You can use different prefixes as a way to organize projects into namespaces. All project names under the same prefix must be unique (*after* casefolding).
+All project names under the same prefix must be unique (*after* casefolding), so you can use different prefixes as a way to organize projects into namespaces.
 
 ### Configure with JSON
 
