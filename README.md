@@ -92,7 +92,7 @@ wulf add test --scope private --group scratch
 wulf edit test
 ```
 
-This will initialize "PREFIX/private/scratch/test/metadata.toml". If you let __badwulf__ set up a default configuration, then PREFIX="$HOME/.badwulf/". The next line will open your default text editor (falls back to `vi`) to edit the "metadata.toml" file.
+This will initialize a project named "test" by creating the file "PREFIX/private/scratch/test/metadata.toml". If you let __badwulf__ set up a default configuration, then PREFIX="$HOME/.badwulf/". The next line will open your default text editor (falls back to `vi`) to edit the "metadata.toml" file.
 
 ### Check for issues
 
