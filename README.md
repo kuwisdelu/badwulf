@@ -4,7 +4,7 @@
 
 The goal of __badwulf__ is a provide a minimal command line interface for accessing and managing project data on scientific computing servers and Beowulf clusters.
 
-This tool is __not__ intended to replace true cluster management and scheduling software for such as __SLURM__. Instead, __badwulf__ is a lightweight package for simplying tasks such as:
+This tool is __not__ intended to replace true cluster management and scheduling software such as __SLURM__. Instead, __badwulf__ is a lightweight package for simplying tasks such as:
 
 - Connecting an port forwarded SSH session to a research server behind a login server
 
