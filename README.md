@@ -112,7 +112,7 @@ For example, the command below will list projects using a long (`-l`) format tha
 wulf list -l -r size
 ```
 
-You can list projects available other sites (e.g., a remote server or cluster) if you've fetched their manifests:
+You can list projects available at other sites (e.g., a remote server or cluster) if you've fetched their manifests:
 
 ```
 wulf list -S <site-alias>
