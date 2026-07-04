@@ -42,22 +42,42 @@ You can see available commands by running `wulf` or `wulf --help`.
 
 By default, if no site configuration is detected, __badwulf__ will set up a prefix under `$HOME/.badwulf`. Any directory under a designated prefix can be a project. Projects are simply directories with a "metadata.toml" file.
 
-The "metadata.toml" file described the project, and can include the following fields:
+The "metadata.toml" file describes the project, which looks like:
 
-- `name`: A string identifying the project (used as a directory name)
-- `scope`: A string for the scope (e.g., "public", "private", "restricted")
-- `group`: A string for the group (e.g., the lab or other organization)
-- `title`: A short title for the project
-- `date`: Key-values of important dates (e.g., created, updated, etc.)
-- `keywords`: A list of project keywords
-- `formats`: A list of file formats and resources types included
-- `contact`: A list of dictionary entries for people/orgs responsible
-- `description`: Key-values of descriptions (e.g., abstract, methods, etc.)
-- `reference`: Key-values of related identifiers (e.g., urls, dois, etc.)
+```
+name = "example0"
+scope = "public"
+group = "Example"
+title = "This is an example title"
+date.created = 1970-01-01
+date.updated = 1970-01-01
+keywords = ["example", "documentation"]
+formats = []
+contact = [
+	{name = "Bad Wolf", email = "entity@the-moment.time"}
+]
+description.abstract = """\
+	A description of the scientific research project, \
+	including the purpose why any data was collected, \
+	and the overall goals of the investigation.\
+	"""
+description.sample-processing = """\
+	Describe the sample preparation and \
+	the data collection protocol.\
+	"""
+description.data-processing = """\
+	Describe any computational processing \
+	applied to the data or files.\
+	"""
+reference.doi = "not.a.valid.doi/or.is.it"
+reference.url = "bad.wolf.corporation"
+```
 
-Only `name`, `scope`, and `group` are required.
+You can use custom keys for any of the sub-tables like "description" and "reference"; "abstract", "url", "doi", etc. are just examples.
 
-If you let __badwulf__ manage projects, these fields are used to organize project paths. A project's canonical path is `PREFIX/SCOPE/GROUP/NAME`.
+Only `name`, `scope`, and `group` are REQUIRED.
+
+Project names MUST be unique after casefolding. Project names, scopes, and groups SHOULD be valid path components. If you let __badwulf__ manage projects for you, these fields are used to create the project directories. A project's canonical path is `PREFIX/SCOPE/GROUP/NAME`.
 
 ## Managing projects
 
@@ -70,13 +90,13 @@ wulf add test --scope private --group scratch
 wulf edit test
 ```
 
-This will initialize "PREFIX/private/scratch/test/metadata.toml". If __badwulf__ set up a default configuration, then PREFIX="$HOME/.badwulf/". The next line will open your default text editor (falls back to `vi`) to edit the "metadata.toml" file.
+This will initialize "PREFIX/private/scratch/test/metadata.toml". If you let __badwulf__ set up a default configuration, then PREFIX="$HOME/.badwulf/". The next line will open your default text editor (falls back to `vi`) to edit the "metadata.toml" file.
 
 ### Checking for issues
 
 You can check for various issues using `wulf check`. These include checking for malformed "metadata.toml" files and misplaced project directories.
 
-Use `wulf check --fix` to organize a prefix by moving project directories to their canonical locations if they're misplaced.
+Use `wulf check --fix` to re-organize a prefix by moving project directories to their canonical locations if they're misplaced.
 
 ## Querying projects
 
