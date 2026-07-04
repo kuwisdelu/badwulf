@@ -41,7 +41,7 @@ You can see available commands by running `wulf` or `wulf --help`.
 
 ### Projects and metadata
 
-By default, if no site configuration is detected, __badwulf__ will set up a prefix under `\~/.badwulf`. Any directory under a designated prefix can be a project.
+By default, if no site configuration is detected, __badwulf__ will set up a prefix under "\~/.badwulf". Any directory under a designated prefix can be a project.
 
 Projects are simply directories with a "metadata.toml" file.
 
@@ -93,7 +93,7 @@ wulf add test --scope private --group scratch
 wulf edit test
 ```
 
-This will initialize a project named "test" by creating the file "PREFIX/private/scratch/test/metadata.toml". If you let __badwulf__ set up a default site configuration for you (i.e., you don't set `$BADWULF_SITES`), then PREFIX="$HOME/.badwulf/". The next line will open your default text editor (first `$VISUAL`, then `$EDITOR`, then `vi`) to edit the "metadata.toml" file.
+This will initialize a project named "test" by creating the file "PREFIX/private/scratch/test/metadata.toml". If you let __badwulf__ set up a default site configuration for you (i.e., you don't set `$BADWULF_SITES`), then PREFIX="\~/.badwulf/". The next line will open your default text editor (first `$VISUAL`, then `$EDITOR`, then `vi`) to edit the "metadata.toml" file.
 
 ### Check for issues
 
