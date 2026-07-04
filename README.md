@@ -125,26 +125,30 @@ Use `wulf search` (alias: `wulf grep`) to query project metadata using regular e
 For example, the command below will search for the variations of "single cell", "single-cell", etc., in the keywords or description fields, ignoring case (`-i`), limiting results to projects with a "public" scope.
 
 ```
-wulf search -i 'single.cell' -g public
+wulf search -i 'single.cell' -f keywords -f description -g public
 ```
 
 You can also search project metadata in manifests from other sites:
 
 ```
-wulf search -S <site-alias> 'cancer'
+wulf search -S <site-alias> 'arthritis'
 ```
 
 ## Syncing projects
 
 ### Fetch project manifests
 
-Use `wulf fetch` to get manifests from another site. This will make their project metadata available locally for querying, and let you know what projects are available for syncing.
+Use `wulf fetch` to get project manifests from another site. This will make their project metadata available locally for querying, and let you know what projects are available for syncing.
 
 ```
 wulf fetch <site-alias>
 ```
 
-You should always fetch a manifest before pushing a project to another site, so you can inspect if the project has changed at the other site.
+You should always fetch a manifest before pushing a project to another site, so you can inspect if the project has changed at the other site:
+
+```
+wulf info <project-name> --diff <site-alias>
+```
 
 ### Push and pull
 
@@ -156,7 +160,7 @@ wulf push origin test
 wulf pull origin hello
 ```
 
-The above commands (1) fetch the manifest from a site aliased as `origin` (which may be a research server, a cluster transfer node, etc.), (2) upload a project named "test", and then (3) download a project named "hello".
+The above commands (1) fetch the manifest from a site aliased as `origin` (which may be a research server, a cluster's transfer node, etc.), (2) upload a project named "test", and then (3) download a project named "hello".
 
 ### Synchronization status
 
