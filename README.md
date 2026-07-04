@@ -83,7 +83,7 @@ Project names MUST be unique after casefolding. Project names, scopes, and group
 
 ## Managing projects
 
-### Creating and editing project metadata
+### Create and edit project metadata
 
 You can use `wulf` to initialize and edit project metadata.
 
@@ -94,7 +94,7 @@ wulf edit test
 
 This will initialize "PREFIX/private/scratch/test/metadata.toml". If you let __badwulf__ set up a default configuration, then PREFIX="$HOME/.badwulf/". The next line will open your default text editor (falls back to `vi`) to edit the "metadata.toml" file.
 
-### Checking for issues
+### Check for issues
 
 You can check for various issues using `wulf check`. These include checking for malformed "metadata.toml" files and misplaced project directories.
 
@@ -102,7 +102,7 @@ Use `wulf check --fix` to re-organize a prefix by moving project directories to 
 
 ## Querying projects
 
-### Listing projects
+### List projects
 
 Use `wulf list` (alias: `wulf ls`) to list the available projects. You can sort and filter the projects using options.
 
@@ -118,7 +118,7 @@ You can list projects available other sites (e.g., a remote server or cluster) i
 wulf list -S <site-alias>
 ```
 
-### Searching project metadata
+### Search project metadata
 
 Use `wulf search` (alias: `wulf grep`) to query project metadata using regular expressions. You can sort and filter the results using the same options as `wulf list`.
 
@@ -136,7 +136,7 @@ wulf search -S <site-alias> 'cancer'
 
 ## Syncing projects
 
-### Fetching project manifests
+### Fetch project manifests
 
 Use `wulf fetch` to get manifests from another site. This will make their project metadata available locally for querying, and let you know what projects are available for syncing.
 
@@ -146,7 +146,7 @@ wulf fetch <site-alias>
 
 You should always fetch a manifest before pushing a project to another site, so you can inspect if the project has changed at the other site.
 
-### Pushing and pulling
+### Push and pull
 
 Use `wulf push` and `wulf pull` to synchronize project data between sites.
 
@@ -156,7 +156,7 @@ wulf push origin test
 wulf pull origin hello
 ```
 
-The above commands (1) fetch the manifest from a site aliased as `origin` (which may be a research server, a cluster transfer node, etc.), (2) upload a project called "test", and then (3) download a project called "hello".
+The above commands (1) fetch the manifest from a site aliased as `origin` (which may be a research server, a cluster transfer node, etc.), (2) upload a project named "test", and then (3) download a project named "hello".
 
 ### Synchronization status
 
@@ -174,13 +174,13 @@ origin:
 ~bar
 ```
 
-First, this prints the prefix path for the local site (aliased "local"). Then it shows that a remote site (aliased "origin") does *not* have the project "test" that *does* exist locally, but it *does* have the project "hello" that does *not* exist locally, and the projects "foo" and "bar" differ in size, modification time, or metadata between sites.
+First, this prints the prefix path for the local site (aliased "local"). Then it shows that a remote site (aliased "origin") does *not* have the project "test" (that *does* exist locally), but it *does* have the project "hello" (that does *not* exist locally), and the projects "foo" and "bar" differ in size, modification time, or metadata between sites.
 
-Only projects that differ between sites are printed. Use `wulf status -v` to also print unified diffs of the metadata that differ between sites (those marked "~").
+Only projects that differ between sites are printed. Use `wulf status -v` to also print unified diffs of the metadata for projects that differ between sites (those marked "~").
 
 ## Site configuration
 
-### Configuring work sites
+### Configure work sites
 
 Use `wulf site` to add or remove work site configurations or edit their variables.
 
@@ -205,7 +205,7 @@ wulf pull SITE:HOST PREFIX:PROJECT
 
 Each site can have a "default" host and a "default" prefix that will be used if these are left unspecified.
 
-Both of the following commands are equivalent; they download a project named "test" under the "default" prefix from site "origin" using its "default" host.
+Both of the following commands are equivalent; they download a project named "test" under the "default" prefix from site "origin" using its "default" host:
 
 ```
 wulf pull origin:default default:test
@@ -216,7 +216,7 @@ All hosts at the same site are assumed to have prefixes in the same locations. T
 
 You can use different prefixes as a way to organize projects into namespaces. All project names under the same prefix must be unique (*after* casefolding).
 
-### Configuring with JSON
+### Configure with JSON
 
 The `wulf site` command edits a JSON file typically named "badwulf-sites.json".
 
@@ -248,5 +248,5 @@ You can create or edit the JSON configuration directly. For example:
 
 You can use `$BADWULF_SITES` to provide a path for the site configuration JSON.
 
-You can use `$BADWULF_LOCAL` to set the name of the "local" site. This defaults to "local", but you can use any name for the "local" site. Any hosts in the "local" site are ignored. The locally addressable filesystem is used, and SSH uses "localhost" if required.
+You can use `$BADWULF_LOCAL` to set the name of the "local" site. This defaults to "local", but you can use any name for the "local" site. (Any hosts in the "local" site are ignored. The locally addressable filesystem is used, and SSH uses "localhost" if required.)
 
