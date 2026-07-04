@@ -17,7 +17,9 @@ def main():
 	args.func(args)
 
 def build_parser():
-	p = argparse.ArgumentParser(prog="wulf")
+	p = argparse.ArgumentParser(prog="wulf",
+		description="Minimal manager for project data on Beowulf clusters",
+		epilog="See https://github.com/kuwisdelu/badwulf for more information")
 	p.set_defaults(func=lambda args: p.print_help())
 	p.add_argument("-v", "--version", 
 		help="show version and exit",
