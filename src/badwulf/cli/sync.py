@@ -119,9 +119,12 @@ def status(args):
 		else:
 			hosts = [None]
 		for h in hosts:
-			site = f"{k}:" if h is None else f"{k}:{h}:"
-			print(site)
 			remote_db = dbs.get_db(k, h, prefix)
+			site = f"{k}:" if h is None else f"{k}:{h}:"
+			path = dbs.get_site(k).get_path(prefix)
+			if path[-1] != "/":
+				path += "/"
+			print(f"{site} {path}")
 			add_db = remote_db.difference(local_db).sorted_by("name")
 			for proj in add_db.projects:
 				print(f"+{proj.name}")
