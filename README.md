@@ -41,7 +41,7 @@ You can see available commands by running `wulf` or `wulf --help`.
 
 ### Projects and metadata
 
-By default, if no site configuration is detected, __badwulf__ will set up a prefix under `~/.badwulf`. Any directory under a designated prefix can be a project.
+By default, if no site configuration is detected, __badwulf__ will set up a prefix under `\~/.badwulf`. Any directory under a designated prefix can be a project.
 
 Projects are simply directories with a "metadata.toml" file.
 
@@ -225,7 +225,7 @@ All project names under the same prefix must be unique (*after* casefolding), so
 
 The `wulf site` command edits a JSON file typically named "badwulf-sites.json".
 
-Whenever executed, `wulf` looks for "$BADWULF_SITES", "~/.badwulf-sites.json", and "~/.badwulf/badwulf-sites.json" in that order, and creates the last one by default if none are found.
+Whenever executed, `wulf` looks for "$BADWULF_SITES", "\~/.badwulf-sites.json", and "\~/.badwulf/badwulf-sites.json" in that order, and creates the last one by default if none are found.
 
 You can create or edit the JSON configuration directly. For example:
 
