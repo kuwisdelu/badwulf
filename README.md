@@ -122,10 +122,10 @@ wulf list -S <site-alias>
 
 Use `wulf search` (alias: `wulf grep`) to query project metadata using regular expressions. You can sort and filter the results using the same options as `wulf list`.
 
-For example, the command below will search for the variations of "single cell", "single-cell", etc., in the keywords or description fields, ignoring case (`-i`), limiting results to projects with a "public" scope.
+For example, the command below will search for variations of "single cell", "single-cell", etc., in the keywords or description fields, ignoring case (`-i`), limiting results to projects with a "public" scope.
 
 ```
-wulf search -i 'single.cell' -f keywords -f description -g public
+wulf search -i 'single.cell' -f keywords -f description -s public
 ```
 
 You can also search project metadata in manifests from other sites:
