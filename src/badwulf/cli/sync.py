@@ -105,7 +105,10 @@ def status(args):
 	dbs = dbsyncer.from_default_locations()
 	prefix = args.prefix
 	local_db = dbs.local_db(prefix)
-	print(f"{dbs.local_name}: {dbs.local_prefix(prefix)}\n")
+	path = dbs.local_prefix(prefix)
+	if path[-1] != "/":
+		path += "/"
+	print(f"{dbs.local_name}: {path}\n")
 	for k, v in dbs.sites.items():
 		if k == dbs.local_name:
 			continue
