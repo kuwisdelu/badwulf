@@ -37,7 +37,6 @@ class projmeta:
 	:ivar group: The grouping for the org or repository
 	:ivar title: A short title for the project
 	:ivar date: Key-values of important dates (created, updated, etc.)
-	:ivar refs: List of related project identifiers
 	:ivar keywords: List of keywords and subject areas for the project
 	:ivar formats: List of file formats and resource types in the project
 	:ivar contact: List of key-value entries for people/orgs responsible

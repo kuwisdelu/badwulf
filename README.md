@@ -2,49 +2,229 @@
 
 ## Minimal manager for Beowulf clusters and scientific data
 
-The goal of *badwulf* is a provide a minimal command line interface for accessing and managing experimental data on scientific computing servers and Beowulf clusters.
+The goal of __badwulf__ is a provide a minimal command line interface for accessing and managing project data on scientific computing servers and Beowulf clusters.
 
-This tool is __not__ intended to replace true cluster management and scheduling software for such as *Slurm*. Instead, *badwulf* is a lightweight package for simplying tasks such as:
+This tool is __not__ intended to replace true cluster management and scheduling software for such as __SLURM__. Instead, __badwulf__ is a lightweight package for simplying tasks such as:
 
 - Connecting an port forwarded SSH session to a research server behind a login server
 
-- Transfering files and directories between a local client and a research server
+- Managing a simple repository of project data and metadata
 
-- Managing a simple repository of experimental data and metadata
+- Searching project metadata for terms and keywords
 
-- Searching experimental metadata for terms and keywords
+- Syncing projects between work sites like a local client and a research server
 
-- Syncing experimental data between a local client and a research server
+## Contents
 
-## Examples
+Jump to a section:
 
-A command line utility named `wulf` for a hypothetical "Badwulf" cluster with compute nodes named "Wulf-01", "Wulf-02", and "Wulf-03" could be set up as follows:
+- [Overview](#Overview)
+- [Managing projects](#Managing-projects)
+- [Querying projects](#Querying-projects)
+- [Syncing projects](#Syncing-projects)
+- [Site configuration](#Site-configuration)
 
-```
-#!/usr/bin/env python3
+## Overview
 
-import os
-from badwulf.cli import clmanager
+### Installation
 
-wulf = clmanager("Badwulf",
-	nodes = {
-		"01": "Wulf-01",
-		"02": "Wulf-02",
-		"03": "Wulf-03"},
-	date = "2024-12-27",
-	description = "Badwulf CLI utility",
-	username = os.getenv("BADWULF_USER"),
-	server = os.getenv("BADWULF_GATEWAY_SERVER"),
-	server_username = os.getenv("BADWULF_GATEWAY_USER"),
-	program = "wulf")
-
-wulf.main()
-```
-
-This would read the environment variables `$BADWULF_USER`, `$BADWULF_GATEWAY_SERVER`, and `$BADWULF_GATEWAY_USER` to set up the SSH connection to the cluster.
-
-A user could then connect to the node "Wulf-01" as:
+You can install __badwulf__ via `pip`, `uv`, etc. For example, using `uv`:
 
 ```
-wulf run -01
+uv tool install badwulf
 ```
+
+This installs a command line utility `wulf` on `$PATH`.
+
+You can see available commands by running `wulf` or `wulf --help`.
+
+### Projects and metadata
+
+By default, if no site configuration is detected, __badwulf__ will set up a prefix under `$HOME/.badwulf`. Any directory under a designated prefix can be a project. Projects are simply directories with a "metadata.toml" file.
+
+The "metadata.toml" file described the project, and can include the following fields:
+
+- `name`: A string identifying the project (used as a directory name)
+- `scope`: A string for the scope (e.g., "public", "private", "restricted")
+- `group`: A string for the group (e.g., the lab or other organization)
+- `title`: A short title for the project
+- `date`: Key-values of important dates (e.g., created, updated, etc.)
+- `keywords`: A list of project keywords
+- `formats`: A list of file formats and resources types included
+- `contact`: A list of dictionary entries for people/orgs responsible
+- `description`: Key-values of descriptions (e.g., abstract, methods, etc.)
+- `reference`: Key-values of related identifiers (e.g., urls, dois, etc.)
+
+Only `name`, `scope`, and `group` are required.
+
+If you let __badwulf__ manage projects, these fields are used to organize project paths. A project's canonical path is `PREFIX/SCOPE/GROUP/NAME`.
+
+## Managing projects
+
+### Creating and editing project metadata
+
+You can use `wulf` to initialize and edit project metadata.
+
+```
+wulf add test --scope private --group scratch
+wulf edit test
+```
+
+This will initialize "PREFIX/private/scratch/test/metadata.toml". If __badwulf__ set up a default configuration, then PREFIX="$HOME/.badwulf/". The next line will open your default text editor (falls back to `vi`) to edit the "metadata.toml" file.
+
+### Checking for issues
+
+You can check for various issues using `wulf check`. These include checking for malformed "metadata.toml" files and misplaced project directories.
+
+Use `wulf check --fix` to organize a prefix by moving project directories to their canonical locations if they're misplaced.
+
+## Querying projects
+
+### Listing projects
+
+Use `wulf list` (alias: `wulf ls`) to list the available projects. You can sort and filter the projects using options.
+
+For example, the command below will list projects using a long (`-l`) format that also shows project sizes and modification times, sorted in reverse (`-r`) by size.
+
+```
+wulf list -l -r size
+```
+
+You can list projects available other sites (e.g., a remote server or cluster) if you've fetched their manifests:
+
+```
+wulf list -S <site-alias>
+```
+
+### Searching project metadata
+
+Use `wulf search` (alias: `wulf grep`) to query project metadata using regular expressions. You can sort and filter the results using the same options as `wulf list`.
+
+For example, the command below will search for the variations of "single cell", "single-cell", etc., in the keywords or description fields, ignoring case (`-i`), limiting results to projects with a "public" scope.
+
+```
+wulf search -i 'single.cell' -g public
+```
+
+You can also search project metadata in manifests from other sites:
+
+```
+wulf search -S <site-alias> 'cancer'
+```
+
+## Syncing projects
+
+### Fetching project manifests
+
+Use `wulf fetch` to get manifests from another site. This will make their project metadata available locally for querying, and let you know what projects are available for syncing.
+
+```
+wulf fetch <site-alias>
+```
+
+You should always fetch a manifest before pushing a project to another site, so you can inspect if the project has changed at the other site.
+
+### Pushing and pulling
+
+Use `wulf push` and `wulf pull` to synchronize project data between sites.
+
+```
+wulf fetch origin
+wulf push origin test
+wulf pull origin hello
+```
+
+The above commands (1) fetch the manifest from a site aliased as `origin` (which may be a research server, a cluster transfer node, etc.), (2) upload a project called "test", and then (3) download a project called "hello".
+
+### Synchronization status
+
+Use `wulf status` to check the synchronization status of projects across all sites that share the same prefix.
+
+Consider the following output:
+
+```
+local: /home/user/.badwulf
+
+origin:
+-test
++hello
+~foo
+~bar
+```
+
+First, this prints the prefix path for the local site (aliased "local"). Then it shows that a remote site (aliased "origin") does *not* have the project "test" that *does* exist locally, but it *does* have the project "hello" that does *not* exist locally, and the projects "foo" and "bar" differ in size, modification time, or metadata between sites.
+
+Only projects that differ between sites are printed. Use `wulf status -v` to also print unified diffs of the metadata that differ between sites (those marked "~").
+
+## Site configuration
+
+### Configuring work sites
+
+Use `wulf site` to add or remove work site configurations or edit their variables.
+
+For example:
+
+```
+wulf site add origin
+wulf site set origin --user="badwulf"
+wulf site set origin --host=default:bad.wolf.corporation
+wulf site set origin --path=default:/projects
+```
+
+This adds a site aliased as "origin". You connect to the site "origin" via SSH as `badwulf@bad.wolf.corporation`. The default prefix at site "origin" is located at `/projects`.
+
+A site can have multiple hosts, and __badwulf__ supports multiple prefixes.
+
+For example, the fully specified `pull` and `push` commands are:
+
+```
+wulf pull SITE:HOST PREFIX:PROJECT
+```
+
+Each site can have a "default" host and a "default" prefix that will be used if these are left unspecified.
+
+Both of the following commands are equivalent; they download a project named "test" under the "default" prefix from site "origin" using its "default" host.
+
+```
+wulf pull origin:default default:test
+wulf pull origin test
+```
+
+All hosts at the same site are assumed to have prefixes in the same locations. They may even share a filesystem. However, manifests for each host are fetched separately, so they do not need to share storage.
+
+You can use different prefixes as a way to organize projects into namespaces. All project names under the same prefix must be unique (*after* casefolding).
+
+### Configuring with JSON
+
+The `wulf site` command edits a JSON file typically named "badwulf-sites.json".
+
+Whenever executed, `wulf` looks for "$BADWULF_SITES", "$HOME/.badwulf-sites.json", and "$HOME/.badwulf/badwulf-sites.json" in that order, and creates the last one by default if none are found.
+
+You can create or edit the JSON configuration directly. For example:
+
+```
+{
+    "local": {
+        "user": "",
+        "paths: {
+            "default": "/home/user/"
+        }
+    },
+    "origin": {
+        "user": "badwulf",
+        "paths": {
+            "default": "/projects"
+        },
+        "hosts": {
+            "default": "bad.wolf.corporation"
+        }
+    }
+}
+```
+
+## Environment variables
+
+You can use `$BADWULF_SITES` to provide a path for the site configuration JSON.
+
+You can use `$BADWULF_LOCAL` to set the name of the "local" site. This defaults to "local", but you can use any name for the "local" site. Any hosts in the "local" site are ignored. The locally addressable filesystem is used, and SSH uses "localhost" if required.
+
