@@ -82,7 +82,7 @@ Only `name`, `scope`, and `group` are REQUIRED. They are case-insensitive.
 
 Project names MUST be unique after casefolding. Project names, scopes, and groups SHOULD be valid path components.
 
-If you let __badwulf__ manage projects for you, these fields are used to create the project directories after casefolding. The casing of `name` is preserved when creating the project directory, but is casefolded for comparisons. A project's canonical path is `PREFIX/SCOPE/GROUP/NAME`.
+If you let __badwulf__ manage projects for you, then `scope` and `group` are used to create path components (*after* casefolding). The casing of `name` is preserved when creating the project directory, but is casefolded for comparisons. A project's canonical path is `PREFIX/SCOPE/GROUP/NAME`.
 
 ## Managing projects
 
