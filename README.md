@@ -40,7 +40,9 @@ You can see available commands by running `wulf` or `wulf --help`.
 
 ### Projects and metadata
 
-By default, if no site configuration is detected, __badwulf__ will set up a prefix under `$HOME/.badwulf`. Any directory under a designated prefix can be a project. Projects are simply directories with a "metadata.toml" file.
+By default, if no site configuration is detected, __badwulf__ will set up a prefix under `$HOME/.badwulf`. Any directory under a designated prefix can be a project.
+
+Projects are simply directories with a "metadata.toml" file.
 
 The "metadata.toml" file describes the project, which looks like:
 
