@@ -23,6 +23,7 @@ Jump to a section:
 - [Querying projects](#Querying-projects)
 - [Syncing projects](#Syncing-projects)
 - [Site configuration](#Site-configuration)
+- [Environment variables](#Environment-variables)
 
 ## Overview
 
@@ -216,7 +217,7 @@ wulf pull origin:default default:test
 wulf pull origin test
 ```
 
-All hosts at the same site are assumed to have prefixes in the same locations. They may even share a filesystem. However, manifests for each host are fetched separately, so they do not need to share storage. If a site has no hosts, the local filesystem is accessed, and SSH uses "localhost" if required.
+All hosts at the same site are assumed to have prefixes in the same locations. They may even share a filesystem. However, manifests for each host are fetched separately, so they do not need to share storage. If a site has no hosts, the local filesystem is assumed, and SSH uses "localhost".
 
 All project names under the same prefix must be unique (*after* casefolding), so you can use different prefixes as a way to organize projects into namespaces.
 
@@ -252,5 +253,5 @@ You can create or edit the JSON configuration directly. For example:
 
 You can use `$BADWULF_SITES` to provide a path for the site configuration JSON.
 
-You can use `$BADWULF_LOCAL` to set the name of the "local" site. This defaults to "local", but you can use any name for the "local" site. (Any hosts in the "local" site are ignored. The local filesystem is accessed, and SSH uses "localhost" if required.)
+You can use `$BADWULF_LOCAL` to set the name of the "local" site. This defaults to "local", but you can use any name for the "local" site. (Any hosts in the "local" site are ignored. The local filesystem is assumed, and SSH uses "localhost".)
 
