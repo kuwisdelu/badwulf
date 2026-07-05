@@ -206,7 +206,7 @@ def search(args):
 		for hits in hitslist:
 			print(nodename + db[hits.name].path)
 	else:
-		print_search_list(hitslist)
+		print_search_list(hitslist, db)
 
 def format_proj(proj):
 	return {
@@ -229,37 +229,23 @@ def print_proj_list(plist, sep = "  "):
 			sl.append(d["title"])
 			print(sep.join(sl))
 
-def format_search(proj):
-	hits = []
-	for field, hit in proj.hits.items():
-		ctx = [proj.name, field]
-		match hit:
-			case str():
-				hits.append({"ctx": ctx, "hit": hit})
-			case list():
-				for subhit in hit:
-					match subhit:
-						case str():
-							hits.append({"ctx": ctx, "hit": hit})
-						case dict():
-							for k, v in subhit.items():
-								hits.append({"ctx": ctx + [k], "hit": v})
-			case dict():
-				for k, v in hit.items():
-					hits.append({"ctx": ctx + [k], "hit": v})
-	return hits
-
-def print_search_list(plist, sep = ":  "):
-	if len(plist) > 0:
-		hlist = []
-		for proj in plist:
-			hlist.extend(format_search(proj))
-		name_len = max(len(hit["ctx"][0]) for hit in hlist)
-		name_len += len(sep)
-		ctx_len = max(len(sep.join(hit["ctx"][1:])) for hit in hlist)
-		ctx_len += len(sep)
-		for hit in hlist:
-			name = (hit["ctx"][0] + sep).ljust(name_len)
-			ctx = (sep.join(hit["ctx"][1:]) + sep).ljust(ctx_len)
-			print(f'{name}{ctx}{hit["hit"]}')
+def print_search_list(hlist, db, sep = ":  "):
+	if len(hlist) > 0:
+		for hits in hlist:
+			proj = db[hits.name]
+			print(proj.canonical_path + sep)
+			pre_len = max(len(k) for k in hits.hits.keys())
+			pre_len += len(sep)
+			for k, v in hits.hits.items():
+				pre = (k + sep).ljust(pre_len)
+				match v:
+					case str():
+						print(pre + v)
+					case list():
+						for vj in v:
+							print(pre + str(vj))
+					case dict():
+						for kj, vj in v.items():
+							print(pre + kj + sep + str(vj))
+			print()
 
