@@ -117,10 +117,23 @@ def show_info(args):
 		db = dbs.get_db(site, host, prefix)
 	except Exception as e:
 		prog_error(e, args)
+	if name is None or len(name) == 0:
+		path = dbs.get_prefix(site, prefix)
+		if args.json:
+			args.parser.error("argument --json: requires argument PROJECT")
+		elif args.path:
+			print(path)
+		elif args.diff is not None:
+			args.parser.error("argument --diff: requires argument PROJECT")
+		else:
+			print(f"{dbs.get_site(site).normalize_path_alias(prefix)}:{path}")
+			print(f"#mtime# = {datetime.fromtimestamp(db.mtime()).isoformat()}")
+			print(f"#size# = {format_bytes(db.size())}")
+		return
 	try:
 		proj = db[name]
 	except KeyError:
-		prog_error(f"no match for '{name}' at '{args.site}'", args)
+		prog_error(f"no match for '{name}'", args)
 	if args.json:
 		print(json.dumps(proj.to_dict(), indent=2))
 	elif args.path:
@@ -137,7 +150,7 @@ def show_info(args):
 		try:
 			proj2 = db2[proj.name]
 		except KeyError:
-			prog_error(f"no match for '{proj.name}' at '{args.diff}'", args)
+			prog_error(f"no match for '{proj.name}'", args)
 		diff = proj.diff(proj2)
 		if diff is not None:
 			print("".join(diff))

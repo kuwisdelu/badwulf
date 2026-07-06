@@ -61,13 +61,11 @@ def _add_prefix(p, opt=False):
 		metavar="PREFIX",
 		nargs=nargs)
 
-def _add_site(p, opt=False):
+def _add_site(p):
 	help_text = "site specification"
-	nargs = "?" if opt else None
 	p.add_argument("site", 
 		help=help_text,
-		metavar=SITE_METAVAR,
-		nargs=nargs)
+		metavar=SITE_METAVAR)
 
 def _add_site_option(p):
 	help_text = "site specification"
@@ -247,7 +245,7 @@ def register_info(subparsers):
 		help="Display project metadata")
 	g = p.add_mutually_exclusive_group()
 	p.set_defaults(func=proj.show_info, parser=p)
-	_add_project(p)
+	_add_project(p, opt=True)
 	_add_site_option(p)
 	g.add_argument("--diff",
 		help="show diff with another site",

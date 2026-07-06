@@ -828,6 +828,24 @@ class projdb(MutableMapping):
 				diffs[name] = diff
 		return diffs
 
+	def size(self) -> int:
+		"""
+		Get total size of the database
+		"""
+		size = 0
+		for proj in self.projects:
+			size += proj.size
+		return size
+
+	def mtime(self) -> float:
+		"""
+		Get last modification time of the database
+		"""
+		mtime = 0
+		for proj in self.projects:
+			mtime = proj.mtime if proj.mtime > mtime else mtime
+		return mtime
+
 	def save(self, indent: int = "\t") -> None:
 		"""
 		Saves the database to the manifest

@@ -2,7 +2,6 @@
 # Project syncing
 
 import os
-import sys
 
 from ..core import dbsyncer
 from ..util import prog_error
@@ -18,10 +17,10 @@ def fetch(args):
 	if args.clear:
 		print(f"Deleting manifest '{manifest}'")
 		if args.ask and not confirm("Continue?"):
-			sys.exit()
+			return
 		if not args.dry_run:
 			os.remove(manifest)
-		sys.exit()
+		return
 	try:
 		target  = (site, host, prefix)
 		proc = dbs.pull_manifest(*target,
@@ -83,7 +82,7 @@ def push(args):
 	except Exception as e:
 		prog_error(e, args)
 	if proc is None:
-		sys.exit()
+		return
 	if proc.returncode != 0:
 		prog_error(f"Failed to sync project tree to '{site}'", args)
 	try:
@@ -96,7 +95,7 @@ def push(args):
 	except Exception as e:
 		prog_error(e, args)
 	if proc is None:
-		sys.exit()
+		return
 	if proc.returncode != 0:
 		prog_error(f"Failed to copy manifest to '{site}'", args)
 	print("Transfer complete")
