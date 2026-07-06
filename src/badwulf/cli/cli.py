@@ -17,7 +17,7 @@ def main():
 	args = build_parser().parse_args()
 	if args.prefix is not False:
 		dbs = dbsyncer.from_default_locations()
-		print(dbs.get_prefix(None, args.prefix))
+		print(dbs.local_prefix(args.prefix))
 	else:
 		args.func(args)
 
