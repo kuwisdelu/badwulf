@@ -4,6 +4,7 @@
 import argparse
 from importlib import metadata
 
+from ..core import dbsyncer
 from . import site
 from . import proj
 from . import sync
@@ -14,7 +15,11 @@ QUERY_METAVAR = "[PREFIX:]QUERY"
 
 def main():
 	args = build_parser().parse_args()
-	args.func(args)
+	if args.prefix is not False:
+		dbs = dbsyncer.from_default_locations()
+		print(dbs.get_prefix(None, args.prefix))
+	else:
+		args.func(args)
 
 def build_parser():
 	p = argparse.ArgumentParser(prog="wulf",
@@ -25,6 +30,7 @@ def build_parser():
 		help="show version and exit",
 		action="version",
 		version=f'badwulf {metadata.version("badwulf")}')
+	_add_prefix_option(p, opt=True)
 	sub = p.add_subparsers(metavar="command")
 	# create and query projects
 	register_add(sub)
@@ -60,6 +66,15 @@ def _add_prefix(p, opt=False):
 		help=help_text,
 		metavar="PREFIX",
 		nargs=nargs)
+
+def _add_prefix_option(p, opt=False):
+	help_text = "show database prefix"
+	nargs = "?" if opt else None
+	p.add_argument("--prefix", 
+		help=help_text,
+		metavar="PREFIX",
+		nargs=nargs,
+		default=False)
 
 def _add_site(p):
 	help_text = "site specification"
