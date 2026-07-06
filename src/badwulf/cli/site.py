@@ -231,6 +231,8 @@ def show_sites(args):
 					print(f"{name} *")
 				else:
 					print(f"{name}")
+	if not all_missing(args):
+		prog_error("unused arguments", args)
 
 def run(args):
 	dbs = dbsyncer.from_default_locations()
