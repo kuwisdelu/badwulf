@@ -76,12 +76,8 @@ def check(args):
 			print(f"{len(moved)} project(s) moved:")
 			for old, new in moved:
 				print(f"{old} -> {new}")
-	issues = db.check()
-	if len(issues) > 0:
-		print(f"{len(issues)} issue(s):\n")
-		for k, v in issues:
-			print(f"{k}:\n - {v}\n")
-	else:
+	issues = db.check(verbose_output=True)
+	if len(issues) == 0:
 		print("Everything okay")
 
 def remove(args):
