@@ -78,9 +78,9 @@ def check(args):
 				print(f"{old} -> {new}")
 	issues = db.check()
 	if len(issues) > 0:
-		print(f"{len(issues)} issue(s):")
+		print(f"{len(issues)} issue(s):\n")
 		for k, v in issues:
-			print(f"{k}: {v}")
+			print(f"{k}:\n - {v}\n")
 	else:
 		print("Everything okay")
 

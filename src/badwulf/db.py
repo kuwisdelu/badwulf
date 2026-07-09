@@ -642,7 +642,7 @@ class projdb(MutableMapping):
 		checked = {}
 		issues = []
 		for proj in self.projects:
-			k = os.path.relpath(proj.path, self.root)
+			k = proj.path
 			if not proj.is_local():
 				issues.append((k, "metadata.toml does not exist"))
 				continue
@@ -653,7 +653,7 @@ class projdb(MutableMapping):
 				else:
 					checked[proj.name] = proj.path
 				if proj.is_misplaced_relative(self.root):
-					issues.append((k, f"expected at {expected}"))
+					issues.append((k, f"expected at {proj.canonical_path}"))
 			except Exception:
 				issues.append((k, "failed to load metadata.toml"))
 		return issues
