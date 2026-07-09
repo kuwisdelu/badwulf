@@ -137,7 +137,7 @@ def status(args):
 			for proj in del_db.projects:
 				print(f"-{proj.name}")
 			if len(add_db) == 0 and len(del_db) == 0 and len(diffs) == 0:
-				print("Everything synced")
+				print("Everything synced\n")
 			elif len(diffs) > 0 and args.verbose:
 				print()
 				for k, v in diffs.items():
