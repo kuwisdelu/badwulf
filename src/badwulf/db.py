@@ -266,6 +266,20 @@ class projdata:
 		return self.meta.name
 
 	@property
+	def scope(self) -> str:
+		"""
+		Get the scope of the project
+		"""
+		return self.meta.scope
+
+	@property
+	def group(self) -> str:
+		"""
+		Get the group of the project
+		"""
+		return self.meta.group
+
+	@property
 	def size(self) -> int:
 		"""
 		Get size of the dataset directory contents in bytes
@@ -772,11 +786,11 @@ class projdb(MutableMapping):
 		reverse: bool = False) -> projdb:
 		"""
 		Return projects in ascending sort order by project tree stats
-		:param stats: One or more of ('name', 'size', 'mtime')
+		:param stats: One or more of ('scope', 'group', 'name', 'size', 'mtime')
 		:param reverse: Sort in descending order?
 		:returns: A new projdb (referencing original projects)
 		"""
-		expected = ("name", "size", "mtime")
+		expected = ("scope", "group", "name", "size", "mtime")
 		if stats is None or not all(st in expected for st in stats):
 			raise ValueError(f"expected one or more of: {expected}")
 		return self.sorted(key=attrgetter(*stats), reverse=reverse)

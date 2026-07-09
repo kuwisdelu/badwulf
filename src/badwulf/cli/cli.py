@@ -144,14 +144,14 @@ def _add_json(p):
 
 def _add_sort_group(p):
 	g = p.add_mutually_exclusive_group()
-	g.add_argument("-r", "--reverse", 
-		choices=["name", "size", "mtime"],
-		help="sort by project statistics (descending)",
+	g.add_argument("--sort", 
+		choices=["name", "scope", "group", "size", "mtime"],
+		help="sort by project statistics (ascending)",
 		action="append",
 		default=[])
-	g.add_argument("--sort", 
-		choices=["name", "size", "mtime"],
-		help="sort by project statistics (ascending)",
+	g.add_argument("--reverse", 
+		choices=["name", "scope", "group", "size", "mtime"],
+		help="sort by project statistics (descending)",
 		action="append",
 		default=[])
 
