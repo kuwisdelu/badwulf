@@ -221,26 +221,15 @@ def search(args):
 	else:
 		print_search_list(hitslist, db)
 
-def format_proj(proj):
-	return {
-		"path": proj.canonical_path,
-		"size": format_bytes(proj.size),
-		"time": datetime.fromtimestamp(proj.mtime).strftime("%x %X"),
-		"title": proj.meta.title}
-
 def print_proj_list(plist, sep = "  "):
-	if len(plist) > 0:
-		dlist = [format_proj(proj) for proj in plist]
-		path_len = max(len(d["path"]) for d in dlist)
-		size_len = max(len(d["size"]) for d in dlist)
-		time_len = max(len(d["time"]) for d in dlist)
-		for d in dlist:
-			sl = []
-			sl.append(d["path"].ljust(path_len))
-			sl.append(d["size"].rjust(size_len))
-			sl.append(d["time"].rjust(time_len))
-			sl.append(d["title"])
-			print(sep.join(sl))
+	path_len = max(len(proj.canonical_path) for proj in plist)
+	size_len = 10
+	time_len = 18
+	for proj in plist:
+		path = proj.canonical_path.ljust(path_len)
+		size = format_bytes(proj.size).rjust(size_len)
+		time = datetime.fromtimestamp(proj.mtime).strftime("%x %X").rjust(time_len)
+		print(sep.join((path, size, time)))
 
 def print_search_list(hlist, db, sep = ":  "):
 	if len(hlist) > 0:
