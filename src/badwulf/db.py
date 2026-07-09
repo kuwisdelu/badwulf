@@ -634,10 +634,9 @@ class projdb(MutableMapping):
 				pass
 		return moved
 
-	def check(self, verbose_output: bool = False) -> list[tuple[str]]:
+	def check(self) -> list[tuple[str]]:
 		"""
 		Check local projects for issues
-		:param verbose_output: Print verbose stdout?
 		:returns: A list of (path, issue) tuples
 		"""
 		checked = {}
@@ -646,24 +645,16 @@ class projdb(MutableMapping):
 			k = proj.path
 			if not proj.is_local():
 				issues.append((k, "metadata.toml does not exist"))
-				if verbose_output:
-					print(":\n - ".join(issues[-1]) + "\n")
 				continue
 			try:
 				if proj.name in checked:
 					issues.append((k, f"duplicate at {checked[proj.name]}"))
-					if verbose_output:
-						print(":\n - ".join(issues[-1]) + "\n")
 				else:
 					checked[proj.name] = proj.path
 				if proj.is_misplaced_relative(self.root):
 					issues.append((k, f"expected at {proj.canonical_path}"))
-					if verbose_output:
-						print(":\n - ".join(issues[-1]) + "\n")
 			except Exception:
 				issues.append((k, "failed to load metadata.toml"))
-				if verbose_output:
-					print(":\n - ".join(issues[-1]) + "\n")
 		return issues
 
 	def create(self, 
