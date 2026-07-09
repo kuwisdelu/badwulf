@@ -15,17 +15,20 @@ QUERY_METAVAR = "[PREFIX:]QUERY"
 
 def main():
 	args = build_parser().parse_args()
+	args.func(args)
+
+def default(args):
 	if args.prefix is not False:
 		dbs = dbsyncer.from_default_locations()
 		print(dbs.local_prefix(args.prefix))
 	else:
-		args.func(args)
+		args.parser.print_help()
 
 def build_parser():
 	p = argparse.ArgumentParser(prog="wulf",
 		description="Minimal manager for project data on Beowulf clusters",
 		epilog="See https://github.com/kuwisdelu/badwulf for more information")
-	p.set_defaults(func=lambda args: p.print_help())
+	p.set_defaults(func=default)
 	p.add_argument("-v", "--version", 
 		help="show version and exit",
 		action="version",
