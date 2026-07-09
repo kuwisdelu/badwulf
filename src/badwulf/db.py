@@ -650,7 +650,6 @@ class projdb(MutableMapping):
 					print(":\n - ".join(issues[-1]) + "\n")
 				continue
 			try:
-				expected = os.path.join(self.root, proj.canonical_path)
 				if proj.name in checked:
 					issues.append((k, f"duplicate at {checked[proj.name]}"))
 					if verbose_output:
