@@ -109,7 +109,10 @@ def get_vars(args):
 
 def set_vars(args):
 	dbs = dbsyncer.from_default_locations()
-	site = dbs.sites.get(args.name)
+	if args.name is None:
+		site = dbs.local
+	else:
+		site = dbs.sites.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
 	if all_missing(args):
@@ -158,7 +161,10 @@ def set_vars(args):
 
 def unset_vars(args):
 	dbs = dbsyncer.from_default_locations()
-	site = dbs.sites.get(args.name)
+	if args.name is None:
+		site = dbs.local
+	else:
+		site = dbs.sites.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
 	if all_missing(args):

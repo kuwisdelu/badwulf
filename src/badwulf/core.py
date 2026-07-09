@@ -285,6 +285,7 @@ class dbsyncer:
 			self.load_sites()
 		else:
 			if self.sites is None:
+				self.sites = profiles({})
 				prefix = os.path.dirname(self.sites_path)
 				self.local = profile()
 				self.local.set_default_path(prefix)
