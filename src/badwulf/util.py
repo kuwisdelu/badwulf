@@ -250,12 +250,19 @@ def tree_stat(
 		raise NotADirectoryError(f"path must be a directory: {path}")
 	mtime = os.path.getmtime(path)
 	size = 0
+	err = []
 	with os.scandir(path) as it:
 		for file in it:
 			if exclude is not None:
 				if grep1(exclude, file.name, ignore_case) is not None:
 					continue
-			if file.is_dir(follow_symlinks=False):
+			if file.is_symlink():
+				try:
+					st = file.stat()
+				except OSError as e:
+					err.append(str(e))
+				continue
+			if file.is_dir():
 				st = tree_stat(
 					path=file.path, 
 					exclude=exclude, 
@@ -265,7 +272,10 @@ def tree_stat(
 				st = {"size": st.st_size, "mtime": st.st_mtime}
 				mtime = max(mtime, st["mtime"])
 				size += st["size"]
-	return {"size": size, "mtime": mtime}
+	if len(err) > 0:
+		return {"size": size, "mtime": mtime, "err": err}
+	else:
+		return {"size": size, "mtime": mtime}
 
 def detect(
 	pattern: str,
