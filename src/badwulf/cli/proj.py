@@ -108,8 +108,8 @@ def link(args):
 		filename = proj.name
 	else:
 		filename = args.filename
-	if os.path.samefile(db.root, os.path.commonpath((db.root, proj.path))):
-		root = os.path.relpath(db.root, proj.path)
+	if os.path.samefile(db.root, os.path.commonpath((db.root, os.getcwd()))):
+		root = os.path.relpath(db.root, os.getcwd())
 		path = os.path.join(root, os.path.relpath(proj.path, db.root))
 	else:
 		path = proj.path
