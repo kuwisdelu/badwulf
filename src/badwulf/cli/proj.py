@@ -222,14 +222,15 @@ def search(args):
 		print_search_list(hitslist, db)
 
 def print_proj_list(plist, sep = "  "):
-	path_len = max(len(proj.canonical_path) for proj in plist)
-	size_len = 10
-	time_len = 18
-	for proj in plist:
-		path = proj.canonical_path.ljust(path_len)
-		size = format_bytes(proj.size).rjust(size_len)
-		time = datetime.fromtimestamp(proj.mtime).strftime("%x %X").rjust(time_len)
-		print(sep.join((path, size, time)))
+	if len(plist) > 0:
+		path_len = max(len(proj.canonical_path) for proj in plist)
+		size_len = 10
+		time_len = 18
+		for proj in plist:
+			path = proj.canonical_path.ljust(path_len)
+			size = format_bytes(proj.size).rjust(size_len)
+			time = datetime.fromtimestamp(proj.mtime).strftime("%x %X").rjust(time_len)
+			print(sep.join((path, size, time)))
 
 def print_search_list(hlist, db, sep = ":  "):
 	if len(hlist) > 0:
