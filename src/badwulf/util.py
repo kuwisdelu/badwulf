@@ -256,22 +256,21 @@ def tree_stat(
 			if exclude is not None:
 				if grep1(exclude, file.name, ignore_case) is not None:
 					continue
-			if file.is_symlink():
-				try:
+			try:
+				if file.is_dir():
+					st = tree_stat(
+						path=file.path, 
+						exclude=exclude, 
+						ignore_case=ignore_case)
+				else:
 					st = file.stat()
-				except OSError as e:
-					err.append(str(e))
-				continue
-			if file.is_dir():
-				st = tree_stat(
-					path=file.path, 
-					exclude=exclude, 
-					ignore_case=ignore_case)
-			else:
-				st = file.stat()
-				st = {"size": st.st_size, "mtime": st.st_mtime}
-			mtime = max(mtime, st["mtime"])
-			size += st["size"]
+					st = {"size": st.st_size, "mtime": st.st_mtime}
+					if file.is_symlink():
+						continue
+				mtime = max(mtime, st["mtime"])
+				size += st["size"]
+			except OSError as e:
+				err.append(str(e))
 	if len(err) > 0:
 		return {"size": size, "mtime": mtime, "err": err}
 	else:

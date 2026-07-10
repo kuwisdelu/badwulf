@@ -76,11 +76,23 @@ def check(args):
 			print(f"{len(moved)} project(s) moved:")
 			for old, new in moved:
 				print(f"{old} -> {new}")
-	issues = db.check()
-	if len(issues) > 0:
-		print(f"Found {len(issues)} issue(s):\n")
-		for issue in issues:	
-			print(":\n - ".join(issue) + "\n")
+	num_issues = 0
+	checked = set()
+	for proj in db.projects:
+		issues = proj.check(db.root, names=checked)
+		if issues is not None:
+			print(proj.path + ":")
+			if issues is not None:
+				num_issues += len(issues)
+				for issue in issues:
+					print(f" - {issue}")
+			print()
+		try:
+			checked.insert(proj.name.casefold())
+		except Exception:
+			pass
+	if num_issues > 0:
+		print(f"Found {num_issues} issue(s)")
 	else:
 		print("Everything okay")
 

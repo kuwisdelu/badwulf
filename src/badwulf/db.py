@@ -335,10 +335,40 @@ class projdata:
 		"""
 		return self._fetch_meta_stat()["mtime"]	
 
+	def check(self,
+		root: str | None = None, 
+		names: Collection[str] | None = None) -> list[str] | None:
+		"""
+		Check for problems under root
+		:param root: The database root
+		:param names: Casefolded project names to check for uniqueness
+		:returns: A list of issues or None if no issues
+		"""
+		issues = []
+		if not self.is_local():
+			issues.append("[FATAL] metadata.toml does not exist")
+			return issues
+		try:
+			if root is not None and self.is_misplaced_relative(root):
+				issues.append(f"[NOTE] expected tree at {self.canonical_path}")
+			if names is not None and self.name.casefold() in names:
+				issues.append(f"[NOTE] project name {self.name} is not unique")
+			d = self.to_dict()
+			err = d["tree_stat"].get("err")
+			if err is not None:
+				issues.extend(err)
+		except Exception as e:
+			issues.append(str(e))
+		if len(issues) > 0:
+			return issues
+		else:
+			return None
+
 	def format(self, indent: str = "\t") -> list[str]:
 		"""
 		Format as lines for metadata.toml
 		:param indent: String for indentation
+		:returns: Formatted lines
 		"""
 		time = datetime.datetime.fromtimestamp(self.mtime).isoformat()
 		size = format_bytes(self.size)
@@ -350,6 +380,8 @@ class projdata:
 	def diff(self, other: projdata) -> list[str] | None:
 		"""
 		Get a unified diff of project metadata and size
+		:param other: The other project
+		:returns: The lines of the diff
 		"""
 		if self.meta == other.meta and self.size == other.size:
 			return None
@@ -370,6 +402,8 @@ class projdata:
 	def is_misplaced_relative(self, root: str) -> bool:
 		"""
 		Check if project is located at its canonical path under root
+		:param root: The database root
+		:returns: True if the project is misplaced, otherwise False
 		"""
 		expected = os.path.join(root, self.canonical_path)
 		if os.path.exists(expected):
@@ -380,12 +414,14 @@ class projdata:
 	def place_relative(self, root: str) -> None:
 		"""
 		Move the project to its canonical path under root
+		:param root: The database root
 		"""
 		self.move(os.path.join(root, self.canonical_path))
 
 	def move(self, dst: str) -> None:
 		"""
 		Move the project to a new location
+		:param dst: The destination path
 		"""
 		if os.path.exists(dst):
 			raise FileExistsError(f"move destination already exists: {dst}")
@@ -398,6 +434,8 @@ class projdata:
 	def copy(self, dst: str) -> projdata:
 		"""
 		Copy the project to a new location and return the copy
+		:param dst: The destination path
+		:returns: The copied project
 		"""
 		if os.path.exists(dst):
 			raise FileExistsError(f"copy destination already exists: {dst}")
@@ -647,29 +685,6 @@ class projdb(MutableMapping):
 			except Exception:
 				pass
 		return moved
-
-	def check(self) -> list[tuple[str]]:
-		"""
-		Check local projects for issues
-		:returns: A list of (path, issue) tuples
-		"""
-		checked = {}
-		issues = []
-		for proj in self.projects:
-			k = proj.path
-			if not proj.is_local():
-				issues.append((k, "metadata.toml does not exist"))
-				continue
-			try:
-				if proj.name in checked:
-					issues.append((k, f"duplicate at {checked[proj.name]}"))
-				else:
-					checked[proj.name] = proj.path
-				if proj.is_misplaced_relative(self.root):
-					issues.append((k, f"expected at {proj.canonical_path}"))
-			except Exception:
-				issues.append((k, "failed to load metadata.toml"))
-		return issues
 
 	def create(self, 
 		name: str,
