@@ -418,3 +418,4 @@ def prune(x: list | dict, recursive: bool = True) -> list | dict:
 		case _:
 			raise TypeError("expected a list or dict")
 	return pruned
+
