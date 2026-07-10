@@ -289,6 +289,9 @@ def register_fetch(subparsers):
 	p.add_argument("--clear",
 		help="delete cached manifest instead of fetching it?",
 		action="store_true")
+	p.add_argument("--all",
+		help="all prefixes",
+		action="store_true")
 	_add_ask(p)
 
 def register_pull(subparsers):

@@ -13,26 +13,34 @@ def fetch(args):
 	ctx = dbcontext.from_default_locations()
 	site, host = tokenize(args.site)
 	prefix = args.prefix
-	manifest = ctx.get_db(site, host, prefix).manifest
-	if args.clear:
-		print(f"Deleting manifest '{manifest}'")
-		if args.ask and not confirm("Continue?"):
-			return
-		if not args.dry_run:
-			os.remove(manifest)
-		return
-	try:
-		target  = (site, host, prefix)
-		proc = ctx.pull_manifest(*target,
-			verbose=args.verbose,
-			dry_run=args.dry_run, 
-			ask=args.ask)
-	except Exception as e:
-		prog_error(e, args)
-	if proc.returncode != 0:
-		print(f"Failed to fetch manifest from '{site}'")
+	if args.all:
+		prefixes = ctx.local.paths.keys()
 	else:
-		print(f"Fetched manifest from '{site}' to '{manifest}'")
+		prefixes = (prefix,)
+	for prefix in prefixes:
+		try:
+			manifest = ctx.get_db(site, host, prefix).manifest
+		except KeyError as e:
+			prog_error(e, args)
+		if args.clear:
+			print(f"Deleting manifest '{manifest}'")
+			if args.ask and not confirm("Continue?"):
+				return
+			if not args.dry_run:
+				os.remove(manifest)
+			return
+		try:
+			target  = (site, host, prefix)
+			proc = ctx.pull_manifest(*target,
+				verbose=args.verbose,
+				dry_run=args.dry_run, 
+				ask=args.ask)
+		except Exception as e:
+			prog_error(e, args)
+		if proc.returncode != 0:
+			print(f"Failed to fetch manifest from '{site}'")
+		else:
+			print(f"Fetched manifest from '{site}' to '{manifest}'")
 
 def pull(args):
 	ctx = dbcontext.from_default_locations()
