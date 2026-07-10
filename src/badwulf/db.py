@@ -864,9 +864,10 @@ class projdb(MutableMapping):
 		diffs = {}
 		names = set(self.keys()).intersection(set(other.keys()))
 		for name in sorted(names):
-			diff = self[name].diff(other[name])
+			proj = self[name]
+			diff = proj.diff(other[name])
 			if diff is not None:
-				diffs[name] = diff
+				diffs[proj.name] = diff
 		return diffs
 
 	def size(self) -> int:
