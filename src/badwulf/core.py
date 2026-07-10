@@ -220,16 +220,16 @@ class profiles(MutableMapping):
 		with open(p) as f:
 			return cls.from_file(f)
 
-class dbsyncer:
+class dbcontext:
 	"""
-	Sync projects and data between sites
+	Manage projects across multiple sites
 	"""
 	def __init__(self, 
 		sites: profiles | None = None,
 		sites_path: str = "badwulf-sites.json",
 		local_name: str = BADWULF_LOCAL):
 		"""
-		Initializes dbsyncer from a json file or from defaults
+		Initializes dbcontext from a json file or from defaults
 		:param path: Path to the json file defining sites
 		:param sites: A profiles object mapping aliases-to-sites
 		"""
@@ -473,11 +473,11 @@ class dbsyncer:
 	@classmethod
 	def from_path(cls, p: str):
 		"""
-		Create a dbsyncer from a json file and load sites
+		Create a dbcontext from a json file and load sites
 		"""
-		dbs = cls(sites_path=mkpath(p, must_exist=True))
-		dbs.ensure_sites()
-		return dbs
+		ctx = cls(sites_path=mkpath(p, must_exist=True))
+		ctx.ensure_sites()
+		return ctx
 
 	@classmethod
 	def from_default_locations(cls):
@@ -498,6 +498,6 @@ class dbsyncer:
 				if not os.path.isdir(prefix):
 					mktree(prefix)
 				sites_path = mkpath(prefix, "badwulf-sites.json")
-		dbs = cls(sites_path=sites_path)
-		dbs.ensure_sites()
-		return dbs
+		ctx = cls(sites_path=sites_path)
+		ctx.ensure_sites()
+		return ctx

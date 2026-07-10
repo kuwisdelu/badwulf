@@ -4,7 +4,7 @@
 import argparse
 from importlib import metadata
 
-from ..core import dbsyncer
+from ..core import dbcontext
 from . import site
 from . import proj
 from . import sync
@@ -19,8 +19,8 @@ def main():
 
 def default(args):
 	if args.prefix is not False:
-		dbs = dbsyncer.from_default_locations()
-		print(dbs.local_prefix(args.prefix))
+		ctx = dbcontext.from_default_locations()
+		print(ctx.local_prefix(args.prefix))
 	else:
 		args.parser.print_help()
 

@@ -1,3 +1,3 @@
-from .core import dbsyncer
+from .core import dbcontext
 
-__all__ = ["dbsyncer"]
+__all__ = ["dbcontext"]

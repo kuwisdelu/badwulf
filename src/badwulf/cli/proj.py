@@ -8,7 +8,7 @@ from datetime import date
 from datetime import datetime
 from dataclasses import asdict
 
-from ..core import dbsyncer
+from ..core import dbcontext
 from ..util import prog_error
 from ..util import format_bytes
 from ..util import tokenize
@@ -29,10 +29,10 @@ def parse_sort(args):
 	return keys, reverse
 
 def add(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	prefix, name = rtokenize(args.project)
 	try:
-		db = dbs.local_db(prefix)
+		db = ctx.local_db(prefix)
 		proj = db.create(
 			name=name,
 			scope=args.scope,
@@ -49,10 +49,10 @@ def add(args):
 		prog_error(e, args)
 
 def edit(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	prefix, name = rtokenize(args.project)
 	try:
-		proj = dbs.local_db(prefix)[name]
+		proj = ctx.local_db(prefix)[name]
 	except Exception as e:
 		prog_error(e, args)
 	editor = args.editor
@@ -66,9 +66,9 @@ def edit(args):
 	os.execvp(editor, cmd)
 
 def check(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	prefix = args.prefix
-	db = dbs.local_db(prefix)
+	db = ctx.local_db(prefix)
 	if args.fix:
 		print("Canonicalizing project locations...")
 		moved = db.canonicalize()
@@ -85,10 +85,10 @@ def check(args):
 		print("Everything okay")
 
 def remove(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	prefix, name = rtokenize(args.project)
 	try:
-		db = dbs.local_db(prefix)
+		db = ctx.local_db(prefix)
 		proj = db[name]
 		db.delete(name)
 		print(f"Deleted project tree at {proj.path}")
@@ -97,10 +97,10 @@ def remove(args):
 		prog_error(e, args)
 
 def link(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	prefix, name = rtokenize(args.project)
 	try:
-		proj = dbs.local_db(prefix)[name]
+		proj = ctx.local_db(prefix)[name]
 	except Exception as e:
 		prog_error(e, args)
 	if args.filename is None:
@@ -110,15 +110,15 @@ def link(args):
 	os.symlink(proj.path, filename, target_is_directory=True)
 
 def show_info(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	site, host = tokenize(args.site)
 	prefix, name = rtokenize(args.project)
 	try:
-		db = dbs.get_db(site, host, prefix)
+		db = ctx.get_db(site, host, prefix)
 	except Exception as e:
 		prog_error(e, args)
 	if name is None or len(name) == 0:
-		path = dbs.get_prefix(site, prefix)
+		path = ctx.get_prefix(site, prefix)
 		if args.json:
 			args.parser.error("argument --json: requires argument PROJECT")
 		elif args.path:
@@ -126,7 +126,7 @@ def show_info(args):
 		elif args.diff is not None:
 			args.parser.error("argument --diff: requires argument PROJECT")
 		else:
-			print(f"{dbs.get_site(site).normalize_path_alias(prefix)}:{path}")
+			print(f"{ctx.get_site(site).normalize_path_alias(prefix)}:{path}")
 			print(f"#mtime# = {datetime.fromtimestamp(db.mtime()).isoformat()}")
 			print(f"#size# = {format_bytes(db.size())}")
 		return
@@ -139,12 +139,12 @@ def show_info(args):
 	elif args.path:
 		nodename = ""
 		if host is not None:
-			nodename = dbs.get_site(site).get_host(host) + ":"
+			nodename = ctx.get_site(site).get_host(host) + ":"
 		print(nodename + proj.path)
 	elif args.diff is not None:
 		site2, host2 = tokenize(args.diff)
 		try:
-			db2 = dbs.get_db(site2, host2, prefix)
+			db2 = ctx.get_db(site2, host2, prefix)
 		except KeyError as e:
 			prog_error(e, args)
 		try:
@@ -158,11 +158,11 @@ def show_info(args):
 		print("".join(proj.format()))
 
 def show_list(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	site, host = tokenize(args.site)
 	prefix, query = rtokenize(args.query)
 	try:
-		db = dbs.get_db(site, host, prefix)
+		db = ctx.get_db(site, host, prefix)
 	except Exception as e:
 		prog_error(e, args)
 	keys, reverse = parse_sort(args)
@@ -182,7 +182,7 @@ def show_list(args):
 	elif args.path:
 		nodename = ""
 		if host is not None:
-			nodename = dbs.get_site(site).get_host(host) + ":"
+			nodename = ctx.get_site(site).get_host(host) + ":"
 		for proj in projects:
 			print(nodename + proj.path)
 	else:
@@ -190,11 +190,11 @@ def show_list(args):
 			print(proj.name)
 
 def search(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	site, host = tokenize(args.site)
 	prefix, query = rtokenize(args.query)
 	try:
-		db = dbs.get_db(site, host, prefix)
+		db = ctx.get_db(site, host, prefix)
 	except Exception as e:
 		prog_error(str(e), args)
 	keys, reverse = parse_sort(args)
@@ -215,7 +215,7 @@ def search(args):
 	elif args.path:
 		nodename = ""
 		if host is not None:
-			nodename = dbs.get_site(site).get_host(host) + ":"
+			nodename = ctx.get_site(site).get_host(host) + ":"
 		for hits in hitslist:
 			print(nodename + db[hits.name].path)
 	else:

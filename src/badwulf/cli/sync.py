@@ -3,17 +3,17 @@
 
 import os
 
-from ..core import dbsyncer
+from ..core import dbcontext
 from ..util import prog_error
 from ..util import confirm
 from ..util import tokenize
 from ..util import rtokenize
 
 def fetch(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	site, host = tokenize(args.site)
 	prefix = args.prefix
-	manifest = dbs.get_db(site, host, prefix).manifest
+	manifest = ctx.get_db(site, host, prefix).manifest
 	if args.clear:
 		print(f"Deleting manifest '{manifest}'")
 		if args.ask and not confirm("Continue?"):
@@ -23,7 +23,7 @@ def fetch(args):
 		return
 	try:
 		target  = (site, host, prefix)
-		proc = dbs.pull_manifest(*target,
+		proc = ctx.pull_manifest(*target,
 			verbose=args.verbose,
 			dry_run=args.dry_run, 
 			ask=args.ask)
@@ -35,13 +35,13 @@ def fetch(args):
 		print(f"Fetched manifest from '{site}' to '{manifest}'")
 
 def pull(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	site, host = tokenize(args.site)
 	prefix, name = rtokenize(args.project)
 	try:
 		target = (site, host, prefix)
 		print(f"Copying manifest from '{site}'...")
-		proc = dbs.pull_manifest(*target,
+		proc = ctx.pull_manifest(*target,
 			verbose=args.verbose,
 			dry_run=args.dry_run, 
 			ask=args.ask)
@@ -52,7 +52,7 @@ def pull(args):
 	try:
 		target  = (name, site, host, prefix)
 		print(f"Syncing '{name}' project tree from '{site}'...")
-		proc = dbs.pull_tree(*target,
+		proc = ctx.pull_tree(*target,
 			mkdirs=args.mkpath,
 			mirror=args.mirror,
 			verbose=args.verbose,
@@ -66,13 +66,13 @@ def pull(args):
 	print("Transfer complete")
 
 def push(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	site, host = tokenize(args.site)
 	prefix, name = rtokenize(args.project)
 	try:
 		target  = (name, site, host, prefix)
 		print(f"Syncing '{name}' project tree to '{site}'...")
-		proc = dbs.push_tree(*target,
+		proc = ctx.push_tree(*target,
 			mkdirs=args.mkpath,
 			mirror=args.mirror,
 			verbose=args.verbose,
@@ -88,7 +88,7 @@ def push(args):
 	try:
 		target = (site, host, prefix)
 		print(f"Copying manifest to '{site}'...")
-		proc = dbs.push_manifest(*target,
+		proc = ctx.push_manifest(*target,
 			verbose=args.verbose,
 			dry_run=args.dry_run,
 			ask=args.ask)
@@ -101,15 +101,15 @@ def push(args):
 	print("Transfer complete")
 
 def status(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	prefix = args.prefix
-	local_db = dbs.local_db(prefix)
-	path = dbs.local_prefix(prefix)
+	local_db = ctx.local_db(prefix)
+	path = ctx.local_prefix(prefix)
 	if path[-1] != "/":
 		path += "/"
-	print(f"{dbs.local_name}: {path}\n")
-	for k, v in dbs.sites.items():
-		if k == dbs.local_name:
+	print(f"{ctx.local_name}: {path}\n")
+	for k, v in ctx.sites.items():
+		if k == ctx.local_name:
 			continue
 		else:
 			try:
@@ -121,9 +121,9 @@ def status(args):
 		else:
 			hosts = [None]
 		for h in hosts:
-			remote_db = dbs.get_db(k, h, prefix)
+			remote_db = ctx.get_db(k, h, prefix)
 			site = f"{k}:" if h is None else f"{k}:{h}:"
-			path = dbs.get_site(k).get_path(prefix)
+			path = ctx.get_site(k).get_path(prefix)
 			if path[-1] != "/":
 				path += "/"
 			print(f"{site} {path}")

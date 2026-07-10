@@ -5,7 +5,7 @@ import os
 import json
 
 from ..core import profile
-from ..core import dbsyncer
+from ..core import dbcontext
 from ..util import prog_error
 from ..util import tokenize
 from ..util import prune
@@ -43,20 +43,20 @@ def main(args):
 			remove(args)
 
 def add(args):
-	dbs = dbsyncer.from_default_locations()
-	if args.name in dbs.sites:
+	ctx = dbcontext.from_default_locations()
+	if args.name in ctx.sites:
 		prog_error(f"site '{args.name}' already exists", args)
-	dbs.sites[args.name] = profile()
-	dbs.save_sites()
+	ctx.sites[args.name] = profile()
+	ctx.save_sites()
 	if not all_missing(args):
 		set_vars(args)
 
 def get_vars(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	if args.name is None:
-		site = dbs.local
+		site = ctx.local
 	else:
-		site = dbs.sites.get(args.name)
+		site = ctx.sites.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
 	if all_missing(args):
@@ -108,11 +108,11 @@ def get_vars(args):
 		print_site(d)
 
 def set_vars(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	if args.name is None:
-		site = dbs.local
+		site = ctx.local
 	else:
-		site = dbs.sites.get(args.name)
+		site = ctx.sites.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
 	if all_missing(args):
@@ -157,14 +157,14 @@ def set_vars(args):
 				prog_error("empty string invalid for hosts", args)
 			else:
 				site.proxy["host"] = args.proxy_host
-	dbs.save_sites()
+	ctx.save_sites()
 
 def unset_vars(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	if args.name is None:
-		site = dbs.local
+		site = ctx.local
 	else:
-		site = dbs.sites.get(args.name)
+		site = ctx.sites.get(args.name)
 	if site is None:
 		prog_error(f"no site named '{args.name}'", args)
 	if all_missing(args):
@@ -211,32 +211,32 @@ def unset_vars(args):
 				del site.proxy_user["host"]
 			else:
 				args.parser.error("unexpected argument to unset --proxy-host")
-	dbs.save_sites()
+	ctx.save_sites()
 
 def remove(args):
-	dbs = dbsyncer.from_default_locations()
-	if args.name not in dbs.sites:
+	ctx = dbcontext.from_default_locations()
+	if args.name not in ctx.sites:
 		prog_error(f"no site named '{args.name}'", args)
 	else:
-		del dbs.sites[args.name]
-	dbs.save_sites()
+		del ctx.sites[args.name]
+	ctx.save_sites()
 
 def show_sites(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	if args.json:
-		print(json.dumps(dbs.sites.to_dict(), indent=2))
+		print(json.dumps(ctx.sites.to_dict(), indent=2))
 	else:
 		if args.verbose:
-			print(f"{dbs.sites_path}:")
-			d = dbs.sites.to_dict()
+			print(f"{ctx.sites_path}:")
+			d = ctx.sites.to_dict()
 			print()
-			for name in dbs.sites.keys():
+			for name in ctx.sites.keys():
 				print(f"{name}:")
 				print_site(d[name])
 				print()
 		else:
-			for name in dbs.sites.keys():
-				if name == dbs.local_name:
+			for name in ctx.sites.keys():
+				if name == ctx.local_name:
 					print(f"{name} *")
 				else:
 					print(f"{name}")
@@ -244,9 +244,9 @@ def show_sites(args):
 		prog_error("unused arguments", args)
 
 def run(args):
-	dbs = dbsyncer.from_default_locations()
+	ctx = dbcontext.from_default_locations()
 	site, host = tokenize(args.site)
-	sync = dbs.get_syncer(site, host)
+	sync = ctx.get_syncer(site, host)
 	dst = sync.destination if sync.has_remote() else "localhost"
 	cmd = sync.rsh + [dst] + args.command
 	os.execvp(cmd[0], cmd)

@@ -4,7 +4,7 @@ import tempfile
 
 from badwulf.core import profile
 from badwulf.core import profiles
-from badwulf.core import dbsyncer
+from badwulf.core import dbcontext
 from badwulf.util import mktree
 
 def _testsites():
@@ -46,29 +46,29 @@ def test_profiles():
 	copy = profiles.from_dict(sts.to_dict())
 	assert sts.to_dict() == copy.to_dict()
 
-def test_dbsyncer_sites():
-	dbs = dbsyncer.from_path(_testsites())
-	assert dbs.local_name == "local"
-	assert dbs.local == dbs.sites["local"]
-	origin = dbs.get_syncer("origin")
+def test_dbcontext_sites():
+	ctx = dbcontext.from_path(_testsites())
+	assert ctx.local_name == "local"
+	assert ctx.local == ctx.sites["local"]
+	origin = ctx.get_syncer("origin")
 	assert origin.user == "bad-wolf"
 	assert origin.host == "time.vortex"
 	assert origin.proxy_user == "root"
 	assert origin.proxy_host == "login.dimension.time"
-	other = dbs.get_syncer("other")
+	other = ctx.get_syncer("other")
 	assert other.user == getpass.getuser()
 	assert other.host == "localhost"
 
-def test_dbsyncer_proj_sync():
+def test_dbcontext_proj_sync():
 	td = tempfile.TemporaryDirectory()
-	dbs = dbsyncer.from_path(_testsites())
+	ctx = dbcontext.from_path(_testsites())
 	pd1 = os.path.join(td.name, "testdir1")
 	pd2 = os.path.join(td.name, "testdir2")
 	mktree(pd1)
 	mktree(pd2)
-	dbs.get_site("local").set_default_path(pd1)
-	dbs.get_site("other").set_default_path(pd2)
-	db = dbs.get_db()
+	ctx.get_site("local").set_default_path(pd1)
+	ctx.get_site("other").set_default_path(pd2)
+	db = ctx.get_db()
 	proj = db.create(
 		name="test0",
 		scope="private",
@@ -80,8 +80,8 @@ def test_dbsyncer_proj_sync():
 	assert os.path.exists(p1)
 	assert not os.path.exists(p2)
 	assert db["test0"].meta == proj.meta
-	dbs.push_tree("test0", "other")
-	dbs.push_manifest("other")
+	ctx.push_tree("test0", "other")
+	ctx.push_manifest("other")
 	assert os.path.exists(p1)
 	assert os.path.exists(p2)
 	assert os.path.exists(os.path.join(pd1, "manifest.json"))
@@ -91,8 +91,8 @@ def test_dbsyncer_proj_sync():
 	assert "test0" not in db
 	assert not os.path.exists(p1)
 	assert os.path.exists(p2)
-	dbs.pull_manifest("other")
-	dbs.pull_tree("test0", "other")
+	ctx.pull_manifest("other")
+	ctx.pull_tree("test0", "other")
 	assert "test0" in db
 	assert os.path.exists(p1)
 	assert os.path.exists(p2)
