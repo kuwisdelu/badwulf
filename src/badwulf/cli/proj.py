@@ -100,14 +100,20 @@ def link(args):
 	ctx = dbcontext.from_default_locations()
 	prefix, name = rtokenize(args.project)
 	try:
-		proj = ctx.local_db(prefix)[name]
+		db = ctx.local_db(prefix)
+		proj = db[name]
 	except Exception as e:
 		prog_error(e, args)
 	if args.filename is None:
 		filename = proj.name
 	else:
 		filename = args.filename
-	os.symlink(proj.path, filename, target_is_directory=True)
+	if os.path.samefile(db.root, os.path.commonpath(db.root, proj.path)):
+		root = os.path.relpath(db.root, proj.path)
+		path = os.path.join(root, os.path.relpath(proj.path, db.root))
+	else:
+		path = proj.path
+	os.symlink(path, filename, target_is_directory=True)
 
 def show_info(args):
 	ctx = dbcontext.from_default_locations()
