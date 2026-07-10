@@ -270,8 +270,8 @@ def tree_stat(
 			else:
 				st = file.stat()
 				st = {"size": st.st_size, "mtime": st.st_mtime}
-				mtime = max(mtime, st["mtime"])
-				size += st["size"]
+			mtime = max(mtime, st["mtime"])
+			size += st["size"]
 	if len(err) > 0:
 		return {"size": size, "mtime": mtime, "err": err}
 	else:
