@@ -5,6 +5,7 @@ import argparse
 from importlib import metadata
 
 from ..core import dbcontext
+from ..util import prog_error
 from . import site
 from . import proj
 from . import sync
@@ -20,7 +21,10 @@ def main():
 def default(args):
 	if args.prefix is not False:
 		ctx = dbcontext.from_default_locations()
-		print(ctx.local_prefix(args.prefix))
+		try:
+			print(ctx.local_prefix(args.prefix))
+		except KeyError as e:
+			prog_error(e, args)
 	else:
 		args.parser.print_help()
 
