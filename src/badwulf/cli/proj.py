@@ -69,6 +69,13 @@ def check(args):
 	ctx = dbcontext.from_default_locations()
 	prefix = args.prefix
 	db = ctx.local_db(prefix)
+	if args.rebuild:
+		try:
+			print("Rebuilding database manifest...\n")
+			db.rebuild()
+		except Exception as e:
+			print(str(e))
+			print("Failed to rebuild manifest\n")
 	if args.fix:
 		print("Canonicalizing project locations...")
 		moved = db.canonicalize()
@@ -76,6 +83,9 @@ def check(args):
 			print(f"{len(moved)} project(s) moved:")
 			for old, new in moved:
 				print(f"{old} -> {new}")
+		print()
+		if args.rebuild:
+			db.save()
 	num_issues = 0
 	checked = set()
 	for proj in db.projects:

@@ -188,18 +188,21 @@ def mkpath(
 		path = path.replace(" ", r"\ ")
 	return path
 
-def mktree(path: str, force: bool = False) -> None:
+def mktree(path: str, mode: int = 0o777, force: bool = False) -> None:
 	"""
 	Create a directory tree
 	:param path: The directory tree to create
+	:param mode: The permissions for the tree (uses umask 0o002)
 	:param force: Create intermediate directories if they don't exist?
 	"""
 	path = mkpath(path, must_exist=False)
+	mask = os.umask(0o002)
 	if not os.path.exists(path):
 		if force:
-			os.makedirs(path)
+			os.makedirs(path, mode, exist_ok=True)
 		else:
-			os.mkdir(path)
+			os.mkdir(path, mode)
+	os.umask(mask)
 
 def rmtree(path: str, force: bool = False) -> None:
 	"""

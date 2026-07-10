@@ -157,15 +157,20 @@ class projmeta:
 				lines.append(f'reference.{k} = "{v}"\n')
 		return lines
 
-	def save(self, path: str, indent: str = "\t") -> None:
+	def save(self, 
+		path: str, 
+		mode: int = 0o664,
+		indent: str = "\t") -> None:
 		"""
 		Save to toml file
 		:param path: The path to the metadata.toml file
+		:param mode: The permissions for the file
 		:param indent: The string to use for indentation
 		"""
 		lines = self.format(indent=indent)
 		with open(path, "w") as f:
 			f.writelines(lines)
+		os.chmod(path, mode)
 
 	def to_dict(self) -> dict[str, Any]:
 		"""
@@ -358,6 +363,7 @@ class projdata:
 			if err is not None:
 				issues.extend(err)
 		except Exception as e:
+			issues.append("[FATAL] metadata.toml could not be read")
 			issues.append(str(e))
 		if len(issues) > 0:
 			return issues
@@ -443,12 +449,15 @@ class projdata:
 			shutil.copytree(self.path, dst)
 		return projdata(dst)
 
-	def save(self, indent: str = "\t") -> None:
+	def save(self, 
+		mode: int = 0o664,
+		indent: str = "\t") -> None:
 		"""
 		Save to metadata.toml
+		:param mode: The permissions for the file
 		:param indent: The string to use for indentation
 		"""
-		self.meta.save(self.meta_path, indent=indent)
+		self.meta.save(self.meta_path, mode=mode, indent=indent)
 
 	def unlink(self) -> None:
 		"""
@@ -692,6 +701,7 @@ class projdb(MutableMapping):
 		group: str,
 		*, 
 		path: str | None = None,
+		mode: int = 0o775,
 		indent: str = "\t",
 		**kwargs: Any) -> projdata:
 		"""
@@ -699,8 +709,10 @@ class projdb(MutableMapping):
 		:param name: The project identifier
 		:param scope: The scoping for how the project can be used
 		:param group: The grouping for the org or repository
-		:param kwargs: Additional arguments to projmeta constructor
 		:param path: The path to the project (if not canonical path)
+		:param mode: The permissions for the project directory
+		:param indent: The indentation to use for saving the metadata.toml
+		:param kwargs: Additional arguments to projmeta constructor
 		"""
 		if not self.root_exists():
 			raise ValueError("root must exist and be a directory")
@@ -712,10 +724,11 @@ class projdb(MutableMapping):
 				raise NotADirectoryError(f"project tree is not a directory: {path}")
 			else:
 				mktree(path, force=True)
+				os.chmod(path, mode)
 		proj = projdata(path, meta)
 		if os.path.exists(proj.meta_path):
 			raise FileExistsError(f"project already initialized: {proj.meta_path}")
-		proj.save(indent=indent)
+		proj.save(mode=mode & ~0o111, indent=indent)
 		self[name] = proj
 		return proj
 
@@ -874,9 +887,12 @@ class projdb(MutableMapping):
 			mtime = proj.mtime if proj.mtime > mtime else mtime
 		return mtime
 
-	def save(self, indent: int = "\t") -> None:
+	def save(self, 
+		mode: int = 0o664,
+		indent: int = "\t") -> None:
 		"""
 		Saves the database to the manifest
+		:param mode: The permissions for the file
 		:param indent: Number of spaces to indent json
 		"""
 		if self.manifest is None:
@@ -884,6 +900,7 @@ class projdb(MutableMapping):
 		outlist = [proj.to_dict() for proj in self.projects]
 		with open(self.manifest, "w") as f:
 			json.dump(outlist, f, indent=indent)
+		os.chmod(self.manifest, mode)
 
 	@classmethod
 	def from_root(cls, root: str):
