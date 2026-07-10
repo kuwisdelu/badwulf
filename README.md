@@ -109,10 +109,10 @@ Use `wulf check --fix` to re-organize a prefix by moving project directories to 
 
 Use `wulf list` (alias: `wulf ls`) to list the available projects. You can sort and filter the projects using options.
 
-For example, the command below will list projects using a long (`-l`) format that also shows project sizes and modification times, sorted in reverse (`-r`) by size.
+For example, the command below will list projects using a long (`-l`) format that also shows project sizes and modification times, sorted by size.
 
 ```
-wulf list -l -r size
+wulf list -l --sort size
 ```
 
 You can list projects available at other sites (e.g., a remote server or cluster) if you've fetched their manifests:
