@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 
 from time import sleep
@@ -200,7 +201,8 @@ class rssh:
 			if ask and not confirm("Continue?"):
 				return
 			if not dry_run:
-				proc = self.run(["mkdir", "-p", dirs], silent=silent)
+				mkd = f"(umask 002; mkdir -p {shlex.quote(dirs)})"
+				proc = subprocess.run([mkd], capture_output=silent)
 				if proc.returncode != 0:
 					raise IOError("failed to create destination paths")
 		if mirror:
@@ -264,7 +266,8 @@ class rssh:
 			if ask and not confirm("Continue?"):
 				return
 			if not dry_run:
-				proc = self.run(["mkdir", "-p", dirs], silent=silent)
+				mkd = f"(umask 002; mkdir -p {shlex.quote(dirs)})"
+				proc = self.run([mkd], silent=silent)
 				if proc.returncode != 0:
 					raise IOError("failed to create destination paths")
 		if mirror:
