@@ -202,7 +202,7 @@ class rssh:
 				return
 			if not dry_run:
 				mkd = f"(umask 002; mkdir -p {shlex.quote(dirs)})"
-				proc = subprocess.run([mkd], capture_output=silent)
+				proc = subprocess.run(["sh", "-c", mkd], capture_output=silent)
 				if proc.returncode != 0:
 					raise IOError("failed to create destination paths")
 		if mirror:
