@@ -391,7 +391,7 @@ class dbcontext:
 		site: str, 
 		host: str | None = None,
 		prefix: str | None = None,
-		**kwargs: Any) -> subprocess.CompletedProces:
+		**kwargs: Any) -> subprocess.CompletedProcess:
 		"""
 		Push a manifest to a node at another site
 		:param site: The site name

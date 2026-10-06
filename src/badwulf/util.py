@@ -154,7 +154,7 @@ def quote(s: str, q: str = '"') -> str:
 	else:
 		return s
 
-def touch(path: str, times: tuple(float) | None = None) -> None:
+def touch(path: str, times: tuple[float] | None = None) -> None:
 	"""
 	Modify a file's atime and mtime and create it if it doesn't exist
 	:param path: The file to create or modify
